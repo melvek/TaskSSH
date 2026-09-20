@@ -55,7 +55,7 @@ public final class JschCommandExecutor {
 
             channel = (ChannelExec) session.openChannel("exec");
             // 把 stderr 重定向到 stdout，统一读取，避免两个流阻塞
-            channel.setCommand(command + " 2>&1");
+            channel.setCommand("(" + command + ") 2>&1");
 
             InputStream in = channel.getInputStream();
             channel.connect();

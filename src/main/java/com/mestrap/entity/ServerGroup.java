@@ -1,13 +1,13 @@
 package com.mestrap.entity;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.mestrap.deserializer.HostMapDeserializer;
 
-import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author melvek
+ */
 public class ServerGroup {
     private String groupName;
 

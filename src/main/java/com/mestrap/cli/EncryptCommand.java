@@ -28,16 +28,18 @@ public final class EncryptCommand {
      */
     public static int run(String mode, String[] args) {
 
-        if (args.length != 1) {
-            LogPrinter.error("Usage: taskssh " + mode + " \"<text>\"");
+        if (args.length == 0) {
+            LogPrinter.error("Missing argument");
+            LogPrinter.hint("Usage: taskssh " + mode + " \"<text>\"");
+            return 1;
+        }
+        if (args.length > 1) {
+            LogPrinter.error("Too many arguments");
+            LogPrinter.hint("Usage: taskssh " + mode + " \"<text>\"");
             return 1;
         }
 
         String input = args[0];
-        if (input.isEmpty()) {
-            LogPrinter.error("Input is empty");
-            return 1;
-        }
 
         try {
             if (CommandDispatcher.CMD_ENCRYPT.equals(mode)) {

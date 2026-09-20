@@ -2,6 +2,9 @@ package com.mestrap.entity;
 
 import java.util.List;
 
+/**
+ * @author melvek
+ */
 public class Task {
     private String name;
     private String description;

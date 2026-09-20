@@ -4,11 +4,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
+/**
+ * @author melvek
+ */
 public class Inventory {
+
     private Map<String, ServerGroup> servers;
 
     @JsonProperty("global_vars")
-    private HostVars globalVars = new HostVars();
+    private HostVars globalVars;
 
     private Map<String, Task> tasks;
 

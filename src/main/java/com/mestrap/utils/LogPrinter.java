@@ -1,8 +1,11 @@
 package com.mestrap.utils;
 
+import java.util.Locale;
+
 /**
  * Colored console output utility class
  * Supports ANSI color codes; automatically disables colors on Windows
+ * @author melvek
  */
 public class LogPrinter {
 
@@ -46,7 +49,8 @@ public class LogPrinter {
      */
     private static void detectColorSupport() {
         // Windows does not support ANSI colors by default (unless enabled)
-        String os = System.getProperty(PROP_OS_NAME).toLowerCase();
+        String os = System.getProperty(PROP_OS_NAME, "").toLowerCase(Locale.ROOT);
+
         if (os.contains(OS_WINDOWS)) {
             // Windows 10 and above may support it, but it is disabled by default
             // It can be enabled as needed; here it is disabled by default for compatibility
@@ -346,8 +350,5 @@ public class LogPrinter {
             this.code = code;
         }
 
-        public String getCode() {
-            return code;
-        }
     }
 }

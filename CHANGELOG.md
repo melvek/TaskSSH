@@ -1,5 +1,17 @@
 # 更新日志
 
+## [1.2.1] - 2026-09-20
+
+### Add
+
+- **加解密工具独立入口**：新增 taskssh encrypt / taskssh decrypt 子命令，无需依赖清单文件即可单独使用
+
+### Fixed
+
+- 修复 `JschCommandExecutor` 中输出重定向可能会导致输出信息异常的错误
+
+---
+
 ## [1.2.0] - 2026-09-19
 
 ### Breaking Changes

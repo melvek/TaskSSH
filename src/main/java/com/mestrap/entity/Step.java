@@ -2,6 +2,9 @@ package com.mestrap.entity;
 
 import java.util.Map;
 
+/**
+ * @author melvek
+ */
 public class Step {
     private String name;
     private String action;

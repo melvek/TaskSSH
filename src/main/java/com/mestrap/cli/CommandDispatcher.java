@@ -31,6 +31,7 @@ public class CommandDispatcher {
     public static final String CMD_DECRYPT = "decrypt";
 
     private final TaskRegistry taskRegistry = new TaskRegistry();
+
     private final ActionRegistry actionRegistry = new ActionRegistry();
 
     public int dispatch(String[] args) {
@@ -71,12 +72,13 @@ public class CommandDispatcher {
         }
 
         // ---- 4. 加载清单 ----
-        String invFile = cl.hasOption(GlobalOptions.INVENTORY)
-                ? cl.getOptionValue(GlobalOptions.INVENTORY)
-                : Constant.DEFAULT_INVENTORY;
+        String invFile = Constant.DEFAULT_INVENTORY;
+        if (cl.hasOption(GlobalOptions.INVENTORY)) {
+            invFile = cl.getOptionValue(GlobalOptions.INVENTORY);
+        }
         Inventory inventory = InventoryLoader.load(invFile);
 
-        // 注册用户流程（同名覆盖内置流程）
+        // 注册任务流程（同名覆盖内置流程）
         taskRegistry.loadTasks(inventory.getTasks());
 
         // ---- 5. 第一个位置参数 = 流程名 ----
@@ -88,8 +90,6 @@ public class CommandDispatcher {
         }
 
         String taskName = positional.get(0);
-        List<String> hostNames = positional.subList(1, positional.size());
-
         Task task = taskRegistry.resolve(taskName);
         if (task == null) {
             LogPrinter.error("Unknown task: <" + taskName + ">");
@@ -98,6 +98,7 @@ public class CommandDispatcher {
         }
 
         // ---- 6. 解析目标主机 ----
+        List<String> hostNames = positional.subList(1, positional.size());
         Map<String, HostVars> hosts = HostResolver.resolve(hostNames, inventory, cl);
 
         if (hosts.isEmpty()) {
@@ -116,6 +117,7 @@ public class CommandDispatcher {
 
         // ---- 8. 确认 ----
         if (!cl.hasOption(GlobalOptions.YES)) {
+            //noinspection AlibabaUndefineMagicConstant
             if (!ConfirmUtil.confirm("Confirm to proceed")) {
                 return 0;
             }
@@ -126,12 +128,8 @@ public class CommandDispatcher {
 
         // ---- 10. 执行 ----
         TaskExecutor executor = new TaskExecutor(actionRegistry);
-        return executor.executeAll(
-                task,
-                hosts,
-                inventory.getGlobalVars() != null
-                        ? inventory.getGlobalVars().getExtraFields()
-                        : Collections.<String, Object>emptyMap(),
+        return executor.executeAll(task, hosts,
+                inventory.getGlobalVars() != null ? inventory.getGlobalVars().getExtraFields() : Collections.emptyMap(),
                 cliVars
         );
     }

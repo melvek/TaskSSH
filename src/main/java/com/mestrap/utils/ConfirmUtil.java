@@ -2,6 +2,9 @@ package com.mestrap.utils;
 
 import java.util.Scanner;
 
+/**
+ * @author melvek
+ */
 public class ConfirmUtil {
 
     /**
