@@ -8,7 +8,6 @@ import com.mestrap.utils.BoolUtil;
 import com.mestrap.utils.LogPrinter;
 import com.mestrap.utils.VariableReplacer;
 import org.apache.commons.cli.Option;
-import sun.rmi.runtime.Log;
 
 import java.io.File;
 import java.util.ArrayList;
