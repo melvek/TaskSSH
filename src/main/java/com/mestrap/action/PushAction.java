@@ -22,7 +22,6 @@ import java.util.Map;
  * <p>-d, --dest 远程目标路径。
  * <p>-F, --force 远程文件已存在时是否覆盖。
  * <p>-B, --backup 覆盖前是否备份原文件。
- * <p>-z, --zip 上传完成后是否解压。
  *
  * @author melvek
  */
@@ -44,8 +43,6 @@ public class PushAction implements TaskAction {
                 .desc("Allow overwriting existing remote files").build());
         list.add(Option.builder("B").longOpt("backup")
                 .desc("Back up existing remote file before overwrite").build());
-        list.add(Option.builder("z").longOpt("zip")
-                .desc("Compress before upload (requires remote unzip)").build());
         return list;
     }
 
@@ -56,7 +53,6 @@ public class PushAction implements TaskAction {
         cliVar.put("dest", "dest");
         cliVar.put("force", "force");
         cliVar.put("backup", "backup");
-        cliVar.put("zip", "zip");
         return cliVar;
     }
 

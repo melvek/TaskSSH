@@ -18,7 +18,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 命令调度器：解析参数，加载清单，执行任务。
@@ -31,64 +35,47 @@ public class CommandDispatcher {
     public static final String CMD_DECRYPT = "decrypt";
 
     private final TaskRegistry taskRegistry = new TaskRegistry();
-
     private final ActionRegistry actionRegistry = new ActionRegistry();
 
     public int dispatch(String[] args) {
 
-        // 无参数：打印帮助
         if (args == null || args.length == 0) {
             ShowHelp.printGlobal(actionRegistry);
             return 1;
         }
 
-        String first = args[0];
-        if (CMD_ENCRYPT.equals(first) || CMD_DECRYPT.equals(first)) {
+        // 工具子命令：encrypt / decrypt
+        if (isToolCommand(args[0])) {
             String[] remaining = Arrays.copyOfRange(args, 1, args.length);
-            return EncryptCommand.run(first, remaining);
+            return EncryptCommand.run(args[0], remaining);
         }
 
-        // ---- 1. 一次性注册所有选项 ----
-        Options options = buildAllOptions();
-
-        // ---- 2. 直接解析全部参数 ----
+        // 解析参数
         CommandLine cl;
         try {
-            cl = new DefaultParser().parse(options, args);
+            cl = parseArgs(args);
         } catch (ParseException e) {
             LogPrinter.error("Invalid arguments: " + e.getMessage());
             LogPrinter.hint("Use -h to see help");
             return 1;
         }
 
-        // ---- 3. 元信息 ----
-        if (cl.hasOption(GlobalOptions.VERSION)) {
-            ShowHelp.printVersion();
-            return 0;
-        }
-        if (cl.hasOption(GlobalOptions.HELP)) {
-            ShowHelp.printGlobal(actionRegistry);
-            return 0;
+        // 元信息
+        int meta = handleMeta(cl);
+        if (meta >= 0) {
+            return meta;
         }
 
-        // ---- 4. 加载清单 ----
-        String invFile = Constant.DEFAULT_INVENTORY;
-        if (cl.hasOption(GlobalOptions.INVENTORY)) {
-            invFile = cl.getOptionValue(GlobalOptions.INVENTORY);
-        }
-        Inventory inventory = InventoryLoader.load(invFile);
-
-        // 注册任务流程（同名覆盖内置流程）
+        // 加载清单并解析任务
+        Inventory inventory = loadInventory(cl);
         taskRegistry.loadTasks(inventory.getTasks());
 
-        // ---- 5. 第一个位置参数 = 流程名 ----
         List<String> positional = cl.getArgList();
         if (positional.isEmpty()) {
             LogPrinter.error("No task specified");
             ShowHelp.printGlobal(actionRegistry);
             return 1;
         }
-
         String taskName = positional.get(0);
         Task task = taskRegistry.resolve(taskName);
         if (task == null) {
@@ -97,61 +84,120 @@ public class CommandDispatcher {
             return 1;
         }
 
-        // ---- 6. 解析目标主机 ----
+        // 解析目标主机
         List<String> hostNames = positional.subList(1, positional.size());
         Map<String, HostVars> hosts = HostResolver.resolve(hostNames, inventory, cl);
-
         if (hosts.isEmpty()) {
             LogPrinter.error("No target hosts specified");
             LogPrinter.hint("Usage: taskssh " + taskName + " <hosts...> [options]");
             return 1;
         }
 
-        // ---- 7. 展示主机列表 ----
-        LogPrinter.section("Target hosts");
-        hosts.forEach((name, vars) -> LogPrinter.listItem(name, vars.getHost()));
-
+        // 展示主机
+        printHosts(hosts);
         if (cl.hasOption(GlobalOptions.LIST)) {
             return 0;
         }
 
-        // ---- 8. 确认 ----
-        if (!cl.hasOption(GlobalOptions.YES)) {
-            //noinspection AlibabaUndefineMagicConstant
-            if (!ConfirmUtil.confirm("Confirm to proceed")) {
-                return 0;
-            }
+        // 确认
+        if (!confirm(cl)) {
+            return 0;
         }
 
-        // ---- 9. 提取 CLI 变量注入 ----
-        Map<String, Object> cliVars = extractCliVars(cl);
+        // 执行
+        return execute(task, hosts, inventory, cl);
+    }
 
-        // ---- 10. 执行 ----
-        TaskExecutor executor = new TaskExecutor(actionRegistry);
-        return executor.executeAll(task, hosts,
-                inventory.getGlobalVars() != null ? inventory.getGlobalVars().getExtraFields() : Collections.emptyMap(),
-                cliVars
-        );
+    // ------------------------------------------------------------------
+    // 主流程辅助
+    // ------------------------------------------------------------------
+
+    /**
+     * 判断是否为工具子命令。
+     */
+    private boolean isToolCommand(String cmd) {
+        return CMD_ENCRYPT.equals(cmd) || CMD_DECRYPT.equals(cmd);
     }
 
     /**
-     * 构建选项：全局选项 + 所有 action 的选项。
+     * 构建选项并解析参数。
      */
-    private Options buildAllOptions() {
+    private CommandLine parseArgs(String[] args) throws ParseException {
         Options options = new Options();
-
         for (Option o : GlobalOptions.all()) {
             options.addOption(o);
         }
-
         for (TaskAction action : actionRegistry.all()) {
             for (Option o : action.cliOptions()) {
                 options.addOption(o);
             }
         }
-
-        return options;
+        return new DefaultParser().parse(options, args);
     }
+
+    /**
+     * 处理元信息选项。
+     *
+     * @return 退出码，或 -1 表示继续执行
+     */
+    private int handleMeta(CommandLine cl) {
+        if (cl.hasOption(GlobalOptions.VERSION)) {
+            ShowHelp.printVersion();
+            return 0;
+        }
+        if (cl.hasOption(GlobalOptions.HELP)) {
+            ShowHelp.printGlobal(actionRegistry);
+            return 0;
+        }
+        return -1;
+    }
+
+    /**
+     * 加载清单文件。
+     */
+    private Inventory loadInventory(CommandLine cl) {
+        String invFile = cl.hasOption(GlobalOptions.INVENTORY)
+                ? cl.getOptionValue(GlobalOptions.INVENTORY)
+                : Constant.DEFAULT_INVENTORY;
+        return InventoryLoader.load(invFile);
+    }
+
+    /**
+     * 展示目标主机列表。
+     */
+    private void printHosts(Map<String, HostVars> hosts) {
+        LogPrinter.section("Target hosts");
+        hosts.forEach((name, vars) -> LogPrinter.listItem(name, vars.getHost()));
+    }
+
+    /**
+     * 执行前确认。使用 -y 跳过。
+     */
+    private boolean confirm(CommandLine cl) {
+        if (cl.hasOption(GlobalOptions.YES)) {
+            return true;
+        }
+        //noinspection AlibabaUndefineMagicConstant
+        return ConfirmUtil.confirm("Confirm to proceed");
+    }
+
+    /**
+     * 提取 CLI 变量并执行任务。
+     */
+    private int execute(Task task, Map<String, HostVars> hosts,
+                        Inventory inventory, CommandLine cl) {
+        Map<String, Object> cliVars = extractCliVars(cl);
+        Map<String, Object> globalVars = inventory.getGlobalVars() != null
+                ? inventory.getGlobalVars().getExtraFields()
+                : Collections.emptyMap();
+
+        TaskExecutor executor = new TaskExecutor(actionRegistry);
+        return executor.executeAll(task, hosts, globalVars, cliVars);
+    }
+
+    // ------------------------------------------------------------------
+    // CLI 变量
+    // ------------------------------------------------------------------
 
     /**
      * 提取 CLI 变量注入。
@@ -165,19 +211,10 @@ public class CommandDispatcher {
                 String cliOpt = e.getKey();
                 String varKey = e.getValue();
                 Option opt = findOption(action, cliOpt);
-                if (opt == null) {
+                if (opt == null || !cl.hasOption(cliOpt)) {
                     continue;
                 }
-
-                if (!cl.hasOption(cliOpt)) {
-                    continue;
-                }
-
-                if (opt.hasArg()) {
-                    vars.put(varKey, cl.getOptionValue(cliOpt));
-                } else {
-                    vars.put(varKey, "true");
-                }
+                vars.put(varKey, opt.hasArg() ? cl.getOptionValue(cliOpt) : "true");
             }
         }
         return vars;

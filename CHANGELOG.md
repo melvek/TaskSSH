@@ -6,6 +6,10 @@
 
 - **加解密工具独立入口**：新增 taskssh encrypt / taskssh decrypt 子命令，无需依赖清单文件即可单独使用
 
+### Changed
+
+- **`push` 不再自动解压**：上传压缩包后不执行解压，如需解压请在任务中显式添加 `command` 步骤，执行远程解压命令
+
 ### Fixed
 
 - 修复 `JschCommandExecutor` 中输出重定向可能会导致输出信息异常的错误

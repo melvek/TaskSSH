@@ -14,7 +14,6 @@ TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务
 
 - JDK 8 或更高版本
 - 远程服务器需支持 SSH / SFTP
-- 上传目录或解压需目标机支持 `tar`（`.tar.gz`）或 `unzip`（`.zip`）
 
 ---
 
@@ -146,14 +145,12 @@ taskssh command prod-trans -i inventory.yaml
 | `-d` | `--dest`   | `path`           | 远程目标路径（也可从清单 `service_path` 读取） |
 | `-F` | `--force`  |                  | 覆盖已存在的远程文件                      |
 | `-B` | `--backup` |                  | 覆盖前备份原文件                        |
-| `-z` | `--zip`    |                  | 上传后自动解压（需目标机支持 `tar` 或 `unzip`） |
 
 示例：
 
 ```bash
 taskssh push app-server -f app.jar -d /opt/app/
 taskssh push prod-trans -f app.jar -F -B
-taskssh push prod-trans -f ./dist/web -d /opt/web/ -z
 ```
 
 上传行为：
@@ -164,8 +161,7 @@ taskssh push prod-trans -f ./dist/web -d /opt/web/ -z
     - 默认报错
     - `-F` 直接覆盖
     - `-F -B` 备份原文件（追加时间戳）后覆盖
-4. 上传文件夹时自动打包（`.tar.gz`），`-z` 时远程自动解压
-5. 父目录不存在时直接报错，不自动创建
+4. 父目录不存在时直接报错，不自动创建
 
 ---
 

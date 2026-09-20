@@ -68,7 +68,6 @@ public final class BuiltinTasks {
         withMap.put("dest", "${dest}");
         withMap.put("force", "${force}");
         withMap.put("backup", "${backup}");
-        withMap.put("zip", "${zip}");
         step.setWith(withMap);
 
         task.setSteps(Collections.singletonList(step));
