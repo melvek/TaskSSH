@@ -43,12 +43,12 @@ public class TaskExecutor {
             String hostName = e.getKey();
             HostVars hostVars = e.getValue();
 
-            LogPrinter.progress(idx, hosts.size(), "Processing: " + hostName);
+            LogPrinter.progress(idx, hosts.size(), "Processing: " + hostName + "[" + hostVars.getHost() + "]");
 
             try {
                 executeOnHost(task, hostVars, globalVars, cliVars);
                 success++;
-                LogPrinter.success(hostName + " OK");
+                LogPrinter.success(hostName + "[" + hostVars.getHost() + "]" + " task execute completed!");
             } catch (TaskException ex) {
                 failed++;
                 if (ex.getStepName() != null) {

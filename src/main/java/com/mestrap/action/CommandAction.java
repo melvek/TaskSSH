@@ -48,6 +48,7 @@ public class CommandAction implements TaskAction {
         String cmd = VariableReplacer.replace(String.valueOf(raw), ctx.getVars());
 
         LogPrinter.info("Execute command: " + cmd);
+        LogPrinter.emptyLine();
 
         int exitCode = JschCommandExecutor.executeCommand(
                 ctx.getHostVars().getHost(),

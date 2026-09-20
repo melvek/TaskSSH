@@ -25,7 +25,7 @@ public class TaskTest extends TestCase
 
         CommandDispatcher dispatcher = new CommandDispatcher();
         // 模拟用户输入 deploy 命令
-        String[] args = new String[]{"push", "-i", "inventory.yaml","web_master","-f","bin/taskssh-1.1.0.jar","-d", "${service_path}","-y"};
+        String[] args = new String[]{"push", "-i", "inventory.yaml","web_master","-f","bin/taskssh-1.2.1.jar","-d", "${service_path}","-y"};
         // String[] args = parseArgs("");
 
         int result = dispatcher.dispatch(args);
@@ -44,7 +44,7 @@ public class TaskTest extends TestCase
 
         CommandDispatcher dispatcher = new CommandDispatcher();
         // 模拟用户输入 deploy 命令
-        String[] args = new String[]{"deploy","-i", "inventory.yaml", "web_master", "-y"};
+        String[] args = new String[]{"deploy","-i", "inventory.yaml", "web_master", "-y", "-F", "-B"};
         // String[] args = parseArgs("");
 
         int result = dispatcher.dispatch(args);
@@ -64,5 +64,20 @@ public class TaskTest extends TestCase
 
         assertEquals(1, result); // 验证返回码
     }
+
+    public void testHostTask() {
+        LogPrinter.setColorEnabled(true);
+
+        CommandDispatcher dispatcher = new CommandDispatcher();
+        // 模拟用户输入 deploy 命令
+        String[] args = new String[]{"command", "-i", "inventory.yaml", "172.21.1.74", "-y", "-e", "date"};
+        // String[] args = parseArgs("");
+
+        int result = dispatcher.dispatch(args);
+
+        assertEquals(0, result); // 验证返回码
+    }
+
+
 
 }

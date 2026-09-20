@@ -1,7 +1,7 @@
 # 全局参数
 global_vars:
   port: 22
-  username: app
+  username: web
   password: 2dO7ObeRBjqyuKkMpV6Xkg==
   command: ${service_path}deploy.sh -r
 
@@ -9,22 +9,15 @@ global_vars:
 servers:
   web_master:
     hosts:
-      bta_trans_1: 127.0.0.1
+      web_server: 172.21.1.74
     vars:
       service_path: /app/web/
-      package_path: bin/taskssh-1.1.0.jar
-  web_slave:
-    hosts:
-      bta_trans_2: 192.168.1.1
+      package_path: bin/taskssh-1.2.1.jar
 
 # 任务定义
 tasks:
   deploy:
     steps:
-      - name: "停止服务"
-        action: command
-        with:
-          command: "${service_path}deploy.sh -t"
       - name: "上传文件"
         action: push
         delay: 5
@@ -35,4 +28,4 @@ tasks:
       - name: "启动服务"
         action: command
         with:
-          command: "${service_path}deploy.sh -s"
+          command: "cd ${service_path}deploy.sh -r"

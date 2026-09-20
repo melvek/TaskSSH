@@ -89,7 +89,7 @@ public final class JschFileUploader {
                 sftp.put(fis, finalPath, ChannelSftp.OVERWRITE);
             }
 
-            LogPrinter.success("Uploaded: " + localFile + " -> " + finalPath);
+            LogPrinter.success("Upload " + localFile + " to " + finalPath + " succeeded");
             return 0;
 
         } catch (TaskException e) {
