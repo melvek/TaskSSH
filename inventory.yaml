@@ -1,9 +1,8 @@
 # 全局参数
 global_vars:
-  port: 22
   username: web
-  password: 2dO7ObeRBjqyuKkMpV6Xkg==
-  command: ${service_path}deploy.sh -r
+  # password: 2dO7ObeRBjqyuKkMpV6Xkg==
+  port: 22
 
 # 服务器清单
 servers:
@@ -29,3 +28,9 @@ tasks:
         action: command
         with:
           command: "cd ${service_path}deploy.sh -r"
+  check:
+    steps:
+      - name: "检查服务"
+        action: command
+        with:
+          command: "ps -ef| grep java"

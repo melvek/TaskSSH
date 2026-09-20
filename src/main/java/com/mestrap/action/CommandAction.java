@@ -1,7 +1,7 @@
 package com.mestrap.action;
 
 import com.mestrap.core.ActionContext;
-import com.mestrap.core.JschCommandExecutor;
+import com.mestrap.ssh.JschCommandExecutor;
 import com.mestrap.exception.TaskException;
 import com.mestrap.utils.LogPrinter;
 import com.mestrap.utils.VariableReplacer;

@@ -1,7 +1,7 @@
 package com.mestrap.action;
 
 import com.mestrap.core.ActionContext;
-import com.mestrap.core.JschFileUploader;
+import com.mestrap.ssh.JschFileUploader;
 import com.mestrap.core.OverwritePolicy;
 import com.mestrap.exception.TaskException;
 import com.mestrap.utils.BoolUtil;

@@ -44,6 +44,7 @@ public class TaskExecutor {
             HostVars hostVars = e.getValue();
 
             LogPrinter.progress(idx, hosts.size(), "Processing: " + hostName + "[" + hostVars.getHost() + "]");
+            LogPrinter.emptyLine();
 
             try {
                 executeOnHost(task, hostVars, globalVars, cliVars);
