@@ -57,7 +57,8 @@ public final class HostResolver {
                     if (groupVars != null) {
                         vars.merge(groupVars);
                     }
-                    target.put(name, vars);
+                    String key = hostName + "/" + name;
+                    target.put(key, vars);
                 });
                 resolved = true;
                 LogPrinter.info("Server group: " + hostName

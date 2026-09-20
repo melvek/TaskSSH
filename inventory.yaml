@@ -1,7 +1,7 @@
 # 全局参数
 global_vars:
   username: web
-  # password: 2dO7ObeRBjqyuKkMpV6Xkg==
+  password: 2dO7ObeRBjqyuKkMpV6Xkg==
   port: 22
 
 # 服务器清单
