@@ -29,7 +29,7 @@ public class AppTest extends TestCase
 
         CommandDispatcher dispatcher = new CommandDispatcher();
         // 模拟用户输入 deploy 命令
-        String[] args = parseArgs("push -i inventory.yaml web_master -f \"bin/jssh-1.1.0.jar\" -d ${service_path}  -y");
+        String[] args = parseArgs("push -i inventory.yaml web_master -f \"bin/taskssh-1.1.0.jar\" -d ${service_path}  -y");
         // String[] args = parseArgs("");
 
         int result = dispatcher.dispatch(args);

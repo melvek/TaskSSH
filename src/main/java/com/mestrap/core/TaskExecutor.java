@@ -4,7 +4,7 @@ import com.mestrap.action.TaskAction;
 import com.mestrap.entity.HostVars;
 import com.mestrap.entity.Step;
 import com.mestrap.entity.Task;
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 import com.mestrap.utils.LogPrinter;
 import com.mestrap.utils.VariableReplacer;
 
@@ -46,7 +46,7 @@ public class TaskExecutor {
                 executeOnHost(task, hostVars, globalVars, cliVars);
                 success++;
                 LogPrinter.success(hostName + " OK");
-            } catch (JsshException ex) {
+            } catch (TaskException ex) {
                 failed++;
                 if (ex.getStepName() != null) {
                     LogPrinter.error(hostName + " FAIL at step '"
@@ -96,7 +96,7 @@ public class TaskExecutor {
 
             TaskAction action = actionRegistry.get(step.getAction());
             if (action == null) {
-                throw new JsshException(hostName, step.getName(),
+                throw new TaskException(hostName, step.getName(),
                         "Unknown action: " + step.getAction(), null);
             }
 
@@ -112,10 +112,10 @@ public class TaskExecutor {
             // 4. 执行
             try {
                 action.execute(new ActionContext(hostVars, effectiveWith, vars));
-            } catch (JsshException e) {
-                throw new JsshException(hostName, step.getName(), e.getMessage(), e);
+            } catch (TaskException e) {
+                throw new TaskException(hostName, step.getName(), e.getMessage(), e);
             } catch (Exception e) {
-                throw new JsshException(hostName, step.getName(),
+                throw new TaskException(hostName, step.getName(),
                         "Step failed: " + step.getName() + " - " + e.getMessage(), e);
             }
 
@@ -127,7 +127,7 @@ public class TaskExecutor {
                     Thread.sleep(step.getDelay() * 1000L);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    throw new JsshException(hostName, step.getName(),
+                    throw new TaskException(hostName, step.getName(),
                             "Interrupted while waiting after step", e);
                 }
             }

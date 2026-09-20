@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.mestrap</groupId>
-  <artifactId>jssh</artifactId>
+  <artifactId>taskssh</artifactId>
   <version>1.2.0</version>
   <packaging>jar</packaging>
 
-  <name>jssh</name>
+  <name>taskssh</name>
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -51,7 +51,7 @@
 
 
   <build>
-    <!-- <finalName>jssh</finalName> -->
+    <!-- <finalName>taskssh</finalName> -->
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -67,7 +67,7 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.mestrap.JsshApplication</mainClass>
+                  <mainClass>com.mestrap.TaskSSHApplication</mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -99,7 +99,7 @@
                 <!-- 复制 JAR 文件到 release 目录 -->
                 <copy todir="${project.basedir}/bin">
                   <fileset dir="${project.build.directory}">
-                    <include name="jssh*.jar" />
+                    <include name="taskssh*.jar" />
                   </fileset>
                 </copy>
               </target>

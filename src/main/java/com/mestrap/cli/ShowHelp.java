@@ -24,7 +24,7 @@ public final class ShowHelp {
      * 打印版本信息。
      */
     public static void printVersion() {
-        LogPrinter.section("JavaSSH v" + Constant.VERSION);
+        LogPrinter.section("TaskSSH v" + Constant.VERSION);
         LogPrinter.info("Lightweight SSH operations tool based on JSch");
         String buildTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
@@ -38,11 +38,11 @@ public final class ShowHelp {
      */
     public static void printGlobal(ActionRegistry actionRegistry) {
 
-        System.out.println("\nJavaSSH - Lightweight SSH operations tool");
+        System.out.println("\nTaskSSH - Lightweight SSH operations tool");
         System.out.println("Version: " + Constant.VERSION + "\n");
 
         System.out.println("Usage:");
-        System.out.println("  jssh <task> [hosts...] [options]\n");
+        System.out.println("  taskssh <task> [hosts...] [options]\n");
 
         System.out.println("Available actions for task definitions:\n");
 

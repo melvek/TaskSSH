@@ -2,7 +2,7 @@ package com.mestrap.action;
 
 import com.mestrap.core.ActionContext;
 import com.mestrap.core.JschCommandExecutor;
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 import com.mestrap.utils.LogPrinter;
 import com.mestrap.utils.VariableReplacer;
 import org.apache.commons.cli.Option;
@@ -42,7 +42,7 @@ public class CommandAction implements TaskAction {
     public void execute(ActionContext ctx) throws Exception {
         Object raw = ctx.getWith().get("command");
         if (raw == null) {
-            throw new JsshException("command action requires 'command' parameter");
+            throw new TaskException("command action requires 'command' parameter");
         }
 
         String cmd = VariableReplacer.replace(String.valueOf(raw), ctx.getVars());
@@ -58,7 +58,7 @@ public class CommandAction implements TaskAction {
         );
 
         if (exitCode != 0) {
-            throw new JsshException("Command failed with exit code " + exitCode);
+            throw new TaskException("Command failed with exit code " + exitCode);
         }
     }
 }

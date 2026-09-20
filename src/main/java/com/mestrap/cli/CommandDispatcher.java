@@ -96,7 +96,7 @@ public class CommandDispatcher {
 
         if (hosts.isEmpty()) {
             LogPrinter.error("No target hosts specified");
-            LogPrinter.hint("Usage: jssh " + taskName + " <hosts...> [options]");
+            LogPrinter.hint("Usage: taskssh " + taskName + " <hosts...> [options]");
             return 1;
         }
 

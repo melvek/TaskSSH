@@ -1,4 +1,4 @@
 #!/bin/sh
 ENV=$1
 shift
-java -Dfile.encoding=UTF-8 -jar jssh-1.2.0.jar deploy "$@" -i "${ENV}.yaml"
+java -Dfile.encoding=UTF-8 -jar taskssh-1.2.0.jar deploy "$@" -i "${ENV}.yaml"

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.mestrap.entity.HostVars;
 import com.mestrap.entity.Inventory;
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 import com.mestrap.utils.LogPrinter;
 
 import java.io.File;
@@ -30,14 +30,14 @@ public final class InventoryLoader {
      *
      * @param path 清单文件路径
      * @return 清单对象
-     * @throws JsshException 文件不存在或解析失败时抛出
+     * @throws TaskException 文件不存在或解析失败时抛出
      */
     public static Inventory load(String path) {
 
         File file = new File(path);
         if (!file.exists()) {
             LogPrinter.error("Inventory not found: " + file.getAbsolutePath());
-            throw new JsshException("Inventory file not found: " + file.getAbsolutePath());
+            throw new TaskException("Inventory file not found: " + file.getAbsolutePath());
         }
 
         try (InputStream in = new FileInputStream(file)) {
@@ -58,11 +58,11 @@ public final class InventoryLoader {
 
             return inv;
 
-        } catch (JsshException e) {
+        } catch (TaskException e) {
             throw e;
         } catch (Exception e) {
             LogPrinter.error("Failed to parse inventory: " + e.getMessage());
-            throw new JsshException("Failed to parse inventory: " + e.getMessage(), e);
+            throw new TaskException("Failed to parse inventory: " + e.getMessage(), e);
         }
     }
 }

@@ -3,7 +3,7 @@ package com.mestrap.action;
 import com.mestrap.core.ActionContext;
 import com.mestrap.core.JschFileUploader;
 import com.mestrap.core.OverwritePolicy;
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 import com.mestrap.utils.BoolUtil;
 import com.mestrap.utils.LogPrinter;
 import com.mestrap.utils.VariableReplacer;
@@ -67,10 +67,10 @@ public class PushAction implements TaskAction {
         Object destRaw = ctx.getWith().get("dest");
 
         if (fileRaw == null) {
-            throw new JsshException("push action requires 'file' parameter");
+            throw new TaskException("push action requires 'file' parameter");
         }
         if (destRaw == null) {
-            throw new JsshException("push action requires 'dest' parameter");
+            throw new TaskException("push action requires 'dest' parameter");
         }
 
         String file = VariableReplacer.replace(String.valueOf(fileRaw), ctx.getVars());
@@ -81,7 +81,7 @@ public class PushAction implements TaskAction {
 
         File sourceFile = new File(file);
         if (!sourceFile.exists()) {
-            throw new JsshException("Source file does not exist: " + sourceFile.getAbsolutePath());
+            throw new TaskException("Source file does not exist: " + sourceFile.getAbsolutePath());
         }
 
         OverwritePolicy policy = OverwritePolicy.of(force, backup);
@@ -99,7 +99,7 @@ public class PushAction implements TaskAction {
         );
 
         if (exitCode != 0) {
-            throw new JsshException("Push failed with exit code " + exitCode);
+            throw new TaskException("Push failed with exit code " + exitCode);
         }
     }
 }

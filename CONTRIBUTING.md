@@ -1,6 +1,6 @@
 ## 贡献指南
 
-感谢你对 JavaSSH 的关注！本文档基于 [Alibaba Java Coding Guidelines](https://alibaba.github.io/p3c/) 制定，用于规范代码贡献流程。
+感谢你对 TaskSSH 的关注！本文档基于 [Alibaba Java Coding Guidelines](https://alibaba.github.io/p3c/) 制定，用于规范代码贡献流程。
 
 ### 开发环境
 
@@ -20,7 +20,7 @@ IDEA 中安装 `Alibaba Java Coding Guidelines` 插件：
 
 ### 贡献流程
 
-1. **提交 Issue**：在 [Issues](https://github.com/melvek/JavaSSH/issues) 说明改动意图
+1. **提交 Issue**：在 [Issues](https://github.com/melvek/TaskSSH/issues) 说明改动意图
 2. **Fork 仓库**：从 `main` 分支创建你的工作分支
 3. **编写代码**：遵循下方的注释规约
 4. **本地验证**：运行 `mvn clean test` 确保通过
@@ -53,9 +53,9 @@ public class CommandAction implements TaskAction {
  *
  * @param task     任务定义
  * @param hostVars 目标主机变量
- * @throws JsshException 当某个步骤执行失败时抛出
+ * @throws TaskException 当某个步骤执行失败时抛出
  */
-public void executeOnHost(Task task, HostVars hostVars) throws JsshException {
+public void executeOnHost(Task task, HostVars hostVars) throws TaskException {
 ```
 
 **3. 类必须添加创建者和创建日期**
@@ -166,4 +166,4 @@ docs(readme): add Task usage examples
 
 ### 联系方式
 
-如有疑问，请通过 [Issues](https://github.com/melvek/JavaSSH/issues) 联系。
+如有疑问，请通过 [Issues](https://github.com/melvek/TaskSSH/issues) 联系。

@@ -1,9 +1,9 @@
 [![Language](https://img.shields.io/badge/Language-Java-blue.svg)](https://java.dev)
-[![Version](https://img.shields.io/github/v/release/melvek/JavaSSH?include_prereleases)](https://github.com/melvek/JavaSSH/releases/latest)
+[![Version](https://img.shields.io/github/v/release/melvek/TaskSSH?include_prereleases)](https://github.com/melvek/TaskSSH/releases/latest)
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux-orange)
-[![LICENSE](https://img.shields.io/github/license/melvek/JavaSSH)](LICENSE)
+[![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-JavaSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务器批量上传文件及批量执行远程命令。
+TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务器批量上传文件及批量执行远程命令。
 
 采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件），Task 是由若干 Action 组成的有序任务。
 通过 YAML 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
@@ -20,22 +20,22 @@ JavaSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务
 
 ## 安装
 
-从 [GitHub Releases 页面](https://github.com/melvek/JavaSSH/releases) 下载预编译的 JAR 及启动脚本 `deploy.bat`（Windows）或 `deploy.sh`（Linux）。
+从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载预编译的 JAR 及启动脚本 `deploy.bat`（Windows）或 `deploy.sh`（Linux）。
 
 也可以编译安装：
 
 ```bash
-git clone --depth 1 https://github.com/melvek/JavaSSH.git
-cd JavaSSH
+git clone --depth 1 https://github.com/melvek/TaskSSH.git
+cd TaskSSH
 mvn clean package
 ```
 
-构建完成后，在 `target/` 目录下生成 `jssh-x.x.x.jar`。
+构建完成后，在 `target/` 目录下生成 `taskssh-x.x.x.jar`。
 
 创建别名便于使用：
 
 ```bash
-alias javassh='java -jar /path/to/jssh-x.x.x.jar'
+alias TaskSSH='java -jar /path/to/taskssh-x.x.x.jar'
 ```
 
 ---
@@ -94,7 +94,7 @@ tasks:
 
 ### 2. 加密密码
 
-明文密码存在安全风险，JavaSSH 使用 Jasypt 加密。运行 `EncryptTool` 的 `main` 方法生成密文，填入 YAML。
+明文密码存在安全风险，TaskSSH 使用 Jasypt 加密。运行 `EncryptTool` 的 `main` 方法生成密文，填入 YAML。
 
 主密钥 `SEC_KEY` 硬编码在 `EncryptTool` 中，生产环境请改为从环境变量读取。
 
@@ -103,7 +103,7 @@ tasks:
 ## 命令总览
 
 ```
-jssh <task> <server group / hosts...> [options]
+taskssh <task> <server group / hosts...> [options]
 ```
 
 ### 全局选项
@@ -134,8 +134,8 @@ jssh <task> <server group / hosts...> [options]
 示例：
 
 ```bash
-jssh command web-server-01 -e "ls -la /opt"
-jssh command prod-trans -i inventory.yaml
+taskssh command web-server-01 -e "ls -la /opt"
+taskssh command prod-trans -i inventory.yaml
 ```
 
 ### push — 上传文件
@@ -151,9 +151,9 @@ jssh command prod-trans -i inventory.yaml
 示例：
 
 ```bash
-jssh push app-server -f app.jar -d /opt/app/
-jssh push prod-trans -f app.jar -F -B
-jssh push prod-trans -f ./dist/web -d /opt/web/ -z
+taskssh push app-server -f app.jar -d /opt/app/
+taskssh push prod-trans -f app.jar -F -B
+taskssh push prod-trans -f ./dist/web -d /opt/web/ -z
 ```
 
 上传行为：
@@ -193,14 +193,14 @@ tasks:
 | 字段 | 说明 |
 |------|------|
 | `name` | 步骤名，仅用于日志 |
-| `action` | 动作类型，对应 `jssh -h` 中列出的 Action |
+| `action` | 动作类型，对应 `taskssh -h` 中列出的 Action |
 | `with` | 动作参数，值支持 `${var}` 变量替换 |
 | `delay` | 执行后等待秒数，默认 `0` |
 
 执行：
 
 ```bash
-jssh release prod-trans -i inventory.yaml -y
+taskssh release prod-trans -i inventory.yaml -y
 ```
 
 ### 示例：用自定义任务实现部署
@@ -222,7 +222,7 @@ tasks:
 ```
 
 ```bash
-jssh deploy prod-trans -f app.jar -y
+taskssh deploy prod-trans -f app.jar -y
 ```
 
 ---
@@ -249,10 +249,10 @@ jssh deploy prod-trans -f app.jar -y
 命令中如需 shell 变量，用不带花括号的写法：
 
 ```bash
-jssh command prod -e "echo $HOME"
+taskssh command prod -e "echo $HOME"
 ```
 
-`$HOME` 原样传给 shell，`${HOME}` 会被当作 JavaSSH 变量处理。
+`$HOME` 原样传给 shell，`${HOME}` 会被当作 TaskSSH 变量处理。
 
 ### 内置变量
 

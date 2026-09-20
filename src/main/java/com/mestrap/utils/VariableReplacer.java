@@ -1,6 +1,6 @@
 package com.mestrap.utils;
 
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * 变量替换工具。
  *
- * <p>严格模式：未解析的 {@code ${var}} 会抛出 {@link JsshException}。
+ * <p>严格模式：未解析的 {@code ${var}} 会抛出 {@link TaskException}。
  * <p>递归展开最多 4 层，覆盖 global / group / host / step / CLI 五个来源。
  *
  * @author melvek
@@ -29,7 +29,7 @@ public final class VariableReplacer {
      * @param template 模板字符串，可含 ${var}
      * @param vars     变量池
      * @return 替换后的字符串
-     * @throws JsshException 存在未解析的 ${var} 时抛出
+     * @throws TaskException 存在未解析的 ${var} 时抛出
      */
     public static String replace(String template, Map<String, Object> vars) {
         if (template == null || template.isEmpty()) {
@@ -47,7 +47,7 @@ public final class VariableReplacer {
 
         List<String> missing = findMissingKeys(current);
         if (!missing.isEmpty()) {
-            throw new JsshException(
+            throw new TaskException(
                     "Unresolved variable(s): " + missing + " in \"" + template + "\"");
         }
 

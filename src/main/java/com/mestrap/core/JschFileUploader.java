@@ -5,7 +5,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
-import com.mestrap.exception.JsshException;
+import com.mestrap.exception.TaskException;
 import com.mestrap.utils.Constant;
 import com.mestrap.utils.EncryptTool;
 import com.mestrap.utils.LogPrinter;
@@ -45,12 +45,12 @@ public final class JschFileUploader {
      * @param remoteTarget 远程目标路径
      * @param policy       覆盖策略
      * @return 0 表示成功
-     * @throws JsshException 上传失败，或目标已存在且策略为 FAIL
+     * @throws TaskException 上传失败，或目标已存在且策略为 FAIL
      */
     public static int uploadFile(String host, int port, String username,
                                  String password, String localFile,
                                  String remoteTarget, OverwritePolicy policy)
-            throws JsshException {
+            throws TaskException {
 
         Session session = null;
         ChannelSftp sftp = null;
@@ -71,12 +71,12 @@ public final class JschFileUploader {
 
             // 2. 父目录必须存在
             if (!directoryExists(sftp, parentDir)) {
-                throw new JsshException("Parent directory does not exist: " + parentDir);
+                throw new TaskException("Parent directory does not exist: " + parentDir);
             }
 
             // 3. 目标不能是目录
             if (directoryExists(sftp, finalPath)) {
-                throw new JsshException("Target exists and is a directory: " + finalPath);
+                throw new TaskException("Target exists and is a directory: " + finalPath);
             }
 
             // 4. 根据策略处理已存在的文件
@@ -92,10 +92,10 @@ public final class JschFileUploader {
             LogPrinter.success("Uploaded: " + localFile + " -> " + finalPath);
             return 0;
 
-        } catch (JsshException e) {
+        } catch (TaskException e) {
             throw e;
         } catch (JSchException | SftpException | IOException e) {
-            throw new JsshException("Upload failed: " + e.getMessage(), e);
+            throw new TaskException("Upload failed: " + e.getMessage(), e);
         } finally {
             if (sftp != null && sftp.isConnected()) {
                 sftp.disconnect();
@@ -118,7 +118,7 @@ public final class JschFileUploader {
 
         switch (policy) {
             case FAIL:
-                throw new JsshException("Remote file already exists: " + finalPath
+                throw new TaskException("Remote file already exists: " + finalPath
                         + " (use -F/--force to overwrite, add -B/--backup to keep a backup)");
             case OVERWRITE:
                 LogPrinter.info("Overwriting existing file: " + finalPath);

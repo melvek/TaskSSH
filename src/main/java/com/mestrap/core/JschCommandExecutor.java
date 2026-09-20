@@ -41,8 +41,7 @@ public final class JschCommandExecutor {
      * @param command  命令内容
      * @return 退出码：0 成功，非 0 失败，-1 连接或执行异常
      */
-    public static int executeCommand(String host, int port, String username,
-                                     String password, String command) {
+    public static int executeCommand(String host, int port, String username, String password, String command) {
 
         Session session = null;
         ChannelExec channel = null;

@@ -12,7 +12,7 @@ servers:
       bta_trans_1: 127.0.0.1
     vars:
       service_path: /app/web/
-      package_path: bin/jssh-1.1.0.jar
+      package_path: bin/taskssh-1.1.0.jar
   web_slave:
     hosts:
       bta_trans_2: 192.168.1.1

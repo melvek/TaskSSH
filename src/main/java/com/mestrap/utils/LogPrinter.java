@@ -13,7 +13,7 @@ public class LogPrinter {
     private static final String OS_WINDOWS = "windows";
 
     /** 环境变量：强制启用颜色 */
-    private static final String ENV_FORCE_COLOR = "JAVASSH_COLOR";
+    private static final String ENV_FORCE_COLOR = "TaskSSH_COLOR";
 
     private static final String RESET = "\033[0m";
     private static final String BLACK = "\033[0;30m";

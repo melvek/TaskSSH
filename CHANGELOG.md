@@ -9,23 +9,21 @@
 
 ### Add
 
-- **文件夹上传**：`push` 支持上传文件夹，自动打包后上传
-- **自动解压**：`push` 新增 `-z` 参数，上传完成后按压缩格式自动解压
 - **覆盖策略**：`push` 新增 `-F` / `-B` 参数，控制覆盖和备份行为
 - **步骤等待**：`Step` 新增 `delay` 字段，执行后按配置等待再进入下一步
 - **CLI 值支持变量**：CLI 参数值可引用 `${var}`，每台主机按各自变量展开
 
 ### Changed
 
-- **变量优先级调整**：CLI 参数 > `step.with` > 变量池（`global_vars` / group / host）
+- **变量优先级调整**：CLI 参数 > `step.with` > 变量池（`global_vars` / `group` / `host`）
 - **`step.with` 定位调整**：只作参数容器，不再参与变量池
-- **CLI 结构优化**：参数解析不再受 `-i` 位置限制，`jssh -h` 可正常输出帮助
+- **CLI 结构优化**：参数解析不再受 `-i` 位置限制，`taskssh -h` 可正常输出帮助
 
 ### Fixed
 
 - 修复 `-e` 无法覆盖内置任务中 `${command}` 的问题
 - 修复变量未解析时静默保留的问题
-- 修复 `jssh -h` 被误判为任务名的问题
+- 修复 `taskssh -h` 被误判为任务名的问题
 - 修复大输出场景下远程命令退出码可能取错的问题
 - 修复备份文件命名可能重复的问题
 
@@ -35,7 +33,7 @@
 
 ### Add
 
-- **编码规范**：新增 `CONTRIBUTING.md`，遵循 Alibaba Java Coding Guidelines
+- **编码规范**：新增 `CONTRIBUTING.md`，遵循 `Alibaba Java Coding Guidelines`
 - **覆盖策略**：`push` 新增 `-F` / `-B` 参数
 - **步骤等待**：`Step` 新增 `delay` 字段
 
@@ -59,10 +57,10 @@
 - **Action 抽象**：内置 `command`、`push` 两个 Action
 - **内置流程**：`command` / `push` / `deploy`
 - **自定义流程**：在清单的 `tasks` 段中定义
-- **CLI 入口统一**：`jssh <task> [hosts...] [options]`
+- **CLI 入口统一**：`taskssh <task> [hosts...] [options]`
 - **变量递归替换**：`${key}` 最多展开 4 层
-- **Action 帮助**：`jssh -h` 列出所有 Action 及参数
-- **统一异常**：`JsshException` 携带主机名与步骤名
+- **Action 帮助**：`taskssh -h` 列出所有 Action 及参数
+- **统一异常**：`TaskException` 携带主机名与步骤名
 
 ### Changed
 
@@ -72,7 +70,7 @@
 ### Removed
 
 - `DeployCommand` 等独立命令类
-- `JavaSSHCommand` 抽象基类
+- `TaskSSHCommand` 抽象基类
 
 ---
 
