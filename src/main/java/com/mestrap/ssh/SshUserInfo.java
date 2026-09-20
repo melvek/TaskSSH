@@ -28,8 +28,7 @@ public class SshUserInfo implements UserInfo {
     /** 解密后的密码，可为 null（表示走终端输入） */
     private String password;
 
-    /** 终端提示语，格式：user@host's password: */
-    private final String prompt;
+    private String prompt;
 
     /**
      * 构造认证信息。
@@ -38,9 +37,7 @@ public class SshUserInfo implements UserInfo {
      * @param username          登录用户名
      * @param host              主机地址
      */
-    public SshUserInfo(String encryptedPassword, String username, String host) {
-        this.prompt = username + "@" + host + "'s password: ";
-
+    public SshUserInfo(String encryptedPassword) {
         if (encryptedPassword == null || encryptedPassword.isEmpty()) {
             this.password = null;
             return;
@@ -77,6 +74,7 @@ public class SshUserInfo implements UserInfo {
 
     @Override
     public boolean promptPassword(String message) {
+        prompt = message + ":";
         return password != null || System.console() != null;
     }
 

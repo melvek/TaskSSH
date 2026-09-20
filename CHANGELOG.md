@@ -5,6 +5,7 @@
 ### Add
 
 - **加解密工具独立入口**：新增 taskssh encrypt / taskssh decrypt 子命令，无需依赖清单文件即可单独使用
+- **SSH登录**：支持终端交互输入密码
 
 ### Changed
 

@@ -61,7 +61,8 @@ public final class JschFileUploader {
             session = jsch.getSession(username, host, port);
 
             // 支持密码认证与 keyboard-interactive 认证
-            session.setUserInfo(new SshUserInfo(password, username, host));
+            // 非完整性 keyboard-interactive，后续根据需求支持
+            session.setUserInfo(new SshUserInfo(password));
 
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect(CONNECT_TIMEOUT_MS);
