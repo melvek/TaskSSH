@@ -18,10 +18,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 命令调度器：解析参数，加载清单，执行任务。
@@ -29,6 +26,9 @@ import java.util.Map;
  * @author melvek
  */
 public class CommandDispatcher {
+
+    public static final String CMD_ENCRYPT = "encrypt";
+    public static final String CMD_DECRYPT = "decrypt";
 
     private final TaskRegistry taskRegistry = new TaskRegistry();
     private final ActionRegistry actionRegistry = new ActionRegistry();
@@ -39,6 +39,12 @@ public class CommandDispatcher {
         if (args == null || args.length == 0) {
             ShowHelp.printGlobal(actionRegistry);
             return 1;
+        }
+
+        String first = args[0];
+        if (CMD_ENCRYPT.equals(first) || CMD_DECRYPT.equals(first)) {
+            String[] remaining = Arrays.copyOfRange(args, 1, args.length);
+            return EncryptCommand.run(first, remaining);
         }
 
         // ---- 1. 一次性注册所有选项 ----

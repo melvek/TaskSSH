@@ -44,6 +44,11 @@ public final class ShowHelp {
         System.out.println("Usage:");
         System.out.println("  taskssh <task> [hosts...] [options]\n");
 
+        System.out.println("Tool commands:");
+        System.out.println("  encrypt    Encrypt a string");
+        System.out.println("  decrypt    Decrypt a string");
+        System.out.println();
+
         System.out.println("Available actions for task definitions:\n");
 
         HelpFormatter hf = new HelpFormatter();
