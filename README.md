@@ -3,10 +3,10 @@
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux-orange)
 [![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务器批量上传文件及批量执行远程命令。
+TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
 
-采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件），Task 是由若干 Action 组成的有序任务。
-通过 YAML 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
+采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件、下载文件），Task 是由若干 Action 组成的有序任务。
+通过 `inventory.yaml` 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
 
 ---
 
@@ -19,7 +19,7 @@ TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务
 
 ## 安装
 
-从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载预编译的 JAR 及启动脚本 `deploy.bat`（Windows）或 `deploy.sh`（Linux）。
+从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载预编译的 JAR。
 
 也可以编译安装：
 
@@ -34,7 +34,7 @@ mvn clean package
 创建别名便于使用：
 
 ```bash
-alias TaskSSH='java -jar /path/to/taskssh-x.x.x.jar'
+alias taskssh='java -jar /path/to/taskssh-x.x.x.jar'
 ```
 
 ---
@@ -93,9 +93,14 @@ tasks:
 
 ### 2. 加密密码
 
-明文密码存在安全风险，TaskSSH 使用 Jasypt 加密。运行 `EncryptTool` 的 `main` 方法生成密文，填入 YAML。
+明文密码存在安全风险，TaskSSH 使用 Jasypt 加密。运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
 
-主密钥 `SEC_KEY` 硬编码在 `EncryptTool` 中，生产环境请改为从环境变量读取。
+```bash
+taskssh encrypt "your-password"
+# 输出：2dO7ObeRBjqyuKkMpV6Xkg==
+```
+
+注意：主密钥 `SEC_KEY` 硬编码在 `EncryptTool` 中。
 
 ---
 
@@ -118,11 +123,71 @@ taskssh <task> <server group / hosts...> [options]
 | `-v` | `--version`   |          | 显示版本                      |
 | `-h` | `--help`      |          | 显示帮助（列出所有 Action）         |
 
+### 工具命令
+
+| 命令        | 说明       |
+|-----------|----------|
+| `encrypt` | 加密字符串    |
+| `decrypt` | 解密字符串    |
+
+```bash
+# 加密
+taskssh encrypt "your-password"
+# 输出：2dO7ObeRBjqyuKkMpV6Xkg==
+
+# 解密
+taskssh decrypt "2dO7ObeRBjqyuKkMpV6Xkg=="
+# 输出：your-password
+```
+
+---
+
+## 认证方式
+
+支持以下认证方式，按优先级尝试：
+
+| 方式    | 配置字段            | 说明                     |
+|-------|-----------------|------------------------|
+| 公钥认证  | `identity_file` | 私钥文件路径，`~` 自动展开        |
+| 私钥口令  | `passphrase`    | 与密码同样加密存储              |
+| 密码认证  | `password`      | 加密存储，或运行时终端输入          |
+
+优先级：`publickey > keyboard-interactive > password`
+
+### 配置示例
+
+```yaml
+hosts:
+  prod_1:
+    host: 1.2.3.4
+    username: deploy
+    identity_file: ~/.ssh/id_rsa
+    passphrase: "密文"
+    # 公钥失败时回退密码
+    # password: "密文"
+```
+
+### 终端交互输入
+
+清单未配置密码或口令时，会从终端读取：
+
+```
+deploy@1.2.3.4's password: 
+```
+
+多台主机共享密码缓存，只弹一次。
+
 ---
 
 ## 内置任务
 
-内置任务由工具自带，无需在 YAML 中定义。用户若在 `tasks` 中定义同名任务，则覆盖内置任务。
+内置任务由工具自带，无需在 `inventory.yaml` 中定义。用户若在 `tasks` 中定义同名任务，则覆盖内置任务。
+
+| 任务        | 说明          |
+|-----------|-------------|
+| `command` | 执行远程命令      |
+| `push`    | 上传文件到远程     |
+| `fetch`   | 从远程下载文件     |
 
 ### command — 执行远程命令
 
@@ -162,6 +227,39 @@ taskssh push prod-trans -f app.jar -F -B
     - `-F` 直接覆盖
     - `-F -B` 备份原文件（追加时间戳）后覆盖
 4. 父目录不存在时直接报错，不自动创建
+
+### fetch — 下载文件
+
+| 选项   | 长选项        | 参数     | 说明                |
+|------|------------|--------|-------------------|
+| `-f` | `--file`   | `path` | 远程文件路径            |
+| `-d` | `--dest`   | `path` | 本地目标路径            |
+| `-F` | `--force`  |        | 覆盖本地已存在文件         |
+| `-B` | `--backup` |        | 覆盖前备份本地原文件        |
+
+示例：
+
+```bash
+# 下载到目录（按主机标识分组）
+taskssh fetch prod -f /var/log/app.log -d ./logs/
+
+# 下载到指定文件
+taskssh fetch prod_web_1 -f /var/log/app.log -d ./app.log
+
+# 覆盖并备份
+taskssh fetch prod -f /var/log/app.log -d ./logs/ -F -B
+```
+
+下载行为：
+
+1. `-d` 以 `/` 结尾视为目录，按主机标识分组：`dest/<主机标识>/<文件名>`
+2. `-d` 是文件路径，直接下载到该文件
+3. 本地文件已存在：
+    - 默认报错
+    - `-F` 直接覆盖
+    - `-F -B` 备份本地原文件（追加时间戳）后覆盖
+4. 本地目录不存在时自动创建
+5. 不支持远程目录，需先在远程打包
 
 ---
 

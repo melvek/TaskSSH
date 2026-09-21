@@ -168,7 +168,6 @@ public class CommandDispatcher {
     private void printHosts(Map<String, HostVars> hosts) {
         LogPrinter.section("Target hosts");
         hosts.forEach((name, vars) -> LogPrinter.listItem(name, vars.getHost()));
-        LogPrinter.emptyLine();
     }
 
     /**

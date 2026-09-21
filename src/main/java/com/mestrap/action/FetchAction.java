@@ -4,10 +4,7 @@ import com.mestrap.core.ActionContext;
 import com.mestrap.entity.HostVars;
 import com.mestrap.exception.TaskException;
 import com.mestrap.ssh.JschFileDownloader;
-import com.mestrap.utils.BoolUtil;
-import com.mestrap.utils.Constant;
-import com.mestrap.utils.LogPrinter;
-import com.mestrap.utils.VariableReplacer;
+import com.mestrap.utils.*;
 import org.apache.commons.cli.Option;
 
 import java.io.File;
@@ -68,16 +65,19 @@ public class FetchAction implements TaskAction {
 
         Object fileRaw = ctx.getWith().get("file");
         Object destRaw = ctx.getWith().get("dest");
+        String dest;
+        if (destRaw == null) {
+            // 默认当前目录
+            dest = "./";
+        } else {
+            dest = VariableReplacer.replace(String.valueOf(destRaw), ctx.getVars());
+        }
 
         if (fileRaw == null) {
             throw new TaskException("fetch action requires 'file' parameter");
         }
-        if (destRaw == null) {
-            throw new TaskException("fetch action requires 'dest' parameter");
-        }
 
         String remoteFile = VariableReplacer.replace(String.valueOf(fileRaw), ctx.getVars());
-        String dest = VariableReplacer.replace(String.valueOf(destRaw), ctx.getVars());
 
         boolean force  = BoolUtil.isTruthy(ctx.getWith().get("force"));
         boolean backup = BoolUtil.isTruthy(ctx.getWith().get("backup"));
@@ -95,10 +95,6 @@ public class FetchAction implements TaskAction {
         );
     }
 
-    // ------------------------------------------------------------------
-    // 内部方法
-    // ------------------------------------------------------------------
-
     /**
      * 解析本地路径。
      *
@@ -109,31 +105,17 @@ public class FetchAction implements TaskAction {
      */
     private String resolveLocalPath(String dest, String remoteFile, HostVars host) {
 
-        String fileName = getFileName(remoteFile);
+        String fileName = PathUtil.getFileName(remoteFile);
 
-        // dest 不是目录：直接作为文件路径
-        if (!isDirectoryDest(dest)) {
-            return dest;
+        String path;
+        if (PathUtil.isDirectoryPath(dest)) {
+            String hostId = buildHostId(host);
+            path = dest + hostId + File.separator + fileName;
+        } else {
+            path = dest;
         }
 
-        // dest 是目录：按主机标识分组
-        String hostId = buildHostId(host);
-        return dest + hostId + File.separator + fileName;
-    }
-
-    /**
-     * 判断 dest 是否以路径分隔符结尾（视为目录）。
-     */
-    private boolean isDirectoryDest(String dest) {
-        return dest.endsWith(Constant.SEPARATOR) || dest.endsWith("\\");
-    }
-
-    /**
-     * 取远程路径的文件名（兼容 / 和 \）。
-     */
-    private String getFileName(String path) {
-        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-        return slash >= 0 ? path.substring(slash + 1) : path;
+        return PathUtil.canonical(new File(path));
     }
 
     /**

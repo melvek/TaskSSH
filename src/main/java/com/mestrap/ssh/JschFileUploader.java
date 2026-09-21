@@ -9,6 +9,7 @@ import com.mestrap.entity.HostVars;
 import com.mestrap.exception.TaskException;
 import com.mestrap.utils.Constant;
 import com.mestrap.utils.LogPrinter;
+import com.mestrap.utils.PathUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,7 +55,7 @@ public final class JschFileUploader {
             sftp.connect();
 
             String finalPath = resolveTargetPath(sftp, localFile, remoteTarget);
-            String parentDir = getParentDirectory(finalPath);
+            String parentDir = PathUtil.getParentDirectory(finalPath);
 
             if (!directoryExists(sftp, parentDir)) {
                 throw new TaskException("Parent directory does not exist: " + parentDir);
@@ -71,9 +72,9 @@ public final class JschFileUploader {
                 sftp.put(fis, finalPath, ChannelSftp.OVERWRITE);
             }
 
-            LogPrinter.success("Uploaded: " + localFile + " -> " + finalPath);
-            return 0;
+            LogPrinter.success("Uploaded: " + PathUtil.canonical(new File(localFile)) + " -> " + finalPath);
 
+            return 0;
         } catch (TaskException e) {
             throw e;
         } catch (JSchException | SftpException | IOException e) {
@@ -112,7 +113,7 @@ public final class JschFileUploader {
     private static String backupExisting(ChannelSftp sftp, String targetPath)
             throws SftpException {
         String fileName = new File(targetPath).getName();
-        String parentDir = getParentDirectory(targetPath);
+        String parentDir = PathUtil.getParentDirectory(targetPath);
 
         int dot = fileName.lastIndexOf('.');
         String base = dot > 0 ? fileName.substring(0, dot) : fileName;
@@ -130,7 +131,7 @@ public final class JschFileUploader {
                                             String remoteTarget) throws SftpException {
         String fileName = new File(localFile).getName();
 
-        if (remoteTarget.endsWith(Constant.SEPARATOR)) {
+        if (PathUtil.isDirectoryPath(remoteTarget)) {
             return remoteTarget + fileName;
         }
         if (exists(sftp, remoteTarget) && isDirectory(sftp, remoteTarget)) {
@@ -160,12 +161,4 @@ public final class JschFileUploader {
         return isDirectory(sftp, path);
     }
 
-    private static String getParentDirectory(String path) {
-        if (path == null || path.isEmpty()) {
-            return Constant.SEPARATOR;
-        }
-        String normalized = path.replace('\\', Constant.SEPARATOR_CHAR);
-        int lastSlash = normalized.lastIndexOf(Constant.SEPARATOR_CHAR);
-        return lastSlash <= 0 ? Constant.SEPARATOR : normalized.substring(0, lastSlash);
-    }
 }

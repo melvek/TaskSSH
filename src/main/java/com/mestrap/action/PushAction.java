@@ -83,7 +83,6 @@ public class PushAction implements TaskAction {
         OverwritePolicy policy = OverwritePolicy.of(force, backup);
 
         LogPrinter.info("Push file " + sourceFile.getAbsolutePath() + " to " + dest);
-        LogPrinter.emptyLine();
 
         int exitCode = JschFileUploader.uploadFile(
                 ctx.getHostVars(),

@@ -44,7 +44,6 @@ public class TaskExecutor {
             HostVars hostVars = e.getValue();
 
             LogPrinter.progress(idx, hosts.size(), "Processing: " + hostName + "[" + hostVars.getHost() + "]");
-            LogPrinter.emptyLine();
 
             try {
                 executeOnHost(task, hostVars, globalVars, cliVars);
@@ -96,6 +95,7 @@ public class TaskExecutor {
         for (int i = 0; i < total; i++) {
             Step step = steps.get(i);
 
+            LogPrinter.emptyLine();
             LogPrinter.info("[STEP " + (i + 1) + "/" + total + "] " + step.getName());
 
             TaskAction action = actionRegistry.get(step.getAction());
@@ -135,7 +135,6 @@ public class TaskExecutor {
                             "Interrupted while waiting after step", e);
                 }
             }
-            LogPrinter.emptyLine();
         }
     }
 

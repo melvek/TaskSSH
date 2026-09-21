@@ -89,7 +89,6 @@ public final class BuiltinTasks {
 
         Map<String, Object> withMap = new HashMap<>(8);
         withMap.put("file", "${file}");
-        withMap.put("dest", "${dest}");
         withMap.put("force", "${force}");
         withMap.put("backup", "${backup}");
         step.setWith(withMap);

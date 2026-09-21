@@ -7,6 +7,7 @@ import com.jcraft.jsch.SftpException;
 import com.mestrap.entity.HostVars;
 import com.mestrap.exception.TaskException;
 import com.mestrap.utils.LogPrinter;
+import com.mestrap.utils.PathUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,7 +66,7 @@ public final class JschFileDownloader {
                     String backupPath = backupLocal(local);
                     LogPrinter.info("Backed up local file to: " + backupPath);
                 } else {
-                    LogPrinter.info("Overwriting local file: " + local.getAbsolutePath());
+                    LogPrinter.info("Overwriting local file: " + PathUtil.canonical(local));
                 }
             }
 
@@ -78,7 +79,7 @@ public final class JschFileDownloader {
                 }
             }
 
-            LogPrinter.success("Downloaded: " + remoteFile + " -> " + local.getAbsolutePath());
+            LogPrinter.success("Downloaded: " + remoteFile + " -> " + PathUtil.canonical(local));
             return 0;
 
         } catch (TaskException e) {
