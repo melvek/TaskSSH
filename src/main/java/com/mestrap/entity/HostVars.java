@@ -8,18 +8,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 服务器主机信息
+ * 服务器主机信息。
+ *
+ * <p>包含主机地址、端口、认证信息，以及任意扩展字段。
+ * 除 host / port / username / password 外的字段进入 extraFields，
+ * 可用于变量替换。
+ *
  * @author melvek
  */
 public class HostVars {
+
+    /** 默认 SSH 端口 */
+    private static final int DEFAULT_PORT = 22;
+
     private String host;
-    private Integer port;
+
+    private Integer port = DEFAULT_PORT;
 
     @JsonProperty("username")
     private String userName;
+
     private String password;
 
-    private Map<String, Object> extraFields = new HashMap<>();
+    /** 扩展字段，存放自定义变量 */
+    private Map<String, Object> extraFields = new HashMap<>(16);
 
     public String getHost() {
         return host;
@@ -53,7 +65,6 @@ public class HostVars {
         this.password = password;
     }
 
-    /** Include extra fields during serialization as well */
     @JsonAnyGetter
     public Map<String, Object> getExtraFields() {
         return extraFields;
@@ -63,133 +74,60 @@ public class HostVars {
         this.extraFields = extraFields;
     }
 
-    /** Capture all undefined fields */
+    /**
+     * 捕获未定义的字段，存入 extraFields。
+     */
     @JsonAnySetter
     public void setExtraField(String key, Object value) {
         extraFields.put(key, value);
     }
 
-
-    /** Convenience method: get the value of an extra field */
+    /**
+     * 获取扩展字段的值。
+     *
+     * @param key 字段名
+     * @return 字段值，不存在返回 null
+     */
     public Object getExtra(String key) {
         return extraFields.get(key);
     }
 
     /**
-     * Merge two extraFields; if the target key already exists, skip it
+     * 合并另一个 HostVars。
      *
-     * @param sourceExtraFields Source extraFields (data to be merged in)
-     * @return The number of key-value pairs actually added
-     */
-    public int mergeExtraFields(Map<String, Object> sourceExtraFields) {
-        if (sourceExtraFields == null || sourceExtraFields.isEmpty()) {
-            return 0;
-        }
-
-        int addedCount = 0;
-        for (Map.Entry<String, Object> entry : sourceExtraFields.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-
-            // If the target does not contain the key, add it
-            if (!extraFields.containsKey(key)) {
-                extraFields.put(key, value);
-                addedCount++;
-            }
-        }
-
-        return addedCount;
-    }
-
-    /**
-     * ✅ Merge extraFields from another HostVars object
+     * <p>规则：目标已有值则跳过，不覆盖。
+     * 合并范围：port / userName / password / extraFields。
      *
-     * @param source HostVars source object
-     * @return The number of key-value pairs actually added
-     */
-    public int mergeExtraFields(HostVars source) {
-        if (source == null) {
-            return 0;
-        }
-        return mergeExtraFields(source.getExtraFields());
-    }
-
-    // ==================== Full HostVars merge methods ====================
-
-    /**
-     * Merge the entire HostVars object (including all fields and extraFields)
-     * Rule: if the target field already has a value, skip it (do not overwrite)
-     *
-     * @param source Source HostVars object
+     * @param source 源对象
      */
     public void merge(HostVars source) {
-        merge(source, false);
-    }
-
-    /**
-     * Merge the entire HostVars object (including all fields and extraFields)
-     *
-     * @param source Source HostVars object
-     * @param overwrite Whether to overwrite existing fields (true=overwrite, false=skip)
-     */
-    public void merge(HostVars source, boolean overwrite) {
         if (source == null) {
             return;
         }
 
-        // 2. Merge port
-        if (source.getPort() != null) {
-            if (this.port == null || overwrite) {
-                this.port = source.getPort();
-            }
+        if (source.getPort() != null && this.port == null) {
+            this.port = source.getPort();
+        }
+        if (isNotEmpty(source.getUserName())
+                && !isNotEmpty(this.userName)) {
+            this.userName = source.getUserName();
+        }
+        if (isNotEmpty(source.getPassword())
+                && !isNotEmpty(this.password)) {
+            this.password = source.getPassword();
         }
 
-        // 3. Merge userName
-        if (source.getUserName() != null && !source.getUserName().isEmpty()) {
-            if (this.userName == null || this.userName.isEmpty() || overwrite) {
-                this.userName = source.getUserName();
-            }
-        }
-
-        // 4. Merge password
-        if (source.getPassword() != null && !source.getPassword().isEmpty()) {
-            if (this.password == null || this.password.isEmpty() || overwrite) {
-                this.password = source.getPassword();
-            }
-        }
-
-        // 5. Merge extraFields
         Map<String, Object> sourceExtra = source.getExtraFields();
         if (sourceExtra != null && !sourceExtra.isEmpty()) {
             for (Map.Entry<String, Object> entry : sourceExtra.entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-
-                if (!this.extraFields.containsKey(key) || overwrite) {
-                    this.extraFields.put(key, value);
+                if (!this.extraFields.containsKey(entry.getKey())) {
+                    this.extraFields.put(entry.getKey(), entry.getValue());
                 }
             }
         }
     }
 
-    /**
-     * Merge the entire HostVars object (skip existing fields)
-     * Alias method, equivalent to merge(source, false)
-     *
-     * @param source Source HostVars object
-     */
-    public void mergeIfAbsent(HostVars source) {
-        merge(source, false);
+    private static boolean isNotEmpty(String s) {
+        return s != null && !s.isEmpty();
     }
-
-    /**
-     * Merge the entire HostVars object (overwrite existing fields)
-     * Alias method, equivalent to merge(source, true)
-     *
-     * @param source Source HostVars object
-     */
-    public void mergeWithOverwrite(HostVars source) {
-        merge(source, true);
-    }
-
 }
