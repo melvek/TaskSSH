@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="70" viewBox="0 0 210 70">
+  <!-- Task 黑色普通文本，小字号 -->
+  <text x="0" y="45"
+        font-family="'JetBrains Mono', 'Fira Code', 'Source Code Pro', 'Consolas', 'Courier New', monospace"
+        font-size="32"
+        font-weight="500"
+        fill="#ffffff"
+        letter-spacing="-2">Task</text>
+
+  <!-- SSH 红色背景白色文本，轻微圆角 -->
+  <rect x="69" y="19" width="64" height="33" rx="5" ry="5" fill="#e63946"/>
+  <text x="100" y="44"
+        font-family="'JetBrains Mono', 'Fira Code', 'Source Code Pro', 'Consolas', 'Courier New', monospace"
+        font-size="28"
+        font-weight="500"
+        fill="#ffffff"
+        text-anchor="middle"
+        letter-spacing="0">SSH</text>
+</svg>
