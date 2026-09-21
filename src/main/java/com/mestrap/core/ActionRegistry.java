@@ -1,6 +1,7 @@
 package com.mestrap.core;
 
 import com.mestrap.action.CommandAction;
+import com.mestrap.action.FetchAction;
 import com.mestrap.action.PushAction;
 import com.mestrap.action.TaskAction;
 
@@ -23,6 +24,7 @@ public final class ActionRegistry {
     public ActionRegistry() {
         register(new CommandAction());
         register(new PushAction());
+        register(new FetchAction());
         // 后续扩展：register(new SleepAction()); ...
     }
 

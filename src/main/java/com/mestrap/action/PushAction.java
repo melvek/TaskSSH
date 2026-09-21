@@ -86,10 +86,7 @@ public class PushAction implements TaskAction {
         LogPrinter.emptyLine();
 
         int exitCode = JschFileUploader.uploadFile(
-                ctx.getHostVars().getHost(),
-                ctx.getHostVars().getPort(),
-                ctx.getHostVars().getUserName(),
-                ctx.getHostVars().getPassword(),
+                ctx.getHostVars(),
                 sourceFile.getAbsolutePath(),
                 dest,
                 policy

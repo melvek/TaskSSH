@@ -50,13 +50,7 @@ public class CommandAction implements TaskAction {
         LogPrinter.info("Execute command: " + cmd);
         LogPrinter.emptyLine();
 
-        int exitCode = JschCommandExecutor.executeCommand(
-                ctx.getHostVars().getHost(),
-                ctx.getHostVars().getPort(),
-                ctx.getHostVars().getUserName(),
-                ctx.getHostVars().getPassword(),
-                cmd
-        );
+        int exitCode = JschCommandExecutor.executeCommand(ctx.getHostVars(), cmd);
 
         if (exitCode != 0) {
             throw new TaskException("Command failed with exit code " + exitCode);

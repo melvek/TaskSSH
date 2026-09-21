@@ -28,6 +28,7 @@ public final class BuiltinTasks {
         Map<String, Task> map = new LinkedHashMap<>(8);
         map.put("command", command());
         map.put("push", push());
+        map.put("fetch", fetch());
         return map;
     }
 
@@ -62,6 +63,29 @@ public final class BuiltinTasks {
         Step step = new Step();
         step.setName("upload");
         step.setAction("push");
+
+        Map<String, Object> withMap = new HashMap<>(8);
+        withMap.put("file", "${file}");
+        withMap.put("dest", "${dest}");
+        withMap.put("force", "${force}");
+        withMap.put("backup", "${backup}");
+        step.setWith(withMap);
+
+        task.setSteps(Collections.singletonList(step));
+        return task;
+    }
+
+    /**
+     * 内置 fetch 任务：从远程下载文件。
+     */
+    private static Task fetch() {
+        Task task = new Task();
+        task.setName("fetch");
+        task.setDescription("Download a file from remote server");
+
+        Step step = new Step();
+        step.setName("download");
+        step.setAction("fetch");
 
         Map<String, Object> withMap = new HashMap<>(8);
         withMap.put("file", "${file}");
