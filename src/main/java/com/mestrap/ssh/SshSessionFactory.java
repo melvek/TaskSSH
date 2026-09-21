@@ -91,6 +91,7 @@ public final class SshSessionFactory {
      * @return 展开后的路径
      */
     private static String expandHome(String path) {
+        //noinspection AlibabaUndefineMagicConstant
         if (path.startsWith("~/")) {
             return System.getProperty("user.home") + path.substring(1);
         }

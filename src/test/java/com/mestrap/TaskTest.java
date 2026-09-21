@@ -96,7 +96,7 @@ public class TaskTest extends TestCase
 
         CommandDispatcher dispatcher = new CommandDispatcher();
         // 模拟用户输入 deploy 命令
-        String[] args = new String[]{"fetch", "-i", "inventory.yaml", "web_master", "-y", "-f", "/app/web/taskssh-1.2.1.jar", "-F"};
+        String[] args = new String[]{"fetch", "-i", "inventory.yaml", "web_master", "-y", "-f", "/app/web/taskssh-1.2.1.jar", "-F", "-d", "./download/${service_path}"};
         // String[] args = parseArgs("");
 
         int result = dispatcher.dispatch(args);
