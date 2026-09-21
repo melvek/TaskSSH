@@ -3,7 +3,9 @@
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux-orange)
 [![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-TaskSSH 是一个基于 JSch 的轻量级运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
+![logo](logo.svg)
+
+TaskSSH 是一个基于 JSch 开发的轻量级运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
 
 采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件、下载文件），Task 是由若干 Action 组成的有序任务。
 通过 `inventory.yaml` 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
@@ -31,7 +33,7 @@ mvn clean package
 
 构建完成后，在 `target/` 目录下生成 `taskssh-x.x.x.jar`。
 
-创建别名便于使用：
+在 `.bashrc` 中创建别名便于使用（后续示例均使用此别名）：
 
 ```bash
 alias taskssh='java -Dfile.encoding=UTF-8 -jar /path/to/taskssh-x.x.x.jar'
@@ -45,16 +47,13 @@ alias taskssh='java -Dfile.encoding=UTF-8 -jar /path/to/taskssh-x.x.x.jar'
 
 ```yaml
 global_vars:
-  port: 22
   username: deploy
   password: 2dO7ObeRBjqyuKkMpV6Xkg==
-  command: "systemctl restart my-app"
 
 servers:
   prod-trans:
     vars:
       service_path: /opt/trans/
-      command: "sh /opt/trans/restart.sh"
     hosts:
       prod_trans_1: 192.168.1.1
       prod_trans_2:
@@ -62,8 +61,7 @@ servers:
         port: 2222
         username: root
         password: 2dO7ObeRBjqyuKkMpV6Xkg==
-        remote_path: /data/app/
-
+        
 tasks:
   release:
     steps:
@@ -107,7 +105,7 @@ taskssh encrypt "your-password"
 ## 命令总览
 
 ```
-taskssh <task> <server group / hosts...> [options]
+taskssh <task> <hosts> [options]
 ```
 
 ### 全局选项
@@ -167,21 +165,15 @@ hosts:
     # password: "密文"
 ```
 
-### 终端交互输入
-
-清单未配置密码或口令时，会从终端读取：
-
-```
-deploy@1.2.3.4's password: 
-```
-
-多台主机共享密码缓存，只弹一次。
-
 ---
 
-## 内置任务
+## 基础任务
 
-内置任务由工具自带，无需在 `inventory.yaml` 中定义。用户若在 `tasks` 中定义同名任务，则覆盖内置任务。
+基础任务目标包括`command`,`push`,`fetch`三类，可满足常规运维操作。
+
+基础任务可独立使用，也可作为 tasks 中 step 的 command 对象进行自由组合，来完成复杂的批量运维任务。
+
+内置任务由工具自带，如果在 `inventory.yaml` 中的`tasks`中定义同名任务，将会覆盖内置任务。
 
 | 任务        | 说明          |
 |-----------|-------------|
@@ -199,7 +191,6 @@ deploy@1.2.3.4's password:
 
 ```bash
 taskssh command web-server-01 -e "ls -la /opt"
-taskssh command prod-trans -i inventory.yaml
 ```
 
 ### push — 上传文件
@@ -218,7 +209,7 @@ taskssh push app-server -f app.jar -d /opt/app/
 taskssh push prod-trans -f app.jar -F -B
 ```
 
-上传行为：
+说明：
 
 1. `-d` 以 `/` 结尾视为目录，最终路径为 `目录 + 本地文件名`
 2. 目标已存在且为目录，上传到该目录内
@@ -226,7 +217,7 @@ taskssh push prod-trans -f app.jar -F -B
     - 默认报错
     - `-F` 直接覆盖
     - `-F -B` 备份原文件（追加时间戳）后覆盖
-4. 父目录不存在时直接报错，不自动创建
+4. 若远程目录不存在时会报错，程序不会自动创建远程目录，若有需要，可提前使用 `command` 命令创建远程目录
 
 ### fetch — 下载文件
 
@@ -250,7 +241,7 @@ taskssh fetch prod_web_1 -f /var/log/app.log -d ./app.log
 taskssh fetch prod -f /var/log/app.log -d ./logs/ -F -B
 ```
 
-下载行为：
+说明：
 
 1. `-d` 以 `/` 结尾视为目录，按主机标识分组：`dest/<主机标识>/<文件名>`
 2. `-d` 是文件路径，直接下载到该文件
@@ -259,11 +250,11 @@ taskssh fetch prod -f /var/log/app.log -d ./logs/ -F -B
     - `-F` 直接覆盖
     - `-F -B` 备份本地原文件（追加时间戳）后覆盖
 4. 本地目录不存在时自动创建
-5. 不支持远程目录，需先在远程打包
+5. 不支持远程目录下载，需先在远程打包
 
 ---
 
-## 自定义任务
+## 定义任务流程
 
 在 `inventory.yaml` 的 `tasks` 段中定义。每个任务包含若干 `steps`，按声明顺序执行。
 
@@ -273,6 +264,7 @@ tasks:
     steps:
       - name: "上传新版本"
         action: push
+        delay: 5
         with:
           file: "./dist/${app_name}-${version}.jar"
           dest: "${service_path}"
@@ -297,28 +289,6 @@ tasks:
 taskssh release prod-trans -i inventory.yaml -y
 ```
 
-### 示例：用自定义任务实现部署
-
-```yaml
-tasks:
-  deploy:
-    steps:
-      - name: "上传应用包"
-        action: push
-        with:
-          file: "${package_path}"
-          dest: "${service_path}"
-          force: true
-      - name: "重启服务"
-        action: command
-        with:
-          command: "${command}"
-```
-
-```bash
-taskssh deploy prod-trans -f app.jar -y
-```
-
 ---
 
 ## 变量替换
@@ -329,12 +299,12 @@ taskssh deploy prod-trans -f app.jar -y
 
 按优先级从低到高：
 
-| 层级  | 来源                         | 说明          |
-|-----|----------------------------|-------------|
-| 1   | `global_vars`              | 全局默认        |
-| 2   | `servers.<group>.vars`     | 服务组         |
-| 3   | `hosts.<host>.extraFields` | 单台服务器       |
-| 4   | CLI 参数                     | 命令行指定，优先级最高 |
+| 层级  | 来源                     | 说明          |
+|-----|------------------------|-------------|
+| 1   | `global_vars`          | 全局默认        |
+| 2   | `servers.<group>.vars` | 服务组         |
+| 3   | `hosts.<host>.vars`    | 单台服务器       |
+| 4   | `CLI` 参数               | 命令行指定，优先级最高 |
 
 ### 严格模式
 
