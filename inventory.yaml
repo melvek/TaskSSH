@@ -2,13 +2,12 @@
 global_vars:
   username: web
   password: 2dO7ObeRBjqyuKkMpV6Xkg==
-  port: 22
 
 # 服务器清单
 servers:
   web_master:
     hosts:
-      web_server: 172.21.1.74
+      web_server_1: 172.21.1.74
     vars:
       service_path: /app/web/
       package_path: bin/taskssh-1.2.1.jar
@@ -28,9 +27,3 @@ tasks:
         action: command
         with:
           command: "cd ${service_path}deploy.sh -r"
-  check:
-    steps:
-      - name: "检查服务"
-        action: command
-        with:
-          command: "ps -ef| grep java"
