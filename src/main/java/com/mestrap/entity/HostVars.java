@@ -18,12 +18,9 @@ import java.util.Map;
  */
 public class HostVars {
 
-    /** 默认 SSH 端口 */
-    private static final int DEFAULT_PORT = 22;
-
     private String host;
 
-    private Integer port = DEFAULT_PORT;
+    private Integer port;
 
     @JsonProperty("username")
     private String userName;

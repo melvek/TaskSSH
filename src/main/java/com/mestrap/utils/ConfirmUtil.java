@@ -1,5 +1,6 @@
 package com.mestrap.utils;
 
+import java.util.Locale;
 import java.util.Scanner;
 
 /**
@@ -20,7 +21,7 @@ public class ConfirmUtil {
 
         Scanner scanner = new Scanner(System.in);
         while (true) {
-            String input = scanner.nextLine().trim().toLowerCase();
+            String input = scanner.nextLine().trim().toLowerCase(Locale.ROOT);
             if ("y".equals(input) || "yes".equals(input)) {
                 return true;
             }

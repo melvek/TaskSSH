@@ -36,8 +36,7 @@ public final class SshSessionFactory {
     private static final String EXTRA_PASSPHRASE = "passphrase";
 
     /** 认证顺序 */
-    private static final String PREFERRED_AUTH =
-            "publickey,keyboard-interactive,password";
+    private static final String PREFERRED_AUTH = "publickey,keyboard-interactive,password";
 
     private SshSessionFactory() {}
 
@@ -62,8 +61,11 @@ public final class SshSessionFactory {
         }
 
         // 2. 创建 Session
-        Session session = jsch.getSession(
-                host.getUserName(), host.getHost(), host.getPort());
+        if (host.getPort() == null) {
+            host.setPort(22);
+        }
+
+        Session session = jsch.getSession(host.getUserName(), host.getHost(), host.getPort());
 
         // 3. 设置 UserInfo（密码 + 口令）
         String encryptedPassphrase = (String) host.getExtra(EXTRA_PASSPHRASE);

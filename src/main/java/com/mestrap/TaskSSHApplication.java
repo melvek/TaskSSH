@@ -1,6 +1,7 @@
 package com.mestrap;
 
 import com.mestrap.cli.CommandDispatcher;
+import com.mestrap.ssh.SshUserInfo;
 
 /**
  * TaskSSH is a lightweight operations tool developed based on JSch, used for batch uploading files to remote servers and executing remote commands.
@@ -12,6 +13,8 @@ public class TaskSSHApplication {
     public static void main( String[] args ) {
         CommandDispatcher dispatcher = new CommandDispatcher();
         int exitCode = dispatcher.dispatch(args);
+        // 清理缓存
+        SshUserInfo.clearCache();
         System.exit(exitCode);
     }
 }
