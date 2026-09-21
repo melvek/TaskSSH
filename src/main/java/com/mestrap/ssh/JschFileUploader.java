@@ -46,6 +46,8 @@ public final class JschFileUploader {
                                  String remoteTarget, OverwritePolicy policy)
             throws TaskException {
 
+        LogPrinter.emptyLine();
+
         Session session = null;
         ChannelSftp sftp = null;
 

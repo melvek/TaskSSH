@@ -14,6 +14,7 @@ public class ConfirmUtil {
      * @return true=continue, false=exit
      */
     public static boolean confirm(String message) {
+        System.out.println();
         System.out.print(message + " (y/n): ");
         System.out.flush();
 

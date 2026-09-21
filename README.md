@@ -34,7 +34,7 @@ mvn clean package
 创建别名便于使用：
 
 ```bash
-alias taskssh='java -jar /path/to/taskssh-x.x.x.jar'
+alias taskssh='java -Dfile.encoding=UTF-8 -jar /path/to/taskssh-x.x.x.jar'
 ```
 
 ---

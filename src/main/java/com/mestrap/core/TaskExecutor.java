@@ -11,6 +11,7 @@ import com.mestrap.utils.VariableReplacer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * @author melvek
@@ -43,6 +44,7 @@ public class TaskExecutor {
             String hostName = e.getKey();
             HostVars hostVars = e.getValue();
 
+            LogPrinter.emptyLine();
             LogPrinter.progress(idx, hosts.size(), "Processing: " + hostName + "[" + hostVars.getHost() + "]");
 
             try {

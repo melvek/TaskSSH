@@ -37,6 +37,8 @@ public final class JschFileDownloader {
                                    String localFile, boolean force, boolean backup)
             throws TaskException {
 
+        LogPrinter.emptyLine();
+
         Session session = null;
         ChannelSftp sftp = null;
 

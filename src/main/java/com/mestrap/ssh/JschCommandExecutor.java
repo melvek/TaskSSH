@@ -36,6 +36,8 @@ public final class JschCommandExecutor {
      */
     public static int executeCommand(HostVars host, String command) {
 
+        LogPrinter.emptyLine();
+
         Session session = null;
         ChannelExec channel = null;
 
@@ -48,8 +50,8 @@ public final class JschCommandExecutor {
             InputStream in = channel.getInputStream();
             channel.connect();
 
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(in, StandardCharsets.UTF_8));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+
             String line;
             while ((line = reader.readLine()) != null) {
                 LogPrinter.info(line);

@@ -20,6 +20,7 @@
 
 - **SSH 工具类签名**：`JschCommandExecutor` / `JschFileUploader` 改为接收 `HostVars`
 - **`SshUserInfo` 增强**：支持 passphrase 与终端交互输入
+- **输出日志**: 优化了输出内容可读性
 
 ### Fixed
 
