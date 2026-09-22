@@ -16,7 +16,7 @@ var encryptCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Info(cipher)
+		log.Info("%s", cipher)
 		return nil
 	},
 }
@@ -30,7 +30,7 @@ var decryptCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Info(plain)
+		log.Info("%s", plain)
 		return nil
 	},
 }
