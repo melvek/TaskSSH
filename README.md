@@ -3,7 +3,7 @@
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux-orange)
 [![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-![logo](logo.svg)
+![logo](assets/logo.svg)
 
 TaskSSH 是一个基于 JSch 开发的轻量级运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
 
