@@ -161,8 +161,8 @@ REM 复制二进制并重命名
 copy "%SRC%" "%PKG_DIR%\%TARGET_NAME%" >nul
 
 REM 复制示例清单和 README（存在才复制）
-if exist "%DIST%\inventory.example.yaml" copy "%DIST%\inventory.example.yaml" "%PKG_DIR%\" >nul
-if exist "%DIST%\README.md" copy "%DIST%\README.md" "%PKG_DIR%\" >nul
+if exist "inventory.yaml" copy "inventory.yaml" "%PKG_DIR%\" >nul
+if exist "README.md" copy "README.md" "%PKG_DIR%\" >nul
 
 REM 打包
 powershell -Command "Compress-Archive -Path '%PKG_DIR%\*' -DestinationPath '%RELEASE%\%ZIP_NAME%.zip' -Force"
