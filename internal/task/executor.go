@@ -6,6 +6,7 @@ import (
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/resolve"
 )
 
@@ -31,7 +32,8 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 	var results []Result
 
 	for _, entry := range hosts {
-		fmt.Printf("=== %s (%s) ===\n", entry.Name, entry.Host.Host)
+		log.EmptyLine()
+		log.Info("Processing %s (%s@%s) ", entry.Name, entry.Host.Username, entry.Host.Host)
 
 		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
 		results = append(results, Result{
@@ -41,9 +43,9 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 		})
 
 		if err != nil {
-			fmt.Printf("[FAIL] %s: %v\n\n", entry.Name, err)
+			log.Error("%s: %v", entry.Name, err)
 		} else {
-			fmt.Printf("[OK] %s\n\n", entry.Name)
+			log.Success("[OK] %s", entry.Name)
 		}
 	}
 
@@ -64,7 +66,8 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	}
 
 	for i, step := range task.Steps {
-		fmt.Printf("[STEP %d/%d] %s\n", i+1, len(task.Steps), step.Name)
+		log.EmptyLine()
+		log.Info("[STEP %d/%d] %s", i+1, len(task.Steps), step.Name)
 
 		act := e.actions.Get(step.Action)
 		if act == nil {
@@ -84,7 +87,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 		// delay
 		if step.Delay > 0 {
-			fmt.Printf("Waiting %ds...\n", step.Delay)
+			log.Info("Waiting %ds...", step.Delay)
 			time.Sleep(time.Duration(step.Delay) * time.Second)
 		}
 	}

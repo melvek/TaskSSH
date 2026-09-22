@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -57,7 +58,7 @@ func (a *PushAction) Execute(ctx *Context) error {
 		localAbs = local
 	}
 
-	fmt.Printf("Uploaded: %s -> %s\n", localAbs, finalPath)
+	log.Success("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 

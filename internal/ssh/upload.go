@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+	"mestrap.com/taskssh/internal/log"
 )
 
 // OverwritePolicy 是覆盖策略。
@@ -97,7 +98,7 @@ func handleExisting(client *sftp.Client, path string, policy OverwritePolicy) er
 		if err != nil {
 			return fmt.Errorf("backup %s: %w", path, err)
 		}
-		fmt.Printf("Backed up: %s -> %s\n", path, backupPath)
+		log.Info("Backed up: %s -> %s", path, backupPath)
 		return nil
 	}
 	return nil

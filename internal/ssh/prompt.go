@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"golang.org/x/term"
+	"mestrap.com/taskssh/internal/log"
 )
 
 // readPasswordPrompt 从终端读取密码，无回显。
@@ -18,7 +19,7 @@ func readPasswordPrompt() string {
 
 	if term.IsTerminal(int(syscall.Stdin)) {
 		bytePwd, err := term.ReadPassword(int(syscall.Stdin))
-		fmt.Println()
+		log.EmptyLine()
 		if err == nil {
 			return strings.TrimSpace(string(bytePwd))
 		}

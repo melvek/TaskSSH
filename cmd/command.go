@@ -28,7 +28,8 @@ var commandCmd = &cobra.Command{
 }
 
 func init() {
-	commandCmd.Flags().StringVarP(&executeFlag, "execute", "e", "", "Command to execute")
+	commandCmd.Flags().StringVarP(&executeFlag, "execute", "e",
+		"", "Command to execute")
 }
 
 // 让 action 包被引用，避免未使用

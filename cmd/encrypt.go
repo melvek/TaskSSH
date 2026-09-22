@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/secret"
 )
 
@@ -17,7 +16,7 @@ var encryptCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(cipher)
+		log.Info(cipher)
 		return nil
 	},
 }
@@ -31,7 +30,7 @@ var decryptCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(plain)
+		log.Info(plain)
 		return nil
 	},
 }

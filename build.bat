@@ -20,7 +20,7 @@ for /f "tokens=*" %%i in ('git rev-parse --short HEAD 2^>nul') do set GIT_COMMIT
 if "!GIT_COMMIT!"=="" set GIT_COMMIT=unknown
 
 REM ---- 编译参数 ----
-set LDFLAGS=-s -w -X "mestrap.com/taskssh/internal/utils.Version=!VERSION!" -X "mestrap.com/taskssh/internal/utils.GitCommit=!GIT_COMMIT!"
+set LDFLAGS=-s -w -X "mestrap.com/taskssh/internal/utils.Version=!VERSION!"
 
 echo.
 echo ============================================================

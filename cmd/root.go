@@ -35,6 +35,12 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\nBuild time: " + utils.BuildTime)
+	// 禁用字母排序，按添加顺序显示
+	cobra.EnableCommandSorting = false
+	// 隐藏 completion 命令
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
 	// 全局 flag
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i",
 		utils.DefaultInventory, "Inventory file")
@@ -50,23 +56,14 @@ func init() {
 		"", "Override password (not recommended)")
 
 	// 内置子命令
+	rootCmd.AddCommand(encryptCmd)
+	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(commandCmd)
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(fetchCmd)
-	rootCmd.AddCommand(encryptCmd)
-	rootCmd.AddCommand(decryptCmd)
 }
 
 func buildLongDescription() string {
-	return utils.ProjectName + ` 是一个基于 SSH 的轻量级批量运维工具。
-
-把多个操作编排成任务，一次性对一组服务器按顺序执行。
-
-用法：
-  ` + utils.CLIName + ` <task> <server group / hosts...> [options]
-
-示例：
-  ` + utils.CLIName + ` command prod -e "ls -la /opt"
-  ` + utils.CLIName + ` push prod -f app.jar -d /opt/app/
-  ` + utils.CLIName + ` release prod -i inventory.yaml -y`
+	return utils.ProjectName + ` 是一个基于 SSH 的轻量级批量运维工具。	
+https://taskssh.mestrap.com/`
 }

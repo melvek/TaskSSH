@@ -2,9 +2,9 @@ package action
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -37,10 +37,10 @@ func (a *CommandAction) Execute(ctx *Context) error {
 	}
 
 	if result.Stdout != "" {
-		fmt.Println(strings.TrimRight(result.Stdout, "\n"))
+		log.Info(strings.TrimRight(result.Stdout, "\n"))
 	}
 	if result.Stderr != "" {
-		fmt.Fprintln(os.Stderr, strings.TrimRight(result.Stderr, "\n"))
+		log.Error(strings.TrimRight(result.Stderr, "\n"))
 	}
 
 	if result.ExitCode != 0 {

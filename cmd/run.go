@@ -6,6 +6,7 @@ import (
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/task"
 )
@@ -47,11 +48,11 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	// 展示主机列表
-	fmt.Println("=== Target hosts ===")
+	log.Section("Target hosts")
 	for _, e := range entries {
-		fmt.Printf("  %-20s -> %s\n", e.Name, e.Host.Host)
+		log.ListItem(e.Name, fmt.Sprintf("%s@%s", e.Host.Username, e.Host.Host))
 	}
-	fmt.Println()
+	log.EmptyLine()
 
 	if listOnly {
 		return nil
@@ -80,8 +81,8 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 			failed++
 		}
 	}
-	fmt.Println("=== Summary ===")
-	fmt.Printf("Total: %d, Success: %d, Failed: %d\n", len(results), success, failed)
+	log.Section("Summary")
+	log.Info("Total: %d, Success: %d, Failed: %d", len(results), success, failed)
 
 	if failed > 0 {
 		os.Exit(1)

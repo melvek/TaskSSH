@@ -47,13 +47,30 @@ cd TaskSSH
 go build -o taskssh main.go
 ```
 
-Windows 上一键编译多平台：
+### Shell 补全（可选）
 
-```cmd
-build.bat
+TaskSSH 支持 Tab 补全，提升使用体验。
+
+**PowerShell（Windows）**：
+
+```powershell
+taskssh completion powershell >> $PROFILE
+. $PROFILE
 ```
 
-产物在 `release/` 目录下。
+**Bash（Linux / macOS / Git Bash）**：
+
+```bash
+echo 'source <(taskssh completion bash)' >> ~/.bashrc
+source ~/.bashrc
+```
+
+启用后：
+
+```bash
+taskssh com<TAB>          # 补全为 command
+taskssh command -<TAB>    # 补全 flag
+```
 
 ---
 

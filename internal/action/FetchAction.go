@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -51,6 +52,6 @@ func (a *FetchAction) Execute(ctx *Context) error {
 		localAbs = finalPath
 	}
 
-	fmt.Printf("Downloaded: %s -> %s\n", remote, localAbs)
+	log.Success("Downloaded: %s -> %s", remote, localAbs)
 	return nil
 }
