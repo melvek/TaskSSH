@@ -1,6 +1,56 @@
 # 更新日志
 
-# 更新日志
+## [2.0.0] - 2026-09-22
+
+> **重大版本更新：Java → Go 重写。**
+>
+> 本项目从 Java + JSch 完全重写为 Go，目标是单文件分发、跨平台编译、更好的性能和可维护性。
+> Java 版已迁移至 `taskssh-java-final` 分支，除重大 BUG 外不再更新。
+> 主分支现为 Go 版，将持续演进。
+
+### ⚠️ Breaking Changes
+
+- **运行环境变更**：不再需要 JDK，改为单文件二进制
+- **密文格式不兼容**：加密算法从 Jasypt（PBEWithMD5AndDES）改为 AES-256-GCM
+  - Java 版生成的密文无法在 Go 版解密
+  - 迁移时需用 Go 版重新加密密码：`taskssh encrypt "密码"`
+- **配置文件兼容**：`inventory.yaml` 结构完全不变，用户无需修改清单
+
+### Add
+
+- **单文件分发**：编译产出单个二进制，无需任何运行时
+  - Windows：`taskssh.exe`
+  - Linux：`taskssh`
+  - macOS：`taskssh`
+
+### Changed
+
+- **异常处理**：从 Java 异常体系改为 Go 的 `error` 返回值
+- **日志输出**：格式对齐 Java 版
+- **上传下载输出**：输出完整路径（本地绝对路径 + 远程完整路径）
+- **包结构**：按 Go 惯例重新组织
+
+### Removed
+
+- 移除 Java 版全部代码（迁移至 `taskssh-java-final` 分支）
+
+### Performance
+
+| 维度 | Java 版 | Go 版 |
+|---|---|---|
+| 启动时间 | ~500ms | ~10ms |
+| 内存占用 | ~50MB | ~5MB |
+| 二进制大小 | JAR + JDK (~200MB) | 单文件 (~6MB) |
+| 部署 | 需装 JDK | 拷贝即用 |
+
+### Migration Guide
+
+从 Java 版迁移到 Go 版：
+
+1. **下载 Go 版**：下载对应平台的 `taskssh` / `taskssh.exe`
+2. **保留清单文件**：`inventory.yaml` 结构不变，可直接使用
+3. **重新加密密码**：`taskssh encrypt "你的密码"`，把新密文填回清单
+4. **验证**：`taskssh command prod -e "date" -y`
 
 ## [1.3.1] - 2026-09-22
 
@@ -147,7 +197,7 @@
 
 ---
 
-## [1.0.0] - 2024-05-20
+## [1.0.0] - 2026-09-10
 
 ### 初始版本
 

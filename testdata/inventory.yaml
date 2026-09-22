@@ -1,0 +1,25 @@
+global_vars:
+  username: web
+  password: z0UcevwRf6s+tSsx8wVhy4qwAR3K2S9pVg0gfjjfHYrOjw==
+
+servers:
+  web_server:
+    vars:
+      service_path: /app/web/
+    hosts:
+      web_1: 172.21.1.74
+
+tasks:
+  release:
+    steps:
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}.jar"
+          dest: "${service_path}"
+          force: true
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+        delay: 5

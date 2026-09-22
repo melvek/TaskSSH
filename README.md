@@ -1,11 +1,11 @@
-[![Language](https://img.shields.io/badge/Language-Java-blue.svg)](https://java.dev)
+[![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://go.dev)
 [![Version](https://img.shields.io/github/v/release/melvek/TaskSSH?include_prereleases)](https://github.com/melvek/TaskSSH/releases/latest)
-![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux-orange)
+![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux,%20macOS-orange)
 [![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
 ![logo](docs/assets/logo.svg)
 
-TaskSSH 是一个基于 JSch 开发的轻量级运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
+TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
 
 采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件、下载文件），Task 是由若干 Action 组成的有序任务。
 通过 `inventory.yaml` 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
@@ -14,30 +14,46 @@ TaskSSH 是一个基于 JSch 开发的轻量级运维工具，支持对同一组
 
 ## 环境要求
 
-- JDK 8 或更高版本
 - 远程服务器需支持 SSH / SFTP
+
+支持平台：
+
+| 平台 | 架构 |
+|---|---|
+| Windows | amd64 |
+| Linux | amd64 |
+| macOS | amd64 (Intel) |
+| macOS | arm64 (Apple Silicon) |
 
 ---
 
 ## 安装
 
-从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载预编译的 JAR。
+从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载对应平台的压缩包，解压即用。
 
-也可以编译安装：
+包内包含：
+
+```
+taskssh.exe          （或 taskssh）
+inventory.example.yaml
+README.md
+```
+
+也可以从源码编译：
 
 ```bash
 git clone --depth 1 https://github.com/melvek/TaskSSH.git
 cd TaskSSH
-mvn clean package
+go build -o taskssh main.go
 ```
 
-构建完成后，在 `target/` 目录下生成 `taskssh-x.x.x.jar`。
+Windows 上一键编译多平台：
 
-在 `.bashrc` 中创建别名便于使用（后续示例均使用此别名）：
-
-```bash
-alias taskssh='java -Dfile.encoding=UTF-8 -jar /path/to/taskssh-x.x.x.jar'
+```cmd
+build.bat
 ```
+
+产物在 `release/` 目录下。
 
 ---
 
@@ -61,7 +77,7 @@ servers:
         port: 2222
         username: root
         password: 2dO7ObeRBjqyuKkMpV6Xkg==
-        
+
 tasks:
   release:
     steps:
@@ -91,14 +107,14 @@ tasks:
 
 ### 2. 加密密码
 
-明文密码存在安全风险，TaskSSH 使用 Jasypt 加密。运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
+明文密码存在安全风险，TaskSSH 使用 AES-256-GCM 加密。运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
 
 ```bash
 taskssh encrypt "your-password"
-# 输出：2dO7ObeRBjqyuKkMpV6Xkg==
+# 输出：xxxxx
 ```
 
-注意：主密钥 `SEC_KEY` 硬编码在 `EncryptTool` 中。
+注意：Go 版的密文格式与 Java 版不兼容，从 Java 版迁移时需重新加密。
 
 ---
 
@@ -131,11 +147,9 @@ taskssh <task> <hosts> [options]
 ```bash
 # 加密
 taskssh encrypt "your-password"
-# 输出：2dO7ObeRBjqyuKkMpV6Xkg==
 
 # 解密
-taskssh decrypt "2dO7ObeRBjqyuKkMpV6Xkg=="
-# 输出：your-password
+taskssh decrypt "xxxxx"
 ```
 
 ---
@@ -144,13 +158,14 @@ taskssh decrypt "2dO7ObeRBjqyuKkMpV6Xkg=="
 
 支持以下认证方式，按优先级尝试：
 
-| 方式    | 配置字段            | 说明                     |
-|-------|-----------------|------------------------|
-| 公钥认证  | `identity_file` | 私钥文件路径，`~` 自动展开        |
-| 私钥口令  | `passphrase`    | 与密码同样加密存储              |
-| 密码认证  | `password`      | 加密存储，或运行时终端输入          |
+| 方式                     | 配置字段            | 说明                     |
+|------------------------|-----------------|------------------------|
+| 公钥认证                   | `identity_file` | 私钥文件路径，`~` 自动展开        |
+| keyboard-interactive   | 自动             | 多轮问答，兼容 OTP 类场景        |
+| 密码认证                   | `password`      | 加密存储，或运行时终端输入          |
+| 终端交互                   | 无配置             | 清单未配置时提示输入             |
 
-优先级：`publickey > keyboard-interactive > password`
+优先级：`publickey > keyboard-interactive > password > 终端输入`
 
 ### 配置示例
 
@@ -169,11 +184,11 @@ hosts:
 
 ## 基础任务
 
-基础任务目标包括`command`,`push`,`fetch`三类，可满足常规运维操作。
+基础任务包括 `command`、`push`、`fetch` 三类，可满足常规运维操作。
 
-基础任务可独立使用，也可作为 tasks 中 step 的 command 对象进行自由组合，来完成复杂的批量运维任务。
+基础任务可独立使用，也可作为 `tasks` 中 `step` 的 `action` 进行自由组合，来完成复杂的批量运维任务。
 
-内置任务由工具自带，如果在 `inventory.yaml` 中的`tasks`中定义同名任务，将会覆盖内置任务。
+内置任务由工具自带，如果在 `inventory.yaml` 中的 `tasks` 中定义同名任务，将会覆盖内置任务。
 
 | 任务        | 说明          |
 |-----------|-------------|
@@ -329,3 +344,9 @@ taskssh command prod -e "echo $HOME"
 ## 更新日志
 
 [CHANGELOG](CHANGELOG.md)
+
+---
+
+## 许可证
+
+MIT License，详见 [LICENSE](LICENSE)。
