@@ -88,21 +88,7 @@ public final class EncryptCommand {
                 LogPrinter.error("Input is empty");
                 return null;
             }
-            char[] pwd2 = console.readPassword("Confirm password: ");
-            if (pwd2 == null || pwd2.length == 0) {
-                Arrays.fill(pwd1, ' ');
-                LogPrinter.error("Input is empty");
-                return null;
-            }
-            String s1 = new String(pwd1);
-            String s2 = new String(pwd2);
-            Arrays.fill(pwd1, ' ');
-            Arrays.fill(pwd2, ' ');
-            if (!s1.equals(s2)) {
-                LogPrinter.error("Passwords do not match");
-                return null;
-            }
-            return s1;
+            return new String(pwd1);
         }
 
         // 解密：输入密文
