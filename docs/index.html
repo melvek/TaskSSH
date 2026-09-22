@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskSSH - 轻量级批量运维工具</title>
+    <meta name="description" content="TaskSSH 是一个基于 JSch 的轻量级批量运维工具，支持任务编排、批量执行命令、上传下载文件。">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #ffffff;
+            --bg-alt: #f8fafc;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+                         sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            background: var(--bg);
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono",
+                         Menlo, monospace;
+            font-size: 0.9em;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Header */
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .nav-links a {
+            margin-left: 24px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .hero .slogan {
+            font-size: 20px;
+            color: var(--text-light);
+            margin-bottom: 32px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-alt);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            text-decoration: none;
+        }
+
+        /* Section */
+        section {
+            padding: 60px 0;
+        }
+
+        section.alt {
+            background: var(--bg-alt);
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+        }
+
+        .feature p {
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        /* Steps */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        /* Commands */
+        .commands {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .command-card {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+        }
+
+        .command-card h3 {
+            font-family: "SFMono-Regular", Consolas, monospace;
+            color: var(--primary);
+        }
+
+        /* Docs links */
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .doc-link {
+            display: block;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            transition: all 0.2s;
+        }
+
+        .doc-link:hover {
+            border-color: var(--primary);
+            text-decoration: none;
+        }
+
+        .doc-link strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .doc-link span {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        footer a {
+            color: var(--text-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero .slogan {
+                font-size: 16px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <nav>
+            <div class="logo">TaskSSH</div>
+            <div class="nav-links">
+                <a href="#features">特性</a>
+                <a href="#start">快速开始</a>
+                <a href="#docs">文档</a>
+                <a href="https://github.com/melvek/TaskSSH">GitHub</a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="container">
+        <h1>TaskSSH</h1>
+        <p class="slogan">一条命令，驱动一批服务器，按你定义的流程干活。</p>
+        <div class="buttons">
+            <a href="#start" class="btn btn-primary">快速开始</a>
+            <a href="https://github.com/melvek/TaskSSH" class="btn btn-secondary">GitHub</a>
+        </div>
+    </div>
+</div>
+
+<!-- Features -->
+<section id="features" class="alt">
+    <div class="container">
+        <h2>为什么用 TaskSSH</h2>
+        <div class="features">
+            <div class="feature">
+                <h3>任务编排</h3>
+                <p>不止能执行一条命令。把多个操作串成有序流程，一条命令搞定。</p>
+            </div>
+            <div class="feature">
+                <h3>配置即文档</h3>
+                <p>整个流程写在 YAML 里，新人看配置就知道发布流程。</p>
+            </div>
+            <div class="feature">
+                <h3>原子能力</h3>
+                <p>command / push / fetch 三个 Action，自由组合。</p>
+            </div>
+            <div class="feature">
+                <h3>变量替换</h3>
+                <p>一套配置适配多套环境，同一任务部署到 prod / uat。</p>
+            </div>
+            <div class="feature">
+                <h3>严格模式</h3>
+                <p>未解析的变量直接报错，避免命令跑到意外路径。</p>
+            </div>
+            <div class="feature">
+                <h3>多认证方式</h3>
+                <p>密码、公钥、私钥口令，或终端交互输入。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Start -->
+<section id="start">
+    <div class="container">
+        <h2>三步上手</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>下载</h3>
+                <p>从 GitHub Releases 下载 JAR，或 <code>mvn clean package</code> 构建。</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>写清单</h3>
+                <p>创建 <code>inventory.yaml</code>，定义服务器组和任务。</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>执行</h3>
+                <p><code>taskssh release prod -y</code>，一条命令搞定。</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 48px;">
+            <h3 style="text-align: center; margin-bottom: 24px;">示例：发布流程</h3>
+            <pre><code>tasks:
+  release:
+    steps:
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+          backup: true
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+        delay: 5
+      - name: "健康检查"
+        action: command
+        with:
+          command: "curl -sf http://localhost:8080/health"</code></pre>
+            <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
+                执行：<code>taskssh release prod-trans -i inventory.yaml -y</code>
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Built-in tasks -->
+<section class="alt">
+    <div class="container">
+        <h2>内置任务</h2>
+        <div class="commands">
+            <div class="command-card">
+                <h3>command</h3>
+                <p>执行远程命令</p>
+                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh command prod -e "ls -la /opt"</code></pre>
+            </div>
+            <div class="command-card">
+                <h3>push</h3>
+                <p>上传文件到远程</p>
+                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh push prod -f app.jar -d /opt/app/</code></pre>
+            </div>
+            <div class="command-card">
+                <h3>fetch</h3>
+                <p>从远程下载文件</p>
+                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh fetch prod -f /var/log/app.log -d ./logs/</code></pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Docs -->
+<section id="docs">
+    <div class="container">
+        <h2>文档</h2>
+        <div class="docs-grid">
+            <a href="https://github.com/melvek/TaskSSH/blob/main/README.md" class="doc-link">
+                <strong>README</strong>
+                <span>快速开始与命令总览</span>
+            </a>
+            <a href="https://github.com/melvek/TaskSSH/wiki" class="doc-link">
+                <strong>Wiki</strong>
+                <span>inventory.yaml 详解</span>
+            </a>
+            <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" class="doc-link">
+                <strong>CHANGELOG</strong>
+                <span>版本更新记录</span>
+            </a>
+            <a href="https://github.com/melvek/TaskSSH/blob/main/CONTRIBUTING.md" class="doc-link">
+                <strong>CONTRIBUTING</strong>
+                <span>贡献指南</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p>
+            TaskSSH · MIT License ·
+            <a href="https://github.com/melvek/TaskSSH">GitHub</a>
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>
