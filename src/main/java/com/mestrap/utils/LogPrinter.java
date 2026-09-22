@@ -153,17 +153,6 @@ public class LogPrinter {
     }
 
     /**
-     * Hint information (cyan)
-     */
-    public static void hint(String message) {
-        if (colorEnabled) {
-            System.out.println(CYAN + "  ↳ " + message + RESET);
-        } else {
-            System.out.println("  ↳ " + message);
-        }
-    }
-
-    /**
      * Debug information (purple)
      */
     public static void debug(String message) {
@@ -196,9 +185,6 @@ public class LogPrinter {
             System.out.println("\r" + CYAN + text + RESET);
         } else {
             System.out.println("\r" + text);
-        }
-        if (current == total) {
-            // System.out.println(); // New line after completion
         }
     }
 
@@ -243,7 +229,7 @@ public class LogPrinter {
                 System.out.printf("  Failed: %d%n", failed);
             }
             if (failedHosts != null && failedHosts.length > 0) {
-                hint("Failed hosts: " + String.join(", ", failedHosts));
+                error("Failed hosts: " + String.join(", ", failedHosts));
             }
         } else {
             keyValue("Failed", "0");
@@ -278,34 +264,6 @@ public class LogPrinter {
         } else {
             System.out.print(message);
         }
-    }
-
-    /**
-     * Print table header
-     */
-    public static void tableHeader(String... headers) {
-        if (colorEnabled) {
-            System.out.print(BOLD);
-            for (String header : headers) {
-                System.out.printf("%-20s", header);
-            }
-            System.out.println(RESET);
-        } else {
-            for (String header : headers) {
-                System.out.printf("%-20s", header);
-            }
-            System.out.println();
-        }
-    }
-
-    /**
-     * Print table row
-     */
-    public static void tableRow(String... columns) {
-        for (String col : columns) {
-            System.out.printf("%-20s", col);
-        }
-        System.out.println();
     }
 
     /**
@@ -349,6 +307,5 @@ public class LogPrinter {
         Color(String code) {
             this.code = code;
         }
-
     }
 }

@@ -56,7 +56,7 @@ public class CommandDispatcher {
             cl = parseArgs(args);
         } catch (ParseException e) {
             LogPrinter.error("Invalid arguments: " + e.getMessage());
-            LogPrinter.hint("Use -h to see help");
+            LogPrinter.info("Use -h to see help");
             return 1;
         }
 
@@ -89,7 +89,7 @@ public class CommandDispatcher {
         Map<String, HostVars> hosts = HostResolver.resolve(hostNames, inventory, cl);
         if (hosts.isEmpty()) {
             LogPrinter.error("No target hosts specified");
-            LogPrinter.hint("Usage: taskssh " + taskName + " <hosts...> [options]");
+            LogPrinter.info("Usage: taskssh " + taskName + " <hosts...> [options]");
             return 1;
         }
 
