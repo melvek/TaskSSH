@@ -3,7 +3,7 @@ package ssh
 import (
 	"bytes"
 	"fmt"
-	"io"
+	"os"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -15,8 +15,38 @@ type ExecResult struct {
 	ExitCode int
 }
 
-// Exec 在远程执行命令，返回结果。
+// Exec 在远程执行命令，输出实时打印到终端。
 func (c *Client) Exec(command string) (*ExecResult, error) {
+	if c.conn == nil {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	session, err := c.conn.NewSession()
+	if err != nil {
+		return nil, fmt.Errorf("create session: %w", err)
+	}
+	defer session.Close()
+
+	// 实时输出到终端
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
+	err = session.Run(command)
+
+	result := &ExecResult{}
+	if err != nil {
+		if exitErr, ok := err.(*ssh.ExitError); ok {
+			result.ExitCode = exitErr.ExitStatus()
+			return result, nil
+		}
+		return nil, fmt.Errorf("run command: %w", err)
+	}
+
+	return result, nil
+}
+
+// ExecBuffered 执行命令，收集输出后返回。
+func (c *Client) ExecBuffered(command string) (*ExecResult, error) {
 	if c.conn == nil {
 		return nil, fmt.Errorf("client not connected")
 	}
@@ -41,28 +71,10 @@ func (c *Client) Exec(command string) (*ExecResult, error) {
 	if err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			result.ExitCode = exitErr.ExitStatus()
-			return result, nil // 命令失败不算 Go 层的错误
+			return result, nil
 		}
 		return nil, fmt.Errorf("run command: %w", err)
 	}
 
 	return result, nil
-}
-
-// ExecStream 执行命令并实时输出到 writer。
-func (c *Client) ExecStream(command string, out io.Writer) error {
-	if c.conn == nil {
-		return fmt.Errorf("client not connected")
-	}
-
-	session, err := c.conn.NewSession()
-	if err != nil {
-		return fmt.Errorf("create session: %w", err)
-	}
-	defer session.Close()
-
-	session.Stdout = out
-	session.Stderr = out
-
-	return session.Run(command)
 }

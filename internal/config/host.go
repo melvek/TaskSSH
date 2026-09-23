@@ -38,7 +38,6 @@ func (h *Host) UnmarshalYAML(value *yaml.Node) error {
 	}
 	*h = Host(raw)
 
-	// 初始化 Extra
 	if h.Extra == nil {
 		h.Extra = make(map[string]interface{})
 	}
@@ -46,7 +45,11 @@ func (h *Host) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // Merge 将另一个 Host 的值合并进来。
-// 规则：目标已有值则跳过，不覆盖。
+//
+// 语义：目标已有值则跳过，不覆盖（目标优先）。
+//
+// 这样调用方按"低优先级 -> 高优先级"顺序合并，
+// 后合并的不会覆盖先合并的已有值。
 func (h *Host) Merge(source *Host) {
 	if source == nil {
 		return

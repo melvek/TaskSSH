@@ -55,6 +55,15 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 }
 
 // resolveGroup 展开服务器组。
+//
+// 合并顺序（优先级从低到高）：
+//  1. global_vars
+//  2. group.vars
+//  3. host（主机级，本来就有的值）
+//
+// Merge 的语义是"目标已有值则跳过"，所以：
+//   - 先把 global 合并到 groupVars，组的值优先
+//   - 再把合并后的 groupVars 合并到 host，主机的值优先
 func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) []HostEntry {
 	var entries []HostEntry
 
@@ -64,10 +73,15 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 	}
 	sort.Strings(names)
 
+	// 1. 全局合并到组变量（组优先）
+	groupVars := group.Vars
+	groupVars.Merge(&inv.GlobalVars)
+
 	for _, name := range names {
 		host := group.Hosts[name]
-		host.Merge(&inv.GlobalVars)
-		host.Merge(&group.Vars)
+
+		// 2. 组变量合并到主机（主机优先）
+		host.Merge(&groupVars)
 
 		vars := make(resolve.Vars, len(host.Extra))
 		for k, v := range host.Extra {

@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 
 REM ============================================================
 REM  TaskSSH 多平台发布脚本
-REM  编译 Windows / Linux / macOS 四个平台
+REM  编译 Windows / Linux / macOS 五个平台
 REM  打包为 zip，内部二进制统一命名为 taskssh / taskssh.exe
 REM ============================================================
 
@@ -39,7 +39,7 @@ mkdir "%DIST%"
 mkdir "%RELEASE%"
 
 REM ---- 依赖 ----
-echo [0/5] Resolving dependencies...
+echo [0/6] Resolving dependencies...
 go mod tidy
 if errorlevel 1 (
     echo [ERROR] go mod tidy failed
@@ -49,7 +49,7 @@ if errorlevel 1 (
 set CGO_ENABLED=0
 
 REM ---- 1. Linux amd64 ----
-echo [1/5] Building Linux amd64...
+echo [1/6] Building Linux amd64...
 set GOOS=linux
 set GOARCH=amd64
 go build -ldflags "!LDFLAGS!" -o "%DIST%\taskssh-linux-amd64" main.go
@@ -58,8 +58,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ---- 2. Windows amd64 ----
-echo [2/5] Building Windows amd64...
+REM ---- 2. Linux arm64 ----
+echo [2/6] Building Linux arm64...
+set GOOS=linux
+set GOARCH=arm64
+go build -ldflags "!LDFLAGS!" -o "%DIST%\taskssh-linux-arm64" main.go
+if errorlevel 1 (
+    echo [ERROR] Linux arm64 build failed
+    exit /b 1
+)
+
+REM ---- 3. Windows amd64 ----
+echo [3/6] Building Windows amd64...
 set GOOS=windows
 set GOARCH=amd64
 go build -ldflags "!LDFLAGS!" -o "%DIST%\taskssh-windows-amd64.exe" main.go
@@ -68,8 +78,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ---- 3. macOS Intel ----
-echo [3/5] Building macOS amd64...
+REM ---- 4. macOS Intel ----
+echo [4/6] Building macOS amd64...
 set GOOS=darwin
 set GOARCH=amd64
 go build -ldflags "!LDFLAGS!" -o "%DIST%\taskssh-darwin-amd64" main.go
@@ -78,8 +88,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ---- 4. macOS Apple Silicon ----
-echo [4/5] Building macOS arm64...
+REM ---- 5. macOS Apple Silicon ----
+echo [5/6] Building macOS arm64...
 set GOOS=darwin
 set GOARCH=arm64
 go build -ldflags "!LDFLAGS!" -o "%DIST%\taskssh-darwin-arm64" main.go
@@ -95,7 +105,7 @@ set CGO_ENABLED=
 
 REM ---- 复制示例文件 ----
 echo.
-echo [5/5] Preparing package files...
+echo [6/6] Preparing package files...
 if exist inventory.example.yaml (
     copy inventory.example.yaml "%DIST%\" >nul
     echo   Copied: inventory.example.yaml
@@ -115,6 +125,7 @@ echo [PACK] Creating release archives...
 
 call :package "%DIST%\taskssh-windows-amd64.exe" "taskssh.exe" "taskssh-windows-amd64"
 call :package "%DIST%\taskssh-linux-amd64"       "taskssh"     "taskssh-linux-amd64"
+call :package "%DIST%\taskssh-linux-arm64"       "taskssh"     "taskssh-linux-arm64"
 call :package "%DIST%\taskssh-darwin-amd64"      "taskssh"     "taskssh-darwin-amd64"
 call :package "%DIST%\taskssh-darwin-arm64"      "taskssh"     "taskssh-darwin-arm64"
 

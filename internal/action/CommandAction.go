@@ -2,9 +2,7 @@ package action
 
 import (
 	"fmt"
-	"strings"
 
-	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -34,13 +32,6 @@ func (a *CommandAction) Execute(ctx *Context) error {
 	result, err := client.Exec(cmd)
 	if err != nil {
 		return err
-	}
-
-	if result.Stdout != "" {
-		log.Info(strings.TrimRight(result.Stdout, "\n"))
-	}
-	if result.Stderr != "" {
-		log.Error(strings.TrimRight(result.Stderr, "\n"))
 	}
 
 	if result.ExitCode != 0 {
