@@ -1,6 +1,6 @@
 module mestrap.com/taskssh
 
-go 1.27.1
+go 1.27
 
 require (
 	github.com/fatih/color v1.19.0

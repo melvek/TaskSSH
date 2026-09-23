@@ -12,7 +12,13 @@ import (
 )
 
 // secKey 是加密密钥。
-const secKey = "c7624159-ca0f-4078-9dc3-f4cd1da6a9f6"
+//
+// 编译时可通过 -ldflags 注入：
+//
+//	go build -ldflags "-X 'mestrap.com/taskssh/internal/secret.secKey=真实密钥'"
+//
+// 未注入时使用默认值（仅用于开发）。
+var secKey = "c7624159-ca0f-4078-9dc3-f4cd1da6a9f6"
 
 // ErrNoKey 表示未设置密钥。
 var ErrNoKey = errors.New("no encryption key available")

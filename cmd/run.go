@@ -3,11 +3,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/resolve"
+	"mestrap.com/taskssh/internal/ssh"
 	"mestrap.com/taskssh/internal/task"
 )
 
@@ -71,6 +73,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	executor := task.NewExecutor(actions, concurrency)
 	results := executor.Run(t, entries, globalVars)
 
+	// 任务结束，清理密码缓存
+	defer ssh.ClearPasswordCache()
+
 	// 摘要
 	success, failed := 0, 0
 	var failedHosts []string
@@ -99,5 +104,6 @@ func confirm(message string) bool {
 	fmt.Printf("%s (y/n): ", message)
 	var input string
 	fmt.Scanln(&input)
+	input = strings.ToLower(strings.TrimSpace(input))
 	return input == "y" || input == "yes"
 }

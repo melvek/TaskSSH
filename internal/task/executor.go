@@ -41,7 +41,13 @@ func NewExecutor(actions *action.Registry, concurrency int) *Executor {
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	log.Section("Start")
-	log.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
+
+	if task.Description != "" {
+		log.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
+	} else {
+		log.Info("Steps: %d", len(task.Steps))
+	}
+
 	log.Info("Targets: %d", len(hosts))
 	log.Info("Concurrency: %d", e.concurrency)
 
@@ -92,10 +98,17 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			var buf bytes.Buffer
 			log.SetOutput(&buf)
 
-			// 保证即使 panic 也恢复输出
 			defer func() {
 				log.ResetOutput()
 				log.RawOutput(buf.String())
+
+				if r := recover(); r != nil {
+					results[idx] = Result{
+						Host:    entry.Name,
+						Success: false,
+						Error:   fmt.Errorf("panic: %v", r),
+					}
+				}
 			}()
 
 			log.EmptyLine()
