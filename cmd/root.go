@@ -39,6 +39,9 @@ func Execute() error {
 }
 
 func init() {
+
+	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\n")
+
 	// 隐藏 completion
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
