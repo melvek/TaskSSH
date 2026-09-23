@@ -20,17 +20,28 @@ func (a *PushAction) Execute(ctx *Context) error {
 		return fmt.Errorf("push action requires 'file' parameter")
 	}
 
-	local, err := ctx.Vars.Replace(fmt.Sprintf("%v", fileRaw))
+	fileStr := fmt.Sprintf("%v", fileRaw)
+	if fileStr == "" {
+		return fmt.Errorf("push action requires non-empty 'file' parameter")
+	}
+
+	local, err := ctx.Vars.Replace(fileStr)
 	if err != nil {
 		return err
 	}
 
-	info, err := os.Stat(local)
+	// 转绝对路径，后续统一使用
+	localAbs, err := filepath.Abs(local)
+	if err != nil {
+		return fmt.Errorf("resolve path %s: %w", local, err)
+	}
+
+	info, err := os.Stat(localAbs)
 	if err != nil {
 		return fmt.Errorf("local file: %w", err)
 	}
 	if info.IsDir() {
-		return fmt.Errorf("directory upload not supported: %s", local)
+		return fmt.Errorf("directory upload not supported: %s", localAbs)
 	}
 
 	dest, err := resolveDest(ctx)
@@ -41,11 +52,6 @@ func (a *PushAction) Execute(ctx *Context) error {
 	force := toBool(ctx.With["force"])
 	backup := toBool(ctx.With["backup"])
 	policy := ssh.NewPolicy(force, backup)
-
-	localAbs, err := filepath.Abs(local)
-	if err != nil {
-		localAbs = local
-	}
 
 	log.Info("Upload %s to %s", localAbs, dest)
 
