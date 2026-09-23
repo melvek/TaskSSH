@@ -56,6 +56,7 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
+		log.EmptyLine()
 		log.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
 		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
@@ -75,7 +76,6 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 	return results
 }
 
-// runParallel 并发执行，按主机缓冲输出。
 func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
@@ -83,15 +83,20 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 
 	for i, entry := range hosts {
 		wg.Add(1)
-		sem <- struct{}{} // 获取信号量
+		sem <- struct{}{}
 
 		go func(idx int, entry HostEntry) {
 			defer wg.Done()
-			defer func() { <-sem }() // 释放信号量
+			defer func() { <-sem }()
 
-			// 每个 goroutine 一个缓冲
 			var buf bytes.Buffer
 			log.SetOutput(&buf)
+
+			// 保证即使 panic 也恢复输出
+			defer func() {
+				log.ResetOutput()
+				log.RawOutput(buf.String())
+			}()
 
 			log.EmptyLine()
 			log.Info("[START] %s [%s]", entry.Name, entry.Host.Host)
@@ -109,12 +114,6 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			} else {
 				log.Success("%s OK", entry.Name)
 			}
-
-			// 恢复默认输出
-			log.ResetOutput()
-
-			// 一次性输出该主机全部日志
-			fmt.Print(buf.String())
 		}(i, entry)
 	}
 

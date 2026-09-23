@@ -101,6 +101,15 @@ func Debug(format string, args ...any) {
 
 // ==================== 结构化输出 ====================
 
+// RawOutput 原样输出字符串（加锁）。
+//
+// 用于输出预先生成的内容（如按主机缓冲的日志）。
+func RawOutput(s string) {
+	outputMu.Lock()
+	defer outputMu.Unlock()
+	fmt.Print(s)
+}
+
 // Section 区块标题。
 func Section(title string) {
 	write("\n=== "+title+" ===", boldBlue)
