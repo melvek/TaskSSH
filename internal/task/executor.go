@@ -95,6 +95,9 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer wg.Done()
 			defer func() { <-sem }()
 
+			// 开始执行时，实时输出一行提示（不进缓冲）
+			log.Info("[START] %s [%s]", entry.Name, entry.Host.Host)
+
 			var buf bytes.Buffer
 			log.SetOutput(&buf)
 
