@@ -11,22 +11,9 @@ set BINARY=taskssh
 set DIST=dist
 set RELEASE=release
 
-REM ---- 版本信息 ----
-for /f "tokens=*" %%i in ('git describe --tags --always --dirty 2^>nul') do set VERSION=%%i
-if "!VERSION!"=="" set VERSION=dev
-
-for /f "tokens=*" %%i in ('git rev-parse --short HEAD 2^>nul') do set GIT_COMMIT=%%i
-if "!GIT_COMMIT!"=="" set GIT_COMMIT=unknown
-
-REM ---- 编译参数 ----
-set LDFLAGS=-s -w -X "mestrap.com/taskssh/internal/utils.Version=!VERSION!"
-
 echo.
 echo ============================================================
 echo  TaskSSH Build
-echo ============================================================
-echo  Version:    !VERSION!
-echo  Git commit: !GIT_COMMIT!
 echo  Output:     %RELEASE%\
 echo ============================================================
 echo.
