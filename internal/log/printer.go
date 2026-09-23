@@ -50,8 +50,8 @@ func ResetOutput() {
 	outputs.Delete(getGID())
 }
 
-// getOutput 返回当前 goroutine 的输出目标。
-func getOutput() io.Writer {
+// GetOutput 返回当前 goroutine 的输出目标。
+func GetOutput() io.Writer {
 	if w, ok := outputs.Load(getGID()); ok {
 		return w.(io.Writer)
 	}
@@ -91,7 +91,7 @@ func Warn(format string, args ...any) {
 
 // Hint 提示信息（青色），支持格式化。
 func Hint(format string, args ...any) {
-	write("    "+formatMsg(format, args...), cyan)
+	write("  "+formatMsg(format, args...), cyan)
 }
 
 // Debug 调试信息（紫色），支持格式化。
@@ -135,9 +135,9 @@ func Step(current, total int, name string) {
 	write(fmt.Sprintf("[STEP %d/%d] %s", current, total, name), boldBlue)
 }
 
-// Progress 进度输出。
-func Progress(current, total int, name, addr string) {
-	write(fmt.Sprintf("[Processing %d/%d] %s [%s]", current, total, name, addr), cyan)
+// Progress 主机进度输出。
+func Progress(current, total int, name, host string) {
+	write(fmt.Sprintf("[Processing %d/%d] %s [%s]", current, total, name, host), cyan)
 }
 
 // Summary 执行摘要。
@@ -177,11 +177,13 @@ func IsColorEnabled() bool {
 // ==================== 内部方法 ====================
 
 // write 写一行到当前 goroutine 的输出目标。
+//
+// msg 末尾的换行符会被去掉，由 Fprintln 自动加。
 func write(msg string, c *color.Color) {
 	outputMu.Lock()
 	defer outputMu.Unlock()
 
-	out := getOutput()
+	out := GetOutput()
 	msg = strings.TrimRight(msg, "\n")
 
 	if c != nil && !color.NoColor {
@@ -197,9 +199,4 @@ func formatMsg(format string, args ...any) string {
 		return format
 	}
 	return fmt.Sprintf(format, args...)
-}
-
-// GetOutput 返回当前 goroutine 的输出目标。
-func GetOutput() io.Writer {
-	return getOutput()
 }
