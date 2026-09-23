@@ -32,7 +32,6 @@ func runBuiltinTask(taskName string, hosts []string, with map[string]any) error 
 
 // executeTask 是公共执行入口。
 func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) error {
-	// 构造 CLI 覆盖
 	ov := task.Overrides{
 		Port:     portFlag,
 		Username: userFlag,
@@ -47,10 +46,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		return fmt.Errorf("no target hosts")
 	}
 
-	// 展示主机列表
 	log.Section("Target hosts")
 	for _, e := range entries {
-		log.ListItem(e.Name, fmt.Sprintf("%s@%s", e.Host.Username, e.Host.Host))
+		log.ListItem(e.Name, e.Host.Host)
 	}
 	log.EmptyLine()
 
@@ -70,19 +68,25 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	actions := action.NewRegistry()
-	executor := task.NewExecutor(actions)
+	executor := task.NewExecutor(actions, concurrency)
 	results := executor.Run(t, entries, globalVars)
 
+	// 摘要
 	success, failed := 0, 0
+	var failedHosts []string
 	for _, r := range results {
 		if r.Success {
 			success++
 		} else {
 			failed++
+			failedHosts = append(failedHosts, r.Host)
 		}
 	}
-	log.Section("Summary")
-	log.Info("Total: %d, Success: %d, Failed: %d", len(results), success, failed)
+
+	log.Summary(len(results), success, failed)
+	if len(failedHosts) > 0 {
+		log.Hint("Failed hosts: %v", failedHosts)
+	}
 
 	if failed > 0 {
 		os.Exit(1)

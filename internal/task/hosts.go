@@ -15,6 +15,13 @@ type Overrides struct {
 	Password string
 }
 
+// HostEntry 是目标主机的一项。
+type HostEntry struct {
+	Name string
+	Host config.Host
+	Vars resolve.Vars
+}
+
 // ResolveHosts 解析目标主机列表。
 //
 // hostNames 可以是组名，也可以是独立主机名。
@@ -33,9 +40,7 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 		entries = append(entries, entry)
 	}
 
-	// 应用 CLI 覆盖
 	applyOverrides(entries, ov)
-
 	return entries, nil
 }
 
@@ -73,14 +78,13 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 	}
 	sort.Strings(names)
 
-	// 1. 全局合并到组变量（组优先）
+	// 全局合并到组（组优先）
 	groupVars := group.Vars
 	groupVars.Merge(&inv.GlobalVars)
 
 	for _, name := range names {
 		host := group.Hosts[name]
-
-		// 2. 组变量合并到主机（主机优先）
+		// 组合并到主机（主机优先）
 		host.Merge(&groupVars)
 
 		vars := make(resolve.Vars, len(host.Extra))

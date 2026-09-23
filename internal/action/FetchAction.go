@@ -36,6 +36,8 @@ func (a *FetchAction) Execute(ctx *Context) error {
 		}
 	}
 
+	log.Info("Download %s to %s", remote, dest)
+
 	client, err := ssh.Connect(ctx.Host)
 	if err != nil {
 		return err

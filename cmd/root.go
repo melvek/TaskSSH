@@ -13,6 +13,7 @@ var (
 	portFlag      int
 	userFlag      string
 	passwordFlag  string
+	concurrency   int
 )
 
 var rootCmd = &cobra.Command{
@@ -23,7 +24,8 @@ var rootCmd = &cobra.Command{
 	Args:    cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return cmd.Help()
+			cmd.Help()
+			return nil
 		}
 		return runDynamicTask(cmd, args)
 	},
@@ -35,10 +37,7 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\nBuild time: " + utils.BuildTime)
-	// 禁用字母排序，按添加顺序显示
-	cobra.EnableCommandSorting = false
-	// 隐藏 completion 命令
+	// 隐藏 completion
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
 	// 全局 flag
@@ -54,8 +53,10 @@ func init() {
 		"", "Override username")
 	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p",
 		"", "Override password (not recommended)")
+	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c",
+		1, "Number of concurrent connections")
 
-	// 内置子命令
+	// 子命令
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(commandCmd)

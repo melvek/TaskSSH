@@ -3,6 +3,7 @@ package action
 import (
 	"fmt"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -22,6 +23,8 @@ func (a *CommandAction) Execute(ctx *Context) error {
 	if err != nil {
 		return err
 	}
+
+	log.Info("Execute command: %s", cmd)
 
 	client, err := ssh.Connect(ctx.Host)
 	if err != nil {

@@ -42,6 +42,8 @@ func (a *PushAction) Execute(ctx *Context) error {
 	backup := toBool(ctx.With["backup"])
 	policy := ssh.NewPolicy(force, backup)
 
+	log.Info("Upload %s to %s", local, dest)
+
 	client, err := ssh.Connect(ctx.Host)
 	if err != nil {
 		return err

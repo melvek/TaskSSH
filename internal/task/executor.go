@@ -1,7 +1,9 @@
 package task
 
 import (
+	"bytes"
 	"fmt"
+	"sync"
 	"time"
 
 	"mestrap.com/taskssh/internal/action"
@@ -19,21 +21,42 @@ type Result struct {
 
 // Executor 执行任务。
 type Executor struct {
-	actions *action.Registry
+	actions     *action.Registry
+	concurrency int
 }
 
 // NewExecutor 创建执行器。
-func NewExecutor(actions *action.Registry) *Executor {
-	return &Executor{actions: actions}
+//
+// concurrency 为并发数，<=0 时按 1 处理。
+func NewExecutor(actions *action.Registry, concurrency int) *Executor {
+	if concurrency <= 0 {
+		concurrency = 1
+	}
+	return &Executor{
+		actions:     actions,
+		concurrency: concurrency,
+	}
 }
 
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	var results []Result
+	log.Section("Start")
+	log.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
+	log.Info("Targets: %d", len(hosts))
+	log.Info("Concurrency: %d", e.concurrency)
 
-	for _, entry := range hosts {
-		log.EmptyLine()
-		log.Info("Processing %s (%s@%s) ", entry.Name, entry.Host.Username, entry.Host.Host)
+	if e.concurrency == 1 {
+		return e.runSerial(task, hosts, globalVars)
+	}
+	return e.runParallel(task, hosts, globalVars)
+}
+
+// runSerial 串行执行，实时输出。
+func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+	results := make([]Result, 0, len(hosts))
+
+	for i, entry := range hosts {
+		log.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
 		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
 		results = append(results, Result{
@@ -45,10 +68,57 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 		if err != nil {
 			log.Error("%s: %v", entry.Name, err)
 		} else {
-			log.Success("[OK] %s", entry.Name)
+			log.Success("%s OK", entry.Name)
 		}
 	}
 
+	return results
+}
+
+// runParallel 并发执行，按主机缓冲输出。
+func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+	results := make([]Result, len(hosts))
+	sem := make(chan struct{}, e.concurrency)
+	var wg sync.WaitGroup
+
+	for i, entry := range hosts {
+		wg.Add(1)
+		sem <- struct{}{} // 获取信号量
+
+		go func(idx int, entry HostEntry) {
+			defer wg.Done()
+			defer func() { <-sem }() // 释放信号量
+
+			// 每个 goroutine 一个缓冲
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+
+			log.EmptyLine()
+			log.Info("[START] %s [%s]", entry.Name, entry.Host.Host)
+
+			err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
+
+			results[idx] = Result{
+				Host:    entry.Name,
+				Success: err == nil,
+				Error:   err,
+			}
+
+			if err != nil {
+				log.Error("%s: %v", entry.Name, err)
+			} else {
+				log.Success("%s OK", entry.Name)
+			}
+
+			// 恢复默认输出
+			log.ResetOutput()
+
+			// 一次性输出该主机全部日志
+			fmt.Print(buf.String())
+		}(i, entry)
+	}
+
+	wg.Wait()
 	return results
 }
 
@@ -56,7 +126,7 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
-	// 合并变量池：global -> host
+	// 变量池：global -> host
 	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
 	for k, v := range globalVars {
 		vars[k] = v
@@ -66,15 +136,16 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	}
 
 	for i, step := range task.Steps {
-		log.EmptyLine()
-		log.Info("[STEP %d/%d] %s", i+1, len(task.Steps), step.Name)
+		if e.concurrency == 1 && i > 0 {
+			log.EmptyLine()
+		}
+		log.Step(i+1, len(task.Steps), step.Name)
 
 		act := e.actions.Get(step.Action)
 		if act == nil {
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
-		// 构造执行上下文
 		ctx := &action.Context{
 			Host: host,
 			Vars: vars,
@@ -85,7 +156,6 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			return fmt.Errorf("step %s: %w", step.Name, err)
 		}
 
-		// delay
 		if step.Delay > 0 {
 			log.Info("Waiting %ds...", step.Delay)
 			time.Sleep(time.Duration(step.Delay) * time.Second)
@@ -93,11 +163,4 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	}
 
 	return nil
-}
-
-// HostEntry 是目标主机的一项。
-type HostEntry struct {
-	Name string
-	Host config.Host
-	Vars resolve.Vars
 }
