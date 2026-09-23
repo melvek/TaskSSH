@@ -18,8 +18,12 @@ func (a *CommandAction) Execute(ctx *Context) error {
 		return fmt.Errorf("command action requires 'command' parameter")
 	}
 
-	cmd := fmt.Sprintf("%v", raw)
-	cmd, err := ctx.Vars.Replace(cmd)
+	s := fmt.Sprintf("%v", raw)
+	if s == "" {
+		return fmt.Errorf("command action requires non-empty 'command' parameter")
+	}
+
+	cmd, err := ctx.Vars.Replace(s)
 	if err != nil {
 		return err
 	}
