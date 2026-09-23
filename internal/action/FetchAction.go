@@ -22,7 +22,12 @@ func (a *FetchAction) Execute(ctx *Context) error {
 		return fmt.Errorf("fetch action requires 'file' parameter")
 	}
 
-	remote, err := ctx.Vars.Replace(fmt.Sprintf("%v", fileRaw))
+	fileStr := fmt.Sprintf("%v", fileRaw)
+	if fileStr == "" {
+		return fmt.Errorf("fetch action requires non-empty 'file' parameter")
+	}
+
+	remote, err := ctx.Vars.Replace(fileStr)
 	if err != nil {
 		return err
 	}
@@ -67,36 +72,46 @@ func (a *FetchAction) Execute(ctx *Context) error {
 //  1. dest 是文件路径（非目录）→ 直接用 dest
 //  2. dest 是目录 → dest/<主机标识>/<文件名>
 func resolveFinalPath(dest, remotePath, host string) (string, error) {
+	if remotePath == "" {
+		return "", fmt.Errorf("remote path is empty")
+	}
+
 	fileName := path.Base(remotePath)
+
+	// 远程路径异常（如以 / 结尾）
+	if fileName == "." || fileName == "/" || fileName == "" {
+		return "", fmt.Errorf("remote path is invalid: %s", remotePath)
+	}
 
 	// dest 不是目录 → 视为文件路径
 	if !isDirDest(dest) {
-		abs, err := filepath.Abs(dest)
-		if err != nil {
-			return "", fmt.Errorf("resolve path %s: %w", dest, err)
-		}
-		return abs, nil
+		return absPath(dest)
 	}
 
 	// dest 是目录 → dest/<主机标识>/<文件名>
 	hostID := buildHostID(host)
-	finalPath := filepath.Join(dest, hostID, fileName)
+	return absPath(filepath.Join(dest, hostID, fileName))
+}
 
-	abs, err := filepath.Abs(finalPath)
+// absPath 取绝对路径。
+func absPath(p string) (string, error) {
+	abs, err := filepath.Abs(p)
 	if err != nil {
-		return "", fmt.Errorf("resolve path %s: %w", finalPath, err)
+		return "", fmt.Errorf("resolve path %s: %w", p, err)
 	}
 	return abs, nil
 }
 
 // isDirDest 判断 dest 是否目录。
+//
+// 规则：
+//  1. 以 / 或 \ 结尾 → 目录
+//  2. 已存在且是目录 → 目录
 func isDirDest(dest string) bool {
-	// 以分隔符结尾
 	if strings.HasSuffix(dest, "/") || strings.HasSuffix(dest, string(os.PathSeparator)) {
 		return true
 	}
 
-	// 已存在且是目录
 	if info, err := os.Stat(dest); err == nil && info.IsDir() {
 		return true
 	}
@@ -105,6 +120,8 @@ func isDirDest(dest string) bool {
 }
 
 // buildHostID 构造主机标识，用作本地目录名。
+//
+// 主机标识中的 / 和 \ 替换为 _。
 func buildHostID(host string) string {
 	if host == "" {
 		return "unknown"
