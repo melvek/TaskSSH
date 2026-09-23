@@ -33,6 +33,8 @@ var rootCmd = &cobra.Command{
 
 // Execute 是 CLI 入口。
 func Execute() error {
+	// 禁用命令字母排序，按 AddCommand 顺序显示
+	cobra.EnableCommandSorting = false
 	return rootCmd.Execute()
 }
 
