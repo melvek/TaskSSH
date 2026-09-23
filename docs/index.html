@@ -4,18 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskSSH - 轻量级批量运维工具</title>
-    <meta name="description" content="TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。">
+    <meta name="description" content="TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。单文件、无依赖、YAML 驱动。">
+    <meta name="keywords" content="TaskSSH,SSH,批量运维,DevOps,自动化部署,YAML,Ansible替代">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="TaskSSH - 轻量级批量运维工具">
+    <meta property="og:description" content="一条命令，驱动一批服务器，按你定义的流程干活。单文件、无依赖、YAML 驱动。">
+    <meta property="og:url" content="https://github.com/melvek/TaskSSH">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TaskSSH - 轻量级批量运维工具">
+    <meta name="twitter:description" content="一条命令，驱动一批服务器，按你定义的流程干活。">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
     <style>
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
             --bg: #ffffff;
             --bg-alt: #f8fafc;
-            --text: #1e293b;
+            --text: #0f172a;
             --text-light: #64748b;
             --border: #e2e8f0;
-            --code-bg: #1e293b;
+            --code-bg: #0f172a;
             --code-text: #e2e8f0;
+            --radius: 10px;
+            --shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
         * {
@@ -24,13 +43,19 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
                          "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
                          sans-serif;
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.65;
             background: var(--bg);
+            -webkit-font-smoothing: antialiased;
         }
 
         a {
@@ -52,25 +77,62 @@
         }
 
         pre {
+            position: relative;
             background: var(--code-bg);
             color: var(--code-text);
             padding: 20px;
-            border-radius: 8px;
+            padding-top: 44px;
+            border-radius: var(--radius);
             overflow-x: auto;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
+            text-align: left;
         }
 
         pre code {
             background: none;
             padding: 0;
             color: inherit;
+            font-size: inherit;
+        }
+
+        /* 复制按钮 */
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .copy-btn.copied {
+            background: #16a34a;
+            color: #fff;
+            border-color: #16a34a;
         }
 
         /* Header */
         header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: saturate(180%) blur(12px);
+            -webkit-backdrop-filter: saturate(180%) blur(12px);
             border-bottom: 1px solid var(--border);
-            padding: 16px 0;
+            padding: 14px 0;
         }
 
         .container {
@@ -86,40 +148,103 @@
         }
 
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             font-size: 20px;
             font-weight: 700;
             color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
         }
 
         .nav-links a {
-            margin-left: 24px;
             color: var(--text-light);
             font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links a.gh {
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 8px;
+        }
+
+        .nav-links a.gh:hover {
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         /* Hero */
         .hero {
             text-align: center;
-            padding: 80px 0 60px;
+            padding: 88px 0 72px;
+            background:
+                radial-gradient(600px 300px at 50% 0%, var(--primary-light), transparent 70%);
         }
 
         .hero h1 {
-            font-size: 48px;
+            font-size: 52px;
             font-weight: 800;
             margin-bottom: 16px;
-            letter-spacing: -1px;
+            letter-spacing: -1.5px;
+            background: linear-gradient(135deg, var(--text), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .hero .slogan {
             font-size: 20px;
             color: var(--text-light);
+            margin-bottom: 12px;
+        }
+
+        .hero .sub-slogan {
+            font-size: 15px;
+            color: var(--text-light);
             margin-bottom: 32px;
+        }
+
+        .hero .sub-slogan .dot {
+            margin: 0 8px;
+            color: var(--border);
         }
 
         .buttons {
             display: flex;
             gap: 16px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -129,32 +254,76 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.2s;
+            cursor: pointer;
         }
 
         .btn-primary {
             background: var(--primary);
             color: white;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
         }
 
         .btn-primary:hover {
             background: var(--primary-dark);
             text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
         }
 
         .btn-secondary {
-            background: var(--bg-alt);
+            background: var(--bg);
             color: var(--text);
             border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: var(--border);
+            background: var(--bg-alt);
+            border-color: var(--primary);
+            color: var(--primary);
             text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        /* 安装命令条 */
+        .install-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 32px;
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: "SFMono-Regular", Consolas, monospace;
+            font-size: 14px;
+        }
+
+        .install-bar code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .install-bar button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .install-bar button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
         }
 
         /* Section */
         section {
-            padding: 60px 0;
+            padding: 72px 0;
         }
 
         section.alt {
@@ -164,12 +333,20 @@
         h2 {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 32px;
+            margin-bottom: 12px;
             text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        .section-sub {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 40px;
+            font-size: 16px;
         }
 
         h3 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             margin-bottom: 12px;
         }
@@ -178,14 +355,35 @@
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            gap: 20px;
         }
 
         .feature {
             padding: 24px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius);
             background: var(--bg);
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+        }
+
+        .feature:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-light);
+        }
+
+        .feature .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 20px;
+            margin-bottom: 14px;
         }
 
         .feature p {
@@ -196,12 +394,18 @@
         /* Steps */
         .steps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 24px;
+            margin-bottom: 48px;
         }
 
         .step {
             text-align: center;
+            padding: 24px 16px;
+            border-radius: var(--radius);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
         }
 
         .step-number {
@@ -215,25 +419,55 @@
             color: white;
             font-weight: 700;
             margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        .step h3 {
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            color: var(--text-light);
+            font-size: 15px;
         }
 
         /* Commands */
         .commands {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
         }
 
         .command-card {
             padding: 24px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius);
             background: var(--bg);
+            box-shadow: var(--shadow);
+            transition: all 0.25s;
+        }
+
+        .command-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
         }
 
         .command-card h3 {
             font-family: "SFMono-Regular", Consolas, monospace;
             color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .command-card > p {
+            color: var(--text-light);
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .command-card pre {
+            padding: 14px;
+            padding-top: 14px;
+            font-size: 13px;
         }
 
         /* Docs links */
@@ -247,25 +481,45 @@
             display: block;
             padding: 20px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius);
             background: var(--bg);
-            transition: all 0.2s;
+            transition: all 0.25s;
+            box-shadow: var(--shadow);
         }
 
         .doc-link:hover {
             border-color: var(--primary);
             text-decoration: none;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
         }
 
         .doc-link strong {
             display: block;
             margin-bottom: 4px;
             color: var(--text);
+            font-size: 16px;
         }
 
         .doc-link span {
             font-size: 14px;
             color: var(--text-light);
+        }
+
+        /* CTA */
+        .cta {
+            text-align: center;
+            padding: 64px 0;
+        }
+
+        .cta h2 {
+            margin-bottom: 16px;
+        }
+
+        .cta p {
+            color: var(--text-light);
+            margin-bottom: 28px;
+            font-size: 16px;
         }
 
         /* Footer */
@@ -281,14 +535,52 @@
             color: var(--text-light);
         }
 
+        footer a:hover {
+            color: var(--primary);
+        }
+
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
         /* Responsive */
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
             .hero h1 {
-                font-size: 32px;
+                font-size: 38px;
             }
 
             .hero .slogan {
-                font-size: 16px;
+                font-size: 17px;
+            }
+
+            .nav-links {
+                gap: 14px;
+            }
+
+            .nav-links a:not(.gh) {
+                display: none;
+            }
+
+            h2 {
+                font-size: 26px;
+            }
+
+            section {
+                padding: 56px 0;
+            }
+
+            .hero {
+                padding: 64px 0 56px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 32px;
             }
 
             .buttons {
@@ -300,8 +592,10 @@
                 text-align: center;
             }
 
-            h2 {
-                font-size: 24px;
+            .install-bar {
+                font-size: 12px;
+                max-width: 100%;
+                overflow-x: auto;
             }
         }
     </style>
@@ -311,14 +605,15 @@
 <header>
     <div class="container">
         <nav>
-            <div class="logo">
+            <a href="#" class="logo">
                 <img src="assets/logo.svg">
-            </div>
+            </a>
             <div class="nav-links">
                 <a href="#features">特性</a>
                 <a href="#start">快速开始</a>
+                <a href="#tasks">内置任务</a>
                 <a href="#docs">文档</a>
-                <a href="https://github.com/melvek/TaskSSH">GitHub</a>
+                <a href="https://github.com/melvek/TaskSSH" class="gh" target="_blank" rel="noopener">GitHub</a>
             </div>
         </nav>
     </div>
@@ -329,9 +624,16 @@
     <div class="container">
         <h1>TaskSSH</h1>
         <p class="slogan">一条命令，驱动一批服务器，按你定义的流程干活。</p>
+        <p class="sub-slogan">
+            单文件<span class="dot">·</span>无依赖<span class="dot">·</span>YAML 驱动<span class="dot">·</span>跨平台
+        </p>
         <div class="buttons">
             <a href="#start" class="btn btn-primary">快速开始</a>
-            <a href="https://github.com/melvek/TaskSSH" class="btn btn-secondary">GitHub</a>
+            <a href="https://github.com/melvek/TaskSSH" class="btn btn-secondary" target="_blank" rel="noopener">GitHub</a>
+        </div>
+        <div class="install-bar">
+            <code id="install-cmd">go install github.com/melvek/TaskSSH@latest</code>
+            <button onclick="copyText('install-cmd', this)">复制</button>
         </div>
     </div>
 </div>
@@ -340,28 +642,35 @@
 <section id="features" class="alt">
     <div class="container">
         <h2>为什么用 TaskSSH</h2>
+        <p class="section-sub">比 Ansible 轻，比 Shell 脚本可维护</p>
         <div class="features">
             <div class="feature">
+                <div class="icon">⚙️</div>
                 <h3>任务编排</h3>
                 <p>不止能执行一条命令。把多个操作串成有序流程，一条命令搞定。</p>
             </div>
             <div class="feature">
+                <div class="icon">📄</div>
                 <h3>配置即文档</h3>
                 <p>整个流程写在 YAML 里，新人看配置就知道发布流程。</p>
             </div>
             <div class="feature">
+                <div class="icon">🧩</div>
                 <h3>原子能力</h3>
                 <p>command / push / fetch 三个 Action 自由组合。</p>
             </div>
             <div class="feature">
+                <div class="icon">🔀</div>
                 <h3>变量替换</h3>
                 <p>一套配置适配多套环境，同一任务部署到 prod / uat。</p>
             </div>
             <div class="feature">
+                <div class="icon">🛡️</div>
                 <h3>严格模式</h3>
                 <p>未解析的变量直接报错，避免命令跑到意外路径。</p>
             </div>
             <div class="feature">
+                <div class="icon">🔑</div>
                 <h3>多认证方式</h3>
                 <p>密码、公钥、私钥口令，或终端交互输入。</p>
             </div>
@@ -373,6 +682,7 @@
 <section id="start">
     <div class="container">
         <h2>三步上手</h2>
+        <p class="section-sub">从下载到执行，不超过 5 分钟</p>
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
@@ -391,8 +701,8 @@
             </div>
         </div>
 
-        <div style="margin-top: 48px;">
-            <h3 style="text-align: center; margin-bottom: 24px;">示例：发布流程</h3>
+        <div style="max-width: 760px; margin: 0 auto;">
+            <h3 style="text-align: center; margin-bottom: 20px;">示例：发布流程</h3>
             <pre><code>tasks:
   release:
     steps:
@@ -420,24 +730,25 @@
 </section>
 
 <!-- Built-in tasks -->
-<section class="alt">
+<section id="tasks" class="alt">
     <div class="container">
         <h2>内置任务</h2>
+        <p class="section-sub">三种原子 Action，覆盖绝大多数批量运维场景</p>
         <div class="commands">
             <div class="command-card">
                 <h3>command</h3>
                 <p>执行远程命令</p>
-                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh command prod -e "ls -la /opt"</code></pre>
+                <pre><code>taskssh command prod -e "ls -la /opt"</code></pre>
             </div>
             <div class="command-card">
                 <h3>push</h3>
                 <p>上传文件到远程</p>
-                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh push prod -f app.jar -d /opt/app/</code></pre>
+                <pre><code>taskssh push prod -f app.jar -d /opt/app/</code></pre>
             </div>
             <div class="command-card">
                 <h3>fetch</h3>
                 <p>从远程下载文件</p>
-                <pre style="margin-top: 12px; font-size: 13px;"><code>taskssh fetch prod -f /var/log/app.log -d ./logs/</code></pre>
+                <pre><code>taskssh fetch prod -f /var/log/app.log -d ./logs/</code></pre>
             </div>
         </div>
     </div>
@@ -447,16 +758,17 @@
 <section id="docs">
     <div class="container">
         <h2>文档</h2>
+        <p class="section-sub">更多用法、更新记录与贡献指南</p>
         <div class="docs-grid">
-            <a href="https://github.com/melvek/TaskSSH/blob/main/README.md" class="doc-link">
+            <a href="https://github.com/melvek/TaskSSH/blob/main/README.md" class="doc-link" target="_blank" rel="noopener">
                 <strong>README</strong>
                 <span>快速开始与命令总览</span>
             </a>
-            <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" class="doc-link">
+            <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" class="doc-link" target="_blank" rel="noopener">
                 <strong>CHANGELOG</strong>
                 <span>版本更新记录</span>
             </a>
-            <a href="https://github.com/melvek/TaskSSH/blob/main/CONTRIBUTING.md" class="doc-link">
+            <a href="https://github.com/melvek/TaskSSH/blob/main/CONTRIBUTING.md" class="doc-link" target="_blank" rel="noopener">
                 <strong>CONTRIBUTING</strong>
                 <span>贡献指南</span>
             </a>
@@ -464,15 +776,76 @@
     </div>
 </section>
 
+<!-- CTA -->
+<section class="alt cta">
+    <div class="container">
+        <h2>觉得有用？</h2>
+        <p>给 TaskSSH 点个 Star，让更多人发现它。</p>
+        <a href="https://github.com/melvek/TaskSSH" class="btn btn-primary" target="_blank" rel="noopener">⭐ Star on GitHub</a>
+    </div>
+</section>
+
 <!-- Footer -->
 <footer>
     <div class="container">
-        <p>
-            TaskSSH · MIT License ·
-            <a href="https://github.com/melvek/TaskSSH">GitHub</a>
-        </p>
+        <div class="footer-links">
+            <a href="#features">特性</a>
+            <a href="#start">快速开始</a>
+            <a href="#tasks">内置任务</a>
+            <a href="#docs">文档</a>
+            <a href="https://github.com/melvek/TaskSSH" target="_blank" rel="noopener">GitHub</a>
+        </div>
+        <p>TaskSSH · MIT License · Made with ❤️</p>
     </div>
 </footer>
+
+<script>
+    // 复制指定元素文本
+    function copyText(id, btn) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const text = el.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const original = btn.textContent;
+            btn.textContent = '已复制';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove('copied');
+            }, 1500);
+        }).catch(() => {
+            // 降级方案
+            const range = document.createRange();
+            range.selectNode(el);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+        });
+    }
+
+    // 给所有 pre 代码块自动加复制按钮
+    document.querySelectorAll('pre').forEach(pre => {
+        // 跳过已经手动加过的
+        if (pre.querySelector('.copy-btn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = '复制';
+        btn.onclick = () => {
+            const code = pre.querySelector('code');
+            if (!code) return;
+            navigator.clipboard.writeText(code.textContent).then(() => {
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        };
+        pre.appendChild(btn);
+    });
+</script>
 
 </body>
 </html>

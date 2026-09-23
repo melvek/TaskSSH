@@ -5,10 +5,20 @@
 
 ![logo](docs/assets/logo.svg)
 
-TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组服务器批量上传、下载文件及批量执行远程命令。
+TaskSSH 是一个单文件、无依赖的 SSH 批量运维工具。你只需要写一个 `inventory.yaml`，定义服务器组、认证信息和任务步骤，就能一次对多台服务器执行命令、上传文件、下载文件。
 
-采用「Action + Task」模型：Action 是原子能力（执行命令、上传文件、下载文件），Task 是由若干 Action 组成的有序任务。
-通过 `inventory.yaml` 清单文件定义服务器组、主机、认证信息、业务参数和任务，即可一键完成批量部署、文件推送与命令执行。
+如果你厌倦了用 Shell 循环 + `sshpass` 管理服务器，又觉得 Ansible 对小型场景太重，TaskSSH 可能正适合你。
+
+## 特性
+
+- **单文件、无依赖**：下载即用，不需要 Python、Agent 或复杂运行环境。
+- **YAML 声明式配置**：服务器、变量、任务步骤全部写在 `inventory.yaml`。
+- **Action + Task 模型**：`command`、`push`、`pull` 三种原子操作自由组合。
+- **密码加密存储**：使用 AES-256-GCM 加密密码，避免清单文件中出现明文。
+- **跨平台**：支持 Windows、Linux、macOS。
+- **并发执行**：可控制并发数，默认串行，适合不同风险偏好的场景。
+- **执行前确认**：默认执行前会确认，避免误操作；可用 `-y` 跳过。
+- **Shell Tab 补全**：支持 Bash / PowerShell 补全，提升日常使用效率。
 
 ---
 
@@ -26,46 +36,32 @@ TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组�
 
 ## 安装
 
-从 [GitHub Releases 页面](https://github.com/melvek/TaskSSH/releases) 下载对应平台的压缩包，解压即用。
+### 下载二进制
 
-包内包含：
+前往 [Releases](https://github.com/melvek/TaskSSH/releases) 页面，下载对应平台的压缩包：
 
-```
-taskssh.exe          （或 taskssh）
-inventory.yaml
-README.md
-```
+- Windows amd64
+- Linux amd64 / arm64
 
-### Shell 补全（可选）
+解压后得到：
 
-TaskSSH 支持 Tab 补全，提升使用体验。
+- `taskssh` / `taskssh.exe`
+- `inventory.yaml` 示例
+- `README.md`
 
-**PowerShell（Windows）**：
-
-```powershell
-taskssh completion powershell >> $PROFILE
-. $PROFILE
-```
-
-**Bash（Linux / macOS / Git Bash）**：
+Linux / macOS 下建议添加执行权限：
 
 ```bash
-echo 'source <(taskssh completion bash)' >> ~/.bashrc
-source ~/.bashrc
+chmod +x taskssh
 ```
 
-启用后：
-
-```bash
-taskssh com<TAB>          # 补全为 command
-taskssh command -<TAB>    # 补全 flag
-```
+Windows 下直接运行 `taskssh.exe` 即可
 
 ---
 
 ## 快速开始
 
-### 1. 创建清单文件 `inventory.yaml`
+### 1. 创建`inventory.yaml`清单文件 
 
 ```yaml
 global_vars:
@@ -100,17 +96,6 @@ tasks:
           command: "systemctl restart ${app_name}"
 ```
 
-说明：
-
-- `global_vars`：全局默认参数，被服务器组/主机继承
-- `servers`：服务器组定义
-    - `vars`：该组的变量，合并到组内所有主机
-    - `hosts`：主机列表，支持两种写法
-        - 简写：`主机名: IP`，使用全局参数
-        - 完整：`主机名: { host, port, username, password, ... }`
-- `tasks`：用户自定义任务，可覆盖内置任务，也可新增
-- 除 `host`、`port`、`username`、`password` 外的字段进入 `extraFields`，可用于变量替换
-
 ### 2. 加密密码（可选）
 
 明文密码存在安全风险。TaskSSH 使用 AES-256-GCM 加密，运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
@@ -120,13 +105,124 @@ taskssh encrypt "your-password"
 # 输出：xxxxx
 ```
 
+把输出的密文填入 `inventory.yaml` 的 `password` 字段。
+
+### 3. 执行任务
+
+```bash
+taskssh release prod-trans
+```
+
+TaskSSH 会读取 `inventory.yaml`，对 `prod-trans` 组下的所有主机依次执行 `release` 任务。
+
 ---
 
-## 命令总览
+## 清单文件 `inventory.yaml`
 
+TaskSSH 使用一个 YAML 文件描述所有内容。
+
+### `global_vars`
+
+全局默认变量，会被服务器组和主机继承。
+
+```yaml
+global_vars:
+  username: deploy
+  password: "encrypted-password"
+  app_name: myapp
 ```
-taskssh <task> <hosts> [options]
+
+### `servers`
+
+服务器组定义。每个组可以有自己的 `vars`，组内所有主机会合并这些变量。
+
+```yaml
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+      web2:
+        host: 192.168.1.11
+        port: 2222
+        username: root
+        password: "encrypted-password"
 ```
+
+主机支持两种写法：
+
+- 简写：`主机名: IP`
+- 完整写法：包含 `host`、`port`、`username`、`password` 等字段
+
+除 `host`、`port`、`username`、`password` 外的字段会进入 `extraFields`，可用于变量替换。
+
+### `tasks`
+
+任务由若干步骤组成，步骤按顺序执行。
+
+```yaml
+tasks:
+  release:
+    steps:
+      - name: 上传新版本
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+          backup: true
+
+      - name: 重启服务
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+```
+
+### Action 类型
+
+| Action | 说明 | 常用字段 |
+|---|---|---|
+| `command` | 在远程主机执行命令 | `command` |
+| `push` | 上传本地文件到远程主机 | `file`、`dest`、`force`、`backup` |
+| `fetch` | 从远程主机下载文件 | 参考项目示例 |
+
+---
+
+## 变量替换
+
+TaskSSH 支持在 `inventory.yaml` 中使用 `${变量名}` 进行替换。
+
+变量来源包括：
+
+- `global_vars`
+- `servers.<组名>.vars`
+- 主机自身的 `vars`
+- 执行时传入的变量
+
+示例：
+
+```yaml
+global_vars:
+  app_name: myapp
+
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+
+tasks:
+  restart:
+    steps:
+      - name: 重启服务
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+```
+
+---
 
 ### 全局选项
 
@@ -170,34 +266,6 @@ taskssh encrypt "your-password"
 
 # 解密
 taskssh decrypt "xxxxx"
-```
-
----
-
-## 认证方式
-
-支持以下认证方式，按优先级尝试：
-
-| 方式                     | 配置字段            | 说明                     |
-|------------------------|-----------------|------------------------|
-| 公钥认证                   | `identity_file` | 私钥文件路径，`~` 自动展开        |
-| keyboard-interactive   | 自动             | 多轮问答，兼容 OTP 类场景        |
-| 密码认证                   | `password`      | 加密存储，或运行时终端输入          |
-| 终端交互                   | 无配置             | 清单未配置时提示输入             |
-
-优先级：`publickey > keyboard-interactive > password > 终端输入`
-
-### 配置示例
-
-```yaml
-hosts:
-  prod_1:
-    host: 1.2.3.4
-    username: deploy
-    identity_file: ~/.ssh/id_rsa
-    passphrase: "密文"
-    # 公钥失败时回退密码
-    # password: "密文"
 ```
 
 ---
@@ -341,52 +409,40 @@ taskssh release prod-trans -i inventory.yaml -y
 | 3   | `hosts.<host>.vars`    | 单台服务器       |
 | 4   | `CLI` 参数               | 命令行指定，优先级最高 |
 
-### 严格模式
+---
 
-未解析的 `${var}` 会直接报错，不会静默保留。这样能避免拼写错误导致命令执行到意外路径。
+## 安全建议
 
-命令中如需 shell 变量，用不带花括号的写法：
-
-```bash
-taskssh command prod -e "echo $HOME"
-```
-
-`$HOME` 原样传给 shell，`${HOME}` 会被当作 TaskSSH 变量处理。
-
-### 内置变量
-
-| 变量     | 说明                 |
-|--------|--------------------|
-| `date` | 当前日期，格式 `yyyyMMdd` |
+- 使用 `taskssh encrypt` 加密密码，不要在 `inventory.yaml` 中保存明文。
+- 为批量操作创建专用账号，并遵循最小权限原则。
+- 生产环境执行前，先用 `taskssh -l` 确认目标服务器。
+- 高风险任务建议保持默认串行执行，确认无误后再提高并发。
+- 不要将包含加密密码的 `inventory.yaml` 提交到公开仓库。
 
 ---
 
-### 编译时注入密钥
+## 适用场景
 
-TaskSSH 的加密密钥默认写在代码中：
+TaskSSH 适合需要“对多台服务器做同样操作”的轻量场景：
 
-```go
-// internal/secret/crypto.go
-var secKey = "c7624159-ca0f-4078-9dc3-f4cd1da6a9f6"
-```
+- 批量上传 JAR / 二进制 / 配置文件
+- 批量重启服务、重载配置
+- 从多台服务器拉取日志
+- 批量执行诊断命令
+- 小团队 CI/CD 辅助脚本
+- 临时运维，不想引入重型配置管理工具
 
-如需自定义密钥（比如不同环境用不同密钥），有两种方式。
+---
 
-**方式 A：直接修改代码**
+## 与 Ansible、Shell 脚本的对比
 
-改这一行即可：
+| 方案 | 依赖 | 配置方式 | 学习成本 | 适合场景 |
+|---|---|---|---|---|
+| TaskSSH | 单文件，无依赖 | YAML | 低 | 小到中型批量运维 |
+| Ansible | Python 等 | YAML Playbook | 中 | 中到大型配置管理 |
+| Shell + sshpass | ssh、sshpass 等 | Shell 脚本 | 低但维护难 | 临时、一次性任务 |
 
-```go
-var secKey = "your-secret-key"
-```
-
-**方式 B：编译时注入**
-
-不改代码，通过 `-ldflags` 注入：
-
-```bash
-go build -ldflags "-X 'mestrap.com/taskssh/internal/secret.secKey=your-secret-key'" -o taskssh main.go
-```
+TaskSSH 不试图替代 Ansible。它更专注于“用最简单的方式，安全地批量执行 SSH 操作”。
 
 ---
 
