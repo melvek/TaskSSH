@@ -26,7 +26,6 @@ var (
 	yellow   = color.New(color.FgYellow)
 	cyan     = color.New(color.FgCyan)
 	purple   = color.New(color.FgMagenta)
-	bold     = color.New(color.Bold)
 	boldBlue = color.New(color.Bold, color.FgBlue)
 	boldRed  = color.New(color.Bold, color.FgRed)
 
@@ -132,7 +131,7 @@ func FailedItem(key, value string) {
 
 // Step 步骤输出。
 func Step(current, total int, name string) {
-	write(fmt.Sprintf("[STEP %d/%d] %s", current, total, name), boldBlue)
+	write(fmt.Sprintf("[STEP %d/%d] %s", current, total, name), cyan)
 }
 
 // Progress 主机进度输出。
