@@ -2,10 +2,9 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
+
 REM ============================================================
-REM  TaskSSH 多平台发布脚本
-REM  编译 Windows / Linux / macOS 五个平台
-REM  打包为 zip，内部二进制统一命名为 taskssh / taskssh.exe
+REM  TaskSSH Build Script
 REM ============================================================
 
 set BINARY=taskssh
@@ -143,7 +142,7 @@ echo ============================================================
 echo.
 
 endlocal
-pause
+
 goto :eof
 
 
