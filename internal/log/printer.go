@@ -111,22 +111,22 @@ func RawOutput(s string) {
 
 // Section 区块标题。
 func Section(title string) {
-	write("\n=== "+title+" ===", boldBlue)
+	write("\n>>> "+title, boldBlue)
 }
 
 // KeyValue 键值对输出。
 func KeyValue(key string, value any) {
-	write(fmt.Sprintf("  %s: %v", key, value), nil)
+	write(fmt.Sprintf("%s: %v", key, value), nil)
 }
 
 // ListItem 列表项输出。
 func ListItem(key, value string) {
-	write(fmt.Sprintf("  %-20s -> %s", key, value), cyan)
+	write(fmt.Sprintf("%-20s: %s", key, value), nil)
 }
 
 // FailedItem 失败项输出（红色）。
 func FailedItem(key, value string) {
-	write(fmt.Sprintf("  %-20s -> %s", key, value), red)
+	write(fmt.Sprintf("%-20s: %s", key, value), red)
 }
 
 // Step 步骤输出。
@@ -145,7 +145,7 @@ func Summary(total, success, failed int) {
 	KeyValue("Total tasks", total)
 	KeyValue("Succeeded", success)
 	if failed > 0 {
-		write(fmt.Sprintf("  Failed: %d", failed), boldRed)
+		write(fmt.Sprintf("Failed: %d", failed), boldRed)
 	} else {
 		KeyValue("Failed", "0")
 	}

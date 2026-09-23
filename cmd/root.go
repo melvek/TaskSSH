@@ -17,11 +17,13 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     utils.CLIName + " <task> [hosts...] [options]",
-	Short:   utils.ProjectName + " - 轻量级批量运维工具",
-	Long:    buildLongDescription(),
-	Version: utils.Version,
-	Args:    cobra.ArbitraryArgs,
+	Use:           utils.CLIName + " <task> [hosts...] [options]",
+	Short:         utils.ProjectName + " - 轻量级批量运维工具",
+	Long:          buildLongDescription(),
+	Version:       utils.Version,
+	Args:          cobra.ArbitraryArgs,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			cmd.Help()
