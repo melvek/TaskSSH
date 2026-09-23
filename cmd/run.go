@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -34,6 +35,10 @@ func runBuiltinTask(taskName string, hosts []string, with map[string]any) error 
 
 // executeTask 是公共执行入口。
 func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) error {
+	// 任务开始就清理密码缓存，保证本次任务不受上次影响
+	ssh.ClearPasswordCache()
+	defer ssh.ClearPasswordCache()
+
 	ov := task.Overrides{
 		Port:     portFlag,
 		Username: userFlag,
@@ -54,6 +59,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 	log.EmptyLine()
 
+	// -l 只列主机，直接返回
 	if listOnly {
 		return nil
 	}
@@ -73,9 +79,6 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	executor := task.NewExecutor(actions, concurrency)
 	results := executor.Run(t, entries, globalVars)
 
-	// 任务结束，清理密码缓存
-	defer ssh.ClearPasswordCache()
-
 	// 摘要
 	success, failed := 0, 0
 	var failedHosts []string
@@ -94,7 +97,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	if failed > 0 {
-		os.Exit(1)
+		return fmt.Errorf("%d host(s) failed", failed)
 	}
 	return nil
 }
@@ -102,8 +105,13 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 // confirm 询问用户。
 func confirm(message string) bool {
 	fmt.Printf("%s (y/n): ", message)
-	var input string
-	fmt.Scanln(&input)
+
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
+
 	input = strings.ToLower(strings.TrimSpace(input))
 	return input == "y" || input == "yes"
 }
