@@ -42,7 +42,12 @@ func (a *PushAction) Execute(ctx *Context) error {
 	backup := toBool(ctx.With["backup"])
 	policy := ssh.NewPolicy(force, backup)
 
-	log.Info("Upload %s to %s", local, dest)
+	localAbs, err := filepath.Abs(local)
+	if err != nil {
+		localAbs = local
+	}
+
+	log.Info("Upload %s to %s", localAbs, dest)
 
 	client, err := ssh.Connect(ctx.Host)
 	if err != nil {
@@ -50,14 +55,9 @@ func (a *PushAction) Execute(ctx *Context) error {
 	}
 	defer client.Close()
 
-	finalPath, err := client.Upload(local, dest, policy)
+	finalPath, err := client.Upload(localAbs, dest, policy)
 	if err != nil {
 		return err
-	}
-
-	localAbs, err := filepath.Abs(local)
-	if err != nil {
-		localAbs = local
 	}
 
 	log.Success("Uploaded: %s -> %s", localAbs, finalPath)

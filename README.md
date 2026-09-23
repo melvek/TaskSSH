@@ -18,6 +18,7 @@ TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组�
 |---|---|
 | Windows | amd64 |
 | Linux | amd64 |
+| Linux | arm64 |
 | macOS | amd64 (Intel) |
 | macOS | arm64 (Apple Silicon) |
 
@@ -31,16 +32,8 @@ TaskSSH 是一个基于 SSH 的轻量级批量运维工具，支持对同一组�
 
 ```
 taskssh.exe          （或 taskssh）
-inventory.example.yaml
+inventory.yaml
 README.md
-```
-
-也可以从源码编译：
-
-```bash
-git clone --depth 1 https://github.com/melvek/TaskSSH.git
-cd TaskSSH
-go build -o taskssh main.go
 ```
 
 ### Shell 补全（可选）
@@ -118,16 +111,14 @@ tasks:
 - `tasks`：用户自定义任务，可覆盖内置任务，也可新增
 - 除 `host`、`port`、`username`、`password` 外的字段进入 `extraFields`，可用于变量替换
 
-### 2. 加密密码
+### 2. 加密密码（可选）
 
-明文密码存在安全风险，TaskSSH 使用 AES-256-GCM 加密。运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
+明文密码存在安全风险。TaskSSH 使用 AES-256-GCM 加密，运行 `taskssh encrypt` 生成密文，填入 `inventory.yaml`。
 
 ```bash
 taskssh encrypt "your-password"
 # 输出：xxxxx
 ```
-
-注意：Go 版的密文格式与 Java 版不兼容，从 Java 版迁移时需重新加密。
 
 ---
 
@@ -146,9 +137,25 @@ taskssh <task> <hosts> [options]
 | `-P` | `--port`      | `int`    | 覆盖端口                      |
 | `-u` | `--user`      | `string` | 覆盖用户名                     |
 | `-p` | `--password`  | `string` | 覆盖密码（不推荐）                 |
+| `-c` | `--concurrency` | `int`  | 并发数，默认 `1`（串行）             |
 | `-y` | `--yes`       |          | 跳过执行前确认                   |
 | `-v` | `--version`   |          | 显示版本                      |
 | `-h` | `--help`      |          | 显示帮助（列出所有 Action）         |
+
+### 并发执行
+
+`-c/--concurrency` 控制并发连接数，默认 `1`（串行）。
+
+```bash
+# 串行（默认），输出实时、有序
+taskssh command prod -e "date"
+
+# 10 台并发
+taskssh command prod -e "date" -c 10
+
+# 50 台并发
+taskssh release prod -c 50 -y
+```
 
 ### 工具命令
 
@@ -354,12 +361,35 @@ taskssh command prod -e "echo $HOME"
 
 ---
 
-## 更新日志
+### 编译时注入密钥
 
-[CHANGELOG](CHANGELOG.md)
+TaskSSH 的加密密钥默认写在代码中：
+
+```go
+// internal/secret/crypto.go
+var secKey = "c7624159-ca0f-4078-9dc3-f4cd1da6a9f6"
+```
+
+如需自定义密钥（比如不同环境用不同密钥），有两种方式。
+
+**方式 A：直接修改代码**
+
+改这一行即可：
+
+```go
+var secKey = "your-secret-key"
+```
+
+**方式 B：编译时注入**
+
+不改代码，通过 `-ldflags` 注入：
+
+```bash
+go build -ldflags "-X 'mestrap.com/taskssh/internal/secret.secKey=your-secret-key'" -o taskssh main.go
+```
 
 ---
 
-## 许可证
+## 更新日志
 
-MIT License，详见 [LICENSE](LICENSE)。
+[CHANGELOG](CHANGELOG.md)
