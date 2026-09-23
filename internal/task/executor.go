@@ -82,6 +82,10 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 	return results
 }
 
+// runParallel 并发执行，按主机缓冲输出。
+//
+// 开始执行时，实时输出 [Processing x/y] 提示；
+// 执行过程中的日志写入缓冲，执行完一次性输出。
 func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
@@ -96,15 +100,15 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer func() { <-sem }()
 
 			// 开始执行时，实时输出一行提示（不进缓冲）
-			log.Info("[START] %s [%s]", entry.Name, entry.Host.Host)
+			log.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
 
 			var buf bytes.Buffer
 			log.SetOutput(&buf)
 
 			defer func() {
 				log.ResetOutput()
-				log.RawOutput(buf.String())
 
+				// 恢复 panic
 				if r := recover(); r != nil {
 					results[idx] = Result{
 						Host:    entry.Name,
@@ -112,10 +116,13 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 						Error:   fmt.Errorf("panic: %v", r),
 					}
 				}
+
+				// 输出缓冲
+				log.RawOutput(buf.String())
 			}()
 
-			log.EmptyLine()
-			log.Info("[START] %s [%s]", entry.Name, entry.Host.Host)
+			// 缓冲内：主机分隔标题
+			log.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
 
 			err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
 
@@ -141,17 +148,10 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
-	// 变量池：global -> host
-	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
-	for k, v := range globalVars {
-		vars[k] = v
-	}
-	for k, v := range hostVars {
-		vars[k] = v
-	}
+	vars := mergeVars(globalVars, hostVars)
 
 	for i, step := range task.Steps {
-		if e.concurrency == 1 && i > 0 {
+		if i > 0 {
 			log.EmptyLine()
 		}
 		log.Step(i+1, len(task.Steps), step.Name)
@@ -178,4 +178,16 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	}
 
 	return nil
+}
+
+// mergeVars 合并变量池：global -> host，host 优先。
+func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
+	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
+	for k, v := range globalVars {
+		vars[k] = v
+	}
+	for k, v := range hostVars {
+		vars[k] = v
+	}
+	return vars
 }
