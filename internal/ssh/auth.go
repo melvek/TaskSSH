@@ -38,55 +38,42 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 		methods = append(methods, ssh.PublicKeys(signer))
 	}
 
-	// 2. keyboard-interactive
-	pwd := host.Password
-	methods = append(methods, ssh.KeyboardInteractive(keyboardInteractive(&pwd)))
-
-	// 3. password 后备
+	// 2/3/4. 密码相关
 	if host.Password != "" {
-		methods = append(methods, ssh.Password(decryptPassword(host.Password)))
-	} else {
+		// 解密一次，闭包捕获值（不是指针）
+		pwd := decryptPassword(host.Password)
+
+		// keyboard-interactive：闭包捕获密码
+		methods = append(methods, ssh.KeyboardInteractive(func(
+			name, instruction string, questions []string, echos []bool,
+		) ([]string, error) {
+			if len(questions) == 0 {
+				return nil, nil
+			}
+			answers := make([]string, len(questions))
+			for i := range answers {
+				answers[i] = pwd
+			}
+			return answers, nil
+		}))
+
+		// password 后备
+		methods = append(methods, ssh.Password(pwd))
+	} else if host.IdentityFile == "" {
 		// 4. 终端交互
 		methods = append(methods, ssh.PasswordCallback(func() (string, error) {
 			return PromptPassword(), nil
 		}))
 	}
 
+	if len(methods) == 0 {
+		return nil, fmt.Errorf("no auth method configured for %s", host.Host)
+	}
+
 	return methods, nil
 }
 
-// keyboardInteractive 返回 keyboard-interactive 回调。
-//
-// 服务端可能发起多轮提问，此处对所有问题用同一个密码应答。
-func keyboardInteractive(password *string) ssh.KeyboardInteractiveChallenge {
-	return func(name, instruction string, questions []string, echos []bool) ([]string, error) {
-		if len(questions) == 0 {
-			return nil, nil
-		}
-
-		pwd := resolvePassword(password)
-
-		answers := make([]string, len(questions))
-		for i := range answers {
-			answers[i] = pwd
-		}
-		return answers, nil
-	}
-}
-
-// resolvePassword 返回密码：
-//   - password 非空：解密后使用
-//   - password 为空：从终端读取
-func resolvePassword(password *string) string {
-	if password != nil && *password != "" {
-		return decryptPassword(*password)
-	}
-	return PromptPassword()
-}
-
 // loadPrivateKey 加载私钥。
-//
-// path 支持 ~ 展开；encryptedPassphrase 可选，有则解密私钥。
 func loadPrivateKey(path, encryptedPassphrase string) (ssh.Signer, error) {
 	expanded := expandHome(path)
 
@@ -124,7 +111,6 @@ func decryptPassword(encrypted string) string {
 }
 
 // PromptPassword 从终端读取密码，结果缓存。
-// 多台主机共享，只提示一次。
 func PromptPassword() string {
 	cachedPasswordMu.Lock()
 	defer cachedPasswordMu.Unlock()
