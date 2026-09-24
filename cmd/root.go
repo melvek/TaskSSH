@@ -69,6 +69,7 @@ func init() {
 	rootCmd.AddCommand(commandCmd)
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(fetchCmd)
+	rootCmd.AddCommand(scriptCmd)
 }
 
 func buildLongDescription() string {

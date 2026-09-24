@@ -17,6 +17,7 @@ func NewRegistry() *Registry {
 	r.Register(&CommandAction{})
 	r.Register(&PushAction{})
 	r.Register(&FetchAction{})
+	r.Register(&ScriptAction{})
 	return r
 }
 

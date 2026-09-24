@@ -150,11 +150,17 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 	vars := mergeVars(globalVars, hostVars)
 
+	total := len(task.Steps)
+	showStep := total > 1
+
 	for i, step := range task.Steps {
 		if i > 0 {
 			log.EmptyLine()
 		}
-		log.Step(i+1, len(task.Steps), step.Name)
+
+		if showStep {
+			log.Step(i+1, len(task.Steps), step.Name)
+		}
 
 		act := e.actions.Get(step.Action)
 		if act == nil {
