@@ -1,4 +1,3 @@
-
 /* ============ 字体 ============ */
 @font-face {
     font-family: "PT Mono";
@@ -17,7 +16,7 @@
     --text: #0f172a;
     --text-light: #64748b;
     --border: #e2e8f0;
-    --code-bg: #0f172a;
+    --code-bg: #404246;
     --code-text: #e2e8f0;
     --radius: 10px;
     --shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -39,7 +38,7 @@
 
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 80px;
+    scroll-padding-top: 66px;
 }
 
 body {
@@ -72,11 +71,12 @@ pre {
     position: relative;
     background: var(--code-bg);
     color: var(--code-text);
-    padding: 20px;
-    padding-top: 44px;
+    padding: 16px 18px;
+    padding-top: 40px;
+    margin-bottom: 16px;
     border-radius: var(--radius);
     overflow-x: auto;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.6;
     text-align: left;
     font-family: var(--font-mono);
@@ -130,9 +130,16 @@ header {
 }
 
 .container {
-    max-width: 960px;
+    width: 100%;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 0 24px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 16px;
+    }
 }
 
 nav {
@@ -145,10 +152,13 @@ nav {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
     text-decoration: none;
+}
+
+.logo img {
+    height: 28px;
+    width: auto;
+    display: block;
 }
 
 .logo:hover {
@@ -400,11 +410,15 @@ section.alt {
     background: var(--bg-alt);
 }
 
+/* 首页 section 里的 h2 才居中 */
+section > .container > h2 {
+    text-align: center;
+}
+
 h2 {
     font-size: 32px;
     font-weight: 700;
     margin-bottom: 12px;
-    text-align: center;
     letter-spacing: -0.5px;
 }
 
@@ -731,5 +745,554 @@ footer .footer-links {
 
     .downloads {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.version-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 999px;
+    /*background: rgba(255, 255, 255, 0.2);*/
+    color: #fff;
+    line-height: 1.6;
+    vertical-align: middle;
+}
+
+.version-badge:empty {
+    display: none;
+}
+
+/* ============================================================
+   文档页
+   ============================================================ */
+.docs-page {
+    --sidebar-w: 240px;
+    --header-h: 61px;
+    --content-max: 760px;
+}
+
+.docs-page header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.docs-page .logo img {
+    height: 28px;
+    display: block;
+}
+
+.docs-page .docs-menu-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    line-height: 1;
+    margin-right: 12px;
+}
+
+/* 整体布局：左右两栏 */
+.docs-layout {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+}
+
+.docs-sidebar {
+    width: 220px;
+    min-width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    max-height: calc(100vh - var(--header-h) - 48px);
+    overflow-y: auto;
+    padding: 32px 0;
+}
+
+.docs-content {
+    flex: 1;
+    min-width: 0;
+    padding: 32px 0 120px;
+    font-size: 14.5px;
+    line-height: 1.7;
+}
+
+/* 中屏：侧边栏收窄 */
+@media (max-width: 1024px) {
+    .docs-layout {
+        gap: 28px;
+    }
+
+    .docs-sidebar {
+        width: 190px;
+        min-width: 190px;
+    }
+}
+
+/* 小屏：侧边栏变抽屉 */
+@media (max-width: 900px) {
+    .docs-layout {
+        padding: 0 20px;
+        gap: 0;
+    }
+
+    .docs-sidebar {
+        position: fixed;
+        top: var(--header-h);
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        min-width: 260px;
+        background: var(--bg);
+        border-right: 1px solid var(--border);
+        padding: 24px 16px 48px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 99;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.1);
+        max-height: none;
+    }
+
+    .docs-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .docs-content {
+        max-width: 100%;
+        margin-left: 0;
+        padding: 24px 0 100px;
+    }
+}
+
+/* 超小屏：进一步收紧 */
+@media (max-width: 480px) {
+    .container,
+    .docs-layout {
+        padding: 0 16px;
+    }
+
+    .docs-content h1 {
+        font-size: 21px;
+    }
+}
+
+.docs-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.docs-sidebar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+/* 每个分组：块级，纵向堆叠 */
+.docs-sidebar .nav-group {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.docs-sidebar .nav-group-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--text-light);
+    padding: 0 10px;
+    margin-bottom: 4px;
+}
+
+/* 列表：纵向 */
+.docs-sidebar .docs-nav-list {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+}
+
+.docs-sidebar .docs-nav-list li {
+    display: block;
+    margin: 2px 0;
+}
+
+.docs-sidebar .docs-nav-list a {
+    display: block;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    transition: all 0.15s;
+    line-height: 1.5;
+}
+
+.docs-sidebar .docs-nav-list a:hover {
+    background: rgba(37, 99, 235, 0.08);
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.docs-sidebar .docs-nav-list a.active {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+
+.docs-content h1 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+    line-height: 1.25;
+}
+
+.docs-content .lead {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-bottom: 32px;
+    line-height: 1.7;
+}
+
+.docs-content h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 40px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.3px;
+    scroll-margin-top: calc(var(--header-h) + 20px);
+}
+
+.docs-content h2:first-of-type {
+    margin-top: 0;
+}
+
+.docs-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 24px 0 8px;
+    scroll-margin-top: calc(var(--header-h) + 20px);
+}
+
+.docs-content h4 {
+    font-size: 14.5px;
+    font-weight: 600;
+    margin: 18px 0 6px;
+}
+
+.docs-content p {
+    margin-bottom: 12px;
+}
+
+.docs-content ul,
+.docs-content ol {
+    margin: 0 0 12px 20px;
+}
+
+.docs-content li {
+    margin-bottom: 4px;
+}
+
+/* 提示框 */
+.callout {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    /* border-left: 3px solid var(--primary); */
+    background: var(--primary-light);
+    margin: 0 0 16px;
+    font-size: 13.5px;
+}
+
+.callout .co-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.callout p {
+    margin: 0;
+}
+
+.callout.warn {
+    border-left-color: #f59e0b;
+    background: #fef3c7;
+}
+
+.callout.danger {
+    border-left-color: #ef4444;
+    background: #fee2e2;
+}
+
+.callout.tip {
+    border-left-color: #16a34a;
+    background: #dcfce7;
+}
+
+/* 表格 */
+.docs-content .table-wrap {
+    overflow-x: auto;
+    margin: 0 0 16px;
+}
+
+.docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.docs-content th,
+.docs-content td {
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.docs-content th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.docs-content td code {
+    white-space: nowrap;
+}
+
+/* 锚点偏移 */
+.docs-content .anchor {
+    display: block;
+    position: relative;
+    top: calc(-1 * (var(--header-h) + 20px));
+    visibility: hidden;
+}
+
+/* 返回顶部 */
+.back-top {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s;
+    z-index: 90;
+    font-family: inherit;
+}
+
+.back-top.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-top:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+/* 移动端遮罩 */
+.docs-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    z-index: 98;
+}
+
+.docs-overlay.show {
+    display: block;
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+    .docs-content {
+        margin-left: 24px;
+        padding: 32px 0 100px;
+    }
+}
+
+@media (max-width: 900px) {
+    .docs-page .docs-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .docs-layout {
+        padding: 0 20px;
+    }
+
+    .docs-sidebar {
+        position: fixed;
+        top: var(--header-h);
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        min-width: 260px;
+        max-width: 260px;
+        background: var(--bg);
+        border-right: 1px solid var(--border);
+        padding: 24px 16px 48px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 99;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.1);
+        max-height: none;
+    }
+
+    .docs-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .docs-content {
+        margin-left: 0;
+        padding: 24px 0 100px;
+        max-width: 100%;
+    }
+
+    .docs-content h1 {
+        font-size: 24px;
+    }
+
+    .docs-content h2 {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .docs-content h1 {
+        font-size: 21px;
+    }
+
+    .docs-content th,
+    .docs-content td {
+        padding: 6px 8px;
+        font-size: 12.5px;
+    }
+
+    .back-top {
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
+/* 文档页侧边栏内的 nav 必须回到块级纵向 */
+.docs-sidebar nav {
+    display: block !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+}
+
+/* ============ Prism 集成 ============ */
+/* 让 Prism 高亮融入现有代码块样式 */
+
+pre[class*="language-"],
+code[class*="language-"] {
+    background: none;
+    text-shadow: none;
+    font-family: var(--font-mono);
+    font-size: inherit;
+    line-height: inherit;
+}
+
+pre[class*="language-"] {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 18px;
+    padding-top: 40px;   /* 给复制按钮留位置 */
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: left;
+}
+
+code[class*="language-"] {
+    color: var(--code-text);
+    white-space: pre;
+}
+
+/* ============ 对比表格 ============ */
+.table-wrap {
+    overflow-x: auto;
+    margin: 0 0 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    box-shadow: var(--shadow);
+}
+
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 640px;
+}
+
+.table-wrap th,
+.table-wrap td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.table-wrap th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text);
+    position: sticky;
+    top: 0;
+}
+
+.table-wrap tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-wrap tbody tr:hover {
+    background: var(--bg-alt);
+}
+
+.table-wrap td code {
+    white-space: nowrap;
+}
+
+/* 移动端收紧 */
+@media (max-width: 768px) {
+    .table-wrap {
+        border-radius: 8px;
+    }
+
+    .table-wrap th,
+    .table-wrap td {
+        padding: 8px 10px;
+        font-size: 12.5px;
     }
 }

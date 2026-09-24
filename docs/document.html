@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档 - TaskSSH</title>
+    <meta name="description" content="TaskSSH 官方文档：inventory.yaml 清单定义、task 任务编排、内置 action、变量替换与执行控制。">
+    <meta name="keywords" content="TaskSSH,文档,SSH,批量运维,inventory.yaml,task">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    
+    <link rel="stylesheet" href="assets/prism.css">
+    <link rel="stylesheet" href="assets/style.css">
+
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="docs-page">
+
+<header>
+    <div class="container">
+        <nav>
+            <button class="docs-menu-toggle" id="docsMenuToggle"
+                    onclick="toggleSidebar()" aria-label="打开目录">☰</button>
+            <a href="index.html" class="logo">
+                <img src="assets/logo.svg" alt="TaskSSH">
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features">特性</a>
+                <a href="index.html#start">快速开始</a>
+                <a href="index.html#tasks">内置任务</a>
+                <a href="document.html">文档</a>
+                <a href="https://github.com/melvek/TaskSSH" class="gh" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<div class="docs-layout">
+
+    <aside class="docs-sidebar" id="docsSidebar">
+        <nav>
+            <div class="nav-group">
+                <div class="nav-group-title">开始</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#intro">简介</a></li>
+                    <li><a href="#install">安装</a></li>
+                    <li><a href="#quickstart">快速开始</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">清单配置</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#concept">inventory.yaml</a></li>
+                    <li><a href="#inventory-global">global_vars</a></li>
+                    <li><a href="#inventory-servers">servers</a></li>
+                    <li><a href="#inventory-tasks">tasks</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">任务定义</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#task-step">step 字段</a></li>
+                    <li><a href="#task-compose">组合内置 action</a></li>
+                    <li><a href="#task-example">完整示例</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">Action</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#action-command">command</a></li>
+                    <li><a href="#action-push">push</a></li>
+                    <li><a href="#action-fetch">fetch</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">执行控制</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#serial">串行执行</a></li>
+                    <li><a href="#parallel">并行执行</a></li>
+                    <li><a href="#concurrency">并发数控制</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">进阶</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#variables">变量替换</a></li>
+                    <li><a href="#multi-env">多环境</a></li>
+                    <li><a href="#auth">认证方式</a></li>
+                    <li><a href="#cli">命令行选项</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title">其他</div>
+                <ul class="docs-nav-list">
+                    <li><a href="#faq">常见问题</a></li>
+                    <li><a href="#changelog">更新日志</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="docs-content">
+
+        <h2 id="intro">TaskSSH 文档</h2>
+        <p class="lead">
+            TaskSSH 是一个单文件、无外部依赖的 SSH 批量运维工具。其配置模型由两部分构成：
+            一份 <code>inventory.yaml</code> 清单文件，用于声明服务器组、主机及变量；
+            以及清单中的 <code>tasks</code> 段，用于将一个或多个 action 编排为有序的执行流程。
+            用户通过指定任务名与目标主机组，即可对多台服务器批量执行命令、上传与下载文件。
+        </p>
+
+        <h2 id="install">安装</h2>
+
+        <h3>下载预编译二进制</h3>
+        <p>前往 <a href="https://github.com/melvek/TaskSSH/releases" target="_blank" rel="noopener">Releases</a> 页面，根据目标平台下载对应的压缩包：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>平台</th><th>架构</th><th>文件名</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Windows</td><td>amd64</td><td><code>taskssh-windows-amd64.zip</code></td></tr>
+                    <tr><td>Linux</td><td>amd64</td><td><code>taskssh-linux-amd64.zip</code></td></tr>
+                    <tr><td>Linux</td><td>arm64</td><td><code>taskssh-linux-arm64.zip</code></td></tr>
+                    <tr><td>macOS</td><td>Intel</td><td><code>taskssh-darwin-amd64.zip</code></td></tr>
+                    <tr><td>macOS</td><td>Apple Silicon</td><td><code>taskssh-darwin-arm64.zip</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>解压后获取可执行文件。在 Linux / macOS 环境下，需赋予执行权限：</p>
+
+        <pre class="language-bash"><code>chmod +x taskssh
+./taskssh --help</code></pre>
+
+        <h3>从源码构建</h3>
+        <p>需 Go 1.22 及以上版本：</p>
+
+        <pre class="language-bash"><code>git clone https://github.com/melvek/TaskSSH.git
+cd TaskSSH
+go build -o taskssh main.go</code></pre>
+
+        <h3>Shell 补全（可选）</h3>
+
+        <pre class="language-bash"><code># PowerShell
+taskssh completion powershell >> $PROFILE
+
+# Bash
+echo 'source <(taskssh completion bash)' >> ~/.bashrc
+
+# Zsh
+echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
+
+        <h2 id="quickstart">快速开始</h2>
+
+        <p>标准使用流程包含三个阶段：编写清单、定义任务、执行任务。</p>
+
+        <h3>1. 编写最小清单</h3>
+
+        <pre class="language-yaml"><code>global_vars:
+  username: deploy
+  password: "encrypted-password"
+
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+
+tasks:
+  release:
+    steps:
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/app.jar"
+          dest: "${service_path}"
+          force: true
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart myapp"</code></pre>
+
+        <h3>2. 加密密码（可选）</h3>
+
+        <pre class="language-bash"><code>taskssh encrypt "your-password"</code></pre>
+
+        <p>将输出密文填入清单的 <code>password</code> 字段。</p>
+
+        <h3>3. 执行任务</h3>
+
+        <pre class="language-bash"><code>taskssh release prod -y</code></pre>
+
+        <p>
+            TaskSSH 读取 <code>inventory.yaml</code>，对 <code>prod</code> 组下所有主机
+            依次执行 <code>release</code> 任务。执行过程中输出每台主机的执行状态，结束后
+            输出成功/失败摘要。
+        </p>
+
+        <div class="callout tip">
+            <span class="co-icon">💡</span>
+            <p>
+                除清单驱动模式外，TaskSSH 亦支持免清单的临时执行方式。该模式适用于单次排查类操作，
+                不具备配置复用能力。生产环境建议始终采用清单 + 任务的方式。
+            </p>
+        </div>
+
+        <h2 id="concept">inventory.yaml</h2>
+
+        <p>TaskSSH 的配置模型由两个对象构成：</p>
+
+        <ul>
+            <li><strong>inventory</strong>：即 <code>inventory.yaml</code> 清单文件，用于声明服务器组、主机及变量。</li>
+            <li><strong>task</strong>：清单中 <code>tasks</code> 段定义的执行流程，由一个或多个有序 step 组成。</li>
+        </ul>
+
+        <p>执行任务时，用户指定任务名与目标主机组，TaskSSH 按以下流程处理：</p>
+
+        <ol>
+            <li>从 inventory 中解析目标主机列表；</li>
+            <li>按优先级合并 global / 组 / 主机三级变量，生成每台主机的变量池；</li>
+            <li>按声明顺序执行 task 中各 step；</li>
+            <li>每台主机独立执行，任务结束后汇总成功与失败结果。</li>
+        </ol>
+
+        <p>
+            内置的 <code>command</code> / <code>push</code> / <code>fetch</code> 既可作为独立子命令调用，
+            亦可作为 task 中 step 的 <code>action</code> 使用。
+        </p>
+
+        <p>清单文件由三个顶层段组成：</p>
+
+        <pre class="language-yaml"><code>global_vars:   # 全局变量，由所有主机与任务继承
+servers:       # 服务器组与主机定义
+tasks:         # 任务定义，包含有序步骤</code></pre>
+
+        <p>以下各节对三个段分别进行说明。</p>
+
+        <h2 id="inventory-global">global_vars</h2>
+
+        <p>
+            <code>global_vars</code> 定义全局默认值。其字段结构与主机定义一致，包含
+            <code>host</code>、<code>port</code>、<code>username</code>、<code>password</code>、
+            <code>identity_file</code>、<code>passphrase</code> 等连接相关字段；除这些专有字段外，
+            其余字段将作为变量进入变量池。
+        </p>
+
+        <pre class="language-yaml"><code>global_vars:
+  username: deploy
+  password: "encrypted-password"
+  app_name: myapp
+  version: 1.0.0</code></pre>
+
+        <p>
+            上例中，<code>username</code> 与 <code>password</code> 为连接凭据，用于 SSH 认证；
+            <code>app_name</code> 与 <code>version</code> 为用户自定义变量，可在任务中通过
+            <code>${app_name}</code> 语法引用。
+        </p>
+
+        <h2 id="inventory-servers">servers</h2>
+
+        <p>
+            <code>servers</code> 段定义服务器组。每个组可声明自己的 <code>vars</code>，
+            组内所有主机会继承这些变量。主机可选用简写或完整写法声明。
+        </p>
+
+        <pre class="language-yaml"><code>servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+      web2:
+        host: 192.168.1.11
+        port: 2222
+        username: root
+        password: "encrypted-password"
+
+  uat:
+    vars:
+      service_path: /opt/myapp-uat/
+    hosts:
+      uat1: 10.1.0.1</code></pre>
+
+        <h3>主机声明方式</h3>
+
+        <ul>
+            <li>
+                <strong>简写形式</strong>：<code>主机名: IP</code>。
+                端口、用户名、密码等字段自上层继承。
+            </li>
+            <li>
+                <strong>完整形式</strong>：包含 <code>host</code>、<code>port</code>、
+                <code>username</code>、<code>password</code>、<code>identity_file</code>、
+                <code>passphrase</code> 等字段。
+            </li>
+        </ul>
+
+        <p>
+            除上述专有字段外，其余字段将进入主机的 <code>Extra</code> 映射，
+            参与变量替换。例如为主机声明 <code>role: db</code>，任务中即可通过
+            <code>${role}</code> 引用。
+        </p>
+
+        <h3>变量合并优先级</h3>
+
+        <p>主机最终获得的变量池按以下顺序合并，优先级由低到高：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>层级</th><th>来源</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td><code>global_vars</code></td><td>全局默认值</td></tr>
+                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组级变量</td></tr>
+                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>主机级变量，优先级最高</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 id="inventory-tasks">tasks</h2>
+
+        <p>
+            <code>tasks</code> 段用于定义任务。每个任务具有唯一名称，由若干 <code>steps</code>
+            组成，step 按声明顺序执行。
+        </p>
+
+        <pre class="language-yaml"><code>tasks:
+  release:
+    description: "发布新版本"   # 可选
+    steps:
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+          backup: true
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+        delay: 5</code></pre>
+
+        <p>
+            上例中的 <code>release</code> 任务在执行时，将对 <code>prod</code> 组下
+            每台主机依次执行两个步骤：先上传文件，等待 5 秒，再执行服务重启命令。
+        </p>
+
+        <div class="callout">
+            <span class="co-icon">ℹ️</span>
+            <p>
+                <code>command</code> / <code>push</code> / <code>fetch</code> / <code>encrypt</code> /
+                <code>decrypt</code> 为保留命令名。在 <code>tasks</code> 段中定义同名任务不会生效，
+                因为 CLI 路由优先于任务查找。定义自定义任务时需使用其他任务名。
+            </p>
+        </div>
+
+        <h2 id="task-step">step 字段</h2>
+
+        <p>每个 step 表示一次 action 调用，其字段定义如下：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>字段</th><th>必填</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>name</code></td><td>否</td><td>步骤名称，仅用于日志输出</td></tr>
+                    <tr><td><code>action</code></td><td>是</td><td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code></td></tr>
+                    <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>${var}</code> 变量替换</td></tr>
+                    <tr><td><code>delay</code></td><td>否</td><td>本步骤执行后等待的秒数，默认 0</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            <code>with</code> 中的键名与对应 action 的 CLI 选项保持一致。例如
+            <code>push</code> 支持 <code>file</code> / <code>dest</code> / <code>force</code> /
+            <code>backup</code> 四个参数。
+        </p>
+
+        <h2 id="task-compose">组合内置 action</h2>
+
+        <p>
+            任务可由三种 action 自由组合而成。以下列出若干典型编排模式。
+        </p>
+
+        <h3>模式一：版本发布</h3>
+
+        <pre class="language-yaml"><code>tasks:
+  release:
+    steps:
+      - name: "备份当前版本"
+        action: command
+        with:
+          command: "cp ${service_path}${app_name}.jar ${service_path}${app_name}.jar.bak"
+
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+          backup: true
+
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+        delay: 5
+
+      - name: "健康检查"
+        action: command
+        with:
+          command: "curl -sf http://localhost:8080/health"</code></pre>
+
+        <h3>模式二：批量拉取日志</h3>
+
+        <pre class="language-yaml"><code>tasks:
+  pull-logs:
+    steps:
+      - name: "打包日志"
+        action: command
+        with:
+          command: "tar czf /tmp/app-logs.tar.gz /var/log/app/"
+
+      - name: "下载日志"
+        action: fetch
+        with:
+          file: "/tmp/app-logs.tar.gz"
+          dest: "./logs/"
+
+      - name: "清理临时文件"
+        action: command
+        with:
+          command: "rm -f /tmp/app-logs.tar.gz"</code></pre>
+
+        <h3>模式三：多环境复用同一任务</h3>
+
+        <p>
+            任务本身不与环境绑定，环境差异由组级变量承载。例如 <code>service_path</code>
+            在 <code>prod</code> 组为 <code>/opt/myapp/</code>，在 <code>uat</code> 组为
+            <code>/opt/myapp-uat/</code>，同一 <code>release</code> 任务即可分别对两个组执行。
+        </p>
+
+        <pre class="language-bash"><code>taskssh release prod -y
+taskssh release uat -y</code></pre>
+
+        <h2 id="task-example">完整示例</h2>
+
+        <p>以下为清单文件与任务的完整示例。</p>
+
+        <pre class="language-yaml"><code>global_vars:
+  username: deploy
+  password: "encrypted-password"
+  app_name: myapp
+  version: 1.0.0
+
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+      web2: 192.168.1.11
+
+  uat:
+    vars:
+      service_path: /opt/myapp-uat/
+    hosts:
+      uat1: 10.1.0.1
+
+tasks:
+  release:
+    steps:
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+          backup: true
+
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"
+        delay: 5</code></pre>
+
+        <p>执行方式：</p>
+
+        <pre class="language-bash"><code>taskssh release prod -y
+taskssh release uat -y</code></pre>
+
+        <h2 id="action-command">Action：command</h2>
+
+        <p>
+            在远程主机上执行指定命令。当远程命令返回的退出码非 0 时，该 step 判定为失败。
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-e</code></td><td><code>--execute</code></td><td>string</td><td>待执行的命令；亦可从清单的 <code>command</code> 字段读取</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code>taskssh command web-server-01 -e "ls -la /opt" -y</code></pre>
+
+        <p>作为 step 使用时，将命令写入 <code>with.command</code>：</p>
+
+        <pre class="language-yaml"><code>- name: "重启服务"
+  action: command
+  with:
+    command: "systemctl restart ${app_name}"</code></pre>
+
+        <div class="callout">
+            <span class="co-icon">ℹ️</span>
+            <p>
+                命令中的 <code>$VAR</code> 将原样传递给远程 shell 解析；<code>${VAR}</code>
+                则会被 TaskSSH 作为变量处理。
+            </p>
+        </div>
+
+        <h2 id="action-push">Action：push</h2>
+
+        <p>将本地文件上传至远程主机。不支持上传目录。</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-f</code></td><td><code>--file</code></td><td>file</td><td>本地文件路径</td></tr>
+                    <tr><td><code>-d</code></td><td><code>--dest</code></td><td>path</td><td>远程目标路径；亦可从变量 <code>service_path</code> 读取</td></tr>
+                    <tr><td><code>-F</code></td><td><code>--force</code></td><td>—</td><td>覆盖已存在的远程文件</td></tr>
+                    <tr><td><code>-B</code></td><td><code>--backup</code></td><td>—</td><td>覆盖前备份原文件</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code>taskssh push app-server -f app.jar -d /opt/app/ -y
+taskssh push prod-trans -f app.jar -F -B -y</code></pre>
+
+        <h4>路径与覆盖规则</h4>
+
+        <ol>
+            <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，最终路径为 <code>目录 + 本地文件名</code>。</li>
+            <li>若目标已存在且为目录，文件上传至该目录内。</li>
+            <li>若目标已存在且为文件：
+                <ul>
+                    <li>默认行为为报错；</li>
+                    <li><code>-F</code> 直接覆盖；</li>
+                    <li><code>-F -B</code> 备份原文件（追加时间戳）后覆盖。</li>
+                </ul>
+            </li>
+            <li>远程目录不存在时报错。程序不会自动创建远程目录，如有需要，可在任务中预先加入创建目录的 <code>command</code> 步骤。</li>
+            <li>不支持上传目录。当 <code>-f</code> 指向目录时直接报错。</li>
+        </ol>
+
+        <h2 id="action-fetch">Action：fetch</h2>
+
+        <p>
+            从远程主机下载文件至本地。<strong>不支持下载远程目录</strong>，需先在远程侧打包。
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-f</code></td><td><code>--file</code></td><td>path</td><td>远程文件路径</td></tr>
+                    <tr><td><code>-d</code></td><td><code>--dest</code></td><td>path</td><td>本地目标路径，默认 <code>./</code></td></tr>
+                    <tr><td><code>-F</code></td><td><code>--force</code></td><td>—</td><td>覆盖已存在的本地文件</td></tr>
+                    <tr><td><code>-B</code></td><td><code>--backup</code></td><td>—</td><td>覆盖前备份本地原文件</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code># 下载至目录（按主机标识分组存放）
+taskssh fetch prod -f /var/log/app.log -d ./logs/ -y
+
+# 下载至指定文件
+taskssh fetch prod_web_1 -f /var/log/app.log -d ./app.log -y
+
+# 覆盖并备份
+taskssh fetch prod -f /var/log/app.log -d ./logs/ -F -B -y</code></pre>
+
+        <h4>路径与覆盖规则</h4>
+
+        <ol>
+            <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，按主机标识分组存放：<code>dest/&lt;主机标识&gt;/&lt;文件名&gt;</code>。</li>
+            <li>若 <code>-d</code> 为文件路径，则直接下载至该文件。</li>
+            <li>本地文件已存在时：
+                <ul>
+                    <li>默认行为为报错；</li>
+                    <li><code>-F</code> 直接覆盖；</li>
+                    <li><code>-F -B</code> 备份本地原文件（追加时间戳）后覆盖。</li>
+                </ul>
+            </li>
+            <li>本地父目录不存在时自动创建。</li>
+            <li>远程路径为目录时直接报错。</li>
+        </ol>
+
+        <h2 id="serial">串行执行</h2>
+
+        <p>默认情况下，TaskSSH 以串行方式执行任务：</p>
+
+        <ul>
+            <li>主机之间：一台主机完成后再执行下一台；</li>
+            <li>主机内部：一个 step 完成后再执行下一个 step。</li>
+        </ul>
+
+        <p>
+            串行模式的特性为日志实时输出、失败可即时定位，适用于对执行顺序敏感的场景。
+        </p>
+
+        <h2 id="parallel">并行执行</h2>
+
+        <p>通过 <code>-c</code> 或 <code>--concurrency</code> 指定并发数：</p>
+
+        <pre class="language-bash"><code>taskssh release prod -c 5 -y</code></pre>
+
+        <p>上述命令表示：最多同时操作 5 台主机，一台完成后自动补充下一台。</p>
+
+        <div class="callout">
+            <span class="co-icon">ℹ️</span>
+            <p>
+                并行执行时，开始时实时输出 <code>[Processing x/y]</code> 提示；
+                每台主机执行过程中的日志先写入独立缓冲，执行完毕后统一输出，以避免多主机日志交错。
+            </p>
+        </div>
+
+        <h2 id="concurrency">并发数控制</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>并发数</th><th>适用场景</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>1</code>（默认）</td><td>生产发布、对顺序敏感的操作</td></tr>
+                    <tr><td><code>2-5</code></td><td>小规模集群的滚动操作</td></tr>
+                    <tr><td><code>10+</code></td><td>只读命令、日志收集、批量诊断</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code># 生产发布，串行执行
+taskssh release prod -y
+
+# 分批滚动，最多 3 台并发
+taskssh release prod -c 3 -y
+
+# 批量诊断，高并发
+taskssh command prod -e "df -h" -c 10 -y</code></pre>
+
+        <div class="callout tip">
+            <span class="co-icon">💡</span>
+            <p>
+                并发数并非越大越好。建议从 3～5 开始，结合实际网络与目标主机负载逐步调整。
+            </p>
+        </div>
+
+        <h2 id="variables">变量替换</h2>
+
+        <p>
+            TaskSSH 支持在 <code>inventory.yaml</code> 中使用 <code>${变量名}</code> 语法进行变量替换。
+        </p>
+
+        <h3>变量来源与优先级</h3>
+
+        <p>变量按以下优先级由低到高合并：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>层级</th><th>来源</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td><code>global_vars</code></td><td>全局默认值</td></tr>
+                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组级变量</td></tr>
+                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>主机级变量，优先级最高</td></tr>
+                    <tr><td>4</td><td>CLI <code>-P / -u / -p</code></td><td>仅覆盖端口 / 用户名 / 密码</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            注意：CLI 选项仅覆盖连接三要素，不会将 <code>-e / -f / -d</code> 注入变量池。
+            命令参数通过 <code>with</code> 传递给对应 action。
+        </p>
+
+        <h3>递归展开</h3>
+
+        <p>变量值本身可引用其他变量，最多递归展开 4 层。</p>
+
+        <pre class="language-yaml"><code>global_vars:
+  app_name: myapp
+  version: 1.0.0
+  package: "${app_name}-${version}.jar"   # 递归展开后的结果
+
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+
+tasks:
+  restart:
+    steps:
+      - name: "重启服务"
+        action: command
+        with:
+          command: "systemctl restart ${app_name}"</code></pre>
+
+        <h3>未解析变量的处理</h3>
+
+        <p>
+            TaskSSH 对变量替换采用严格模式：若某 <code>${变量名}</code> 在所有来源中均未定义，
+            执行将立即中断并报错，而非以空字符串替换后继续运行。
+        </p>
+
+        <div class="callout warn">
+            <span class="co-icon">⚠️</span>
+            <p>
+                例如 <code>rm -rf ${target_dir}</code>，若 <code>target_dir</code> 未定义，
+                该命令不会被执行。
+            </p>
+        </div>
+
+        <h3>shell 变量与 TaskSSH 变量</h3>
+
+        <p>若命令中需要引用 shell 变量，应使用不带花括号的写法：</p>
+
+        <pre class="language-bash"><code>taskssh command prod -e "echo $HOME" -y</code></pre>
+
+        <p>
+            <code>$HOME</code> 将原样传递至远程 shell；<code>${HOME}</code> 则被 TaskSSH
+            视为变量引用处理。
+        </p>
+
+        <h2 id="multi-env">多环境</h2>
+
+        <pre class="language-yaml"><code>servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+      env: prod
+    hosts:
+      prod1: 10.0.0.1
+      prod2: 10.0.0.2
+
+  uat:
+    vars:
+      service_path: /opt/myapp-uat/
+      env: uat
+    hosts:
+      uat1: 10.1.0.1</code></pre>
+
+        <pre class="language-bash"><code>taskssh release prod -y
+taskssh release uat -y</code></pre>
+
+        <h2 id="auth">认证方式</h2>
+
+        <p>TaskSSH 按以下顺序尝试认证方式：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>顺序</th><th>方式</th><th>配置字段</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>公钥认证</td><td><code>identity_file</code></td></tr>
+                    <tr><td>2</td><td>私钥口令</td><td><code>passphrase</code></td></tr>
+                    <tr><td>3</td><td>keyboard-interactive（以密码应答）</td><td><code>password</code></td></tr>
+                    <tr><td>4</td><td>password（后备）</td><td><code>password</code></td></tr>
+                    <tr><td>5</td><td>终端交互输入</td><td>未配置任何认证时</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-yaml"><code>hosts:
+  prod_1:
+    host: 1.2.3.4
+    username: deploy
+    identity_file: ~/.ssh/id_rsa
+    passphrase: "密文"
+    # 公钥认证失败时回退至密码认证
+    # password: "密文"</code></pre>
+
+        <p>
+            <code>~</code> 将自动展开为当前用户的 home 目录。<code>passphrase</code> 与
+            <code>password</code> 一样，建议使用 <code>taskssh encrypt</code> 加密后填写。
+        </p>
+
+        <h2 id="cli">命令行选项</h2>
+
+        <h3>全局选项</h3>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-i</code></td><td><code>--inventory</code></td><td>file</td><td>指定清单文件，默认 <code>inventory.yaml</code></td></tr>
+                    <tr><td><code>-l</code></td><td><code>--list</code></td><td>—</td><td>仅列出目标主机，不执行任务</td></tr>
+                    <tr><td><code>-P</code></td><td><code>--port</code></td><td>int</td><td>覆盖端口</td></tr>
+                    <tr><td><code>-u</code></td><td><code>--user</code></td><td>string</td><td>覆盖用户名</td></tr>
+                    <tr><td><code>-p</code></td><td><code>--password</code></td><td>string</td><td>覆盖密码（不推荐）</td></tr>
+                    <tr><td><code>-c</code></td><td><code>--concurrency</code></td><td>int</td><td>并发数，默认 1（串行）</td></tr>
+                    <tr><td><code>-y</code></td><td><code>--yes</code></td><td>—</td><td>跳过执行前确认</td></tr>
+                    <tr><td><code>-v</code></td><td><code>--version</code></td><td>—</td><td>显示版本信息</td></tr>
+                    <tr><td><code>-h</code></td><td><code>--help</code></td><td>—</td><td>显示帮助信息（列出所有子命令）</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>子命令</h3>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>命令</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>command</code></td><td>执行远程命令</td></tr>
+                    <tr><td><code>push</code></td><td>上传本地文件至远程主机</td></tr>
+                    <tr><td><code>fetch</code></td><td>从远程主机下载文件至本地</td></tr>
+                    <tr><td><code>encrypt</code></td><td>加密字符串</td></tr>
+                    <tr><td><code>decrypt</code></td><td>解密字符串</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>常用示例</h3>
+
+        <pre class="language-bash"><code># 执行自定义任务
+taskssh release prod -y
+
+# 指定清单文件
+taskssh release prod -i prod.yaml -y
+
+# 列出目标主机
+taskssh release prod -l
+
+# 覆盖端口与用户名
+taskssh release prod -P 2222 -u root -y
+
+# 并发执行
+taskssh release prod -c 5 -y
+
+# 免清单，直接对指定主机执行命令
+taskssh command 10.0.0.1 -u deploy -e "uptime" -y
+
+# 加密 / 解密密码
+taskssh encrypt "your-password"
+taskssh decrypt "xxxxx"</code></pre>
+
+        <h2 id="faq">常见问题</h2>
+
+        <h3>不编写 inventory.yaml 是否可以使用？</h3>
+        <p>
+            可以。<code>command</code> / <code>push</code> / <code>fetch</code> 支持通过位置参数
+            直接指定主机，并通过 <code>-u</code> / <code>-p</code> 传入认证信息。自定义任务则必须
+            依赖清单文件。
+        </p>
+
+        <h3>执行时报变量未解析错误，如何处理？</h3>
+        <p>
+            请检查该变量是否在 <code>global_vars</code>、<code>servers.vars</code> 或主机
+            <code>Extra</code> 中定义。未解析的变量会直接中断执行，属内置的严格策略。
+        </p>
+
+        <h3>为何在 tasks 段中定义 command 未生效？</h3>
+        <p>
+            <code>command</code> / <code>push</code> / <code>fetch</code> / <code>encrypt</code> /
+            <code>decrypt</code> 为保留命令名。CLI 路由优先于任务查找，因此同名任务不会被触发。
+            请改用其他任务名。
+        </p>
+
+        <h3>串行与并行应如何选择？</h3>
+        <p>
+            生产发布及对顺序敏感的操作建议采用串行（默认）；只读命令、批量诊断等场景可
+            通过 <code>-c</code> 提高并发。并发数建议从 3～5 开始。
+        </p>
+
+        <h3>任务执行失败时是否会中断？</h3>
+        <p>
+            默认情况下，失败将中断当前主机的后续步骤，其他主机继续执行。任务结束后输出
+            成功/失败摘要，并列出失败主机。
+        </p>
+
+        <h3>密码是否可以使用明文？</h3>
+        <p>
+            可以。TaskSSH 兼容明文密码，解密失败时按明文处理。生产环境建议使用
+            <code>taskssh encrypt</code> 加密。
+        </p>
+
+        <h2 id="changelog">更新日志</h2>
+
+        <p>完整更新记录见 <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>。</p>
+
+        <div class="callout">
+            <span class="co-icon">📌</span>
+            <p>
+                文档随版本更新。若发现与代码不一致之处，欢迎通过
+                <a href="https://github.com/melvek/TaskSSH/issues" target="_blank" rel="noopener">Issues</a>
+                反馈。
+            </p>
+        </div>
+
+    </main>
+</div>
+
+<div class="docs-overlay" id="docsOverlay" onclick="closeSidebar()"></div>
+
+<button class="back-top" id="backTop"
+        onclick="window.scrollTo({top:0,behavior:'smooth'})"
+        aria-label="返回顶部">↑</button>
+
+<script>
+    /* ============ 侧边栏抽屉 ============ */
+    function toggleSidebar() {
+        document.getElementById('docsSidebar').classList.toggle('open');
+        document.getElementById('docsOverlay').classList.toggle('show');
+    }
+
+    function closeSidebar() {
+        document.getElementById('docsSidebar').classList.remove('open');
+        const ov = document.getElementById('docsOverlay');
+        if (ov) ov.classList.remove('show');
+    }
+
+    /* ============ 点击导航后关闭抽屉 ============ */
+    document.querySelectorAll('.docs-sidebar .docs-nav-list a').forEach(a => {
+        a.addEventListener('click', () => {
+            if (window.innerWidth <= 900) {
+                closeSidebar();
+            }
+        });
+    });
+
+    /* ============ 返回顶部按钮 ============ */
+    const backTop = document.getElementById('backTop');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            backTop.classList.add('show');
+        } else {
+            backTop.classList.remove('show');
+        }
+    });
+
+    /* ============ 当前小节高亮 ============ */
+    const navLinks = document.querySelectorAll('.docs-sidebar .docs-nav-list a');
+
+    function highlightNav() {
+        const fromTop = window.scrollY + 100;
+        let currentId = '';
+
+        document.querySelectorAll('.docs-content h2[id]').forEach(h => {
+            if (h.offsetTop <= fromTop) {
+                currentId = h.id;
+            }
+        });
+
+        navLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + currentId);
+        });
+    }
+
+    window.addEventListener('scroll', highlightNav);
+    highlightNav();
+
+    /* ============ 代码块复制按钮 ============ */
+    document.querySelectorAll('.docs-content pre').forEach(pre => {
+        // 已有按钮就跳过
+        if (pre.querySelector('.copy-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.type = 'button';
+        btn.textContent = '复制';
+        btn.setAttribute('aria-label', '复制代码');
+
+        btn.addEventListener('click', () => {
+            const code = pre.querySelector('code');
+            if (!code) return;
+
+            const text = code.textContent;
+
+            // 优先用 Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    flashCopied(btn);
+                }).catch(() => {
+                    fallbackCopy(text, btn);
+                });
+            } else {
+                fallbackCopy(text, btn);
+            }
+        });
+
+        pre.appendChild(btn);
+    });
+
+    function flashCopied(btn) {
+        const original = '复制';
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = original;
+            btn.classList.remove('copied');
+        }, 1500);
+    }
+
+    function fallbackCopy(text, btn) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            flashCopied(btn);
+        } catch (e) {
+            console.error('copy failed', e);
+        }
+        document.body.removeChild(ta);
+    }
+</script>
+
+<script src="assets/prism.js"></script>
+
+</body>
+</html>
