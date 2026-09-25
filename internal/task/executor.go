@@ -10,6 +10,7 @@ import (
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/resolve"
+	"mestrap.com/taskssh/internal/ssh"
 )
 
 // Result 是单台主机的执行结果。
@@ -26,8 +27,6 @@ type Executor struct {
 }
 
 // NewExecutor 创建执行器。
-//
-// concurrency 为并发数，<=0 时按 1 处理。
 func NewExecutor(actions *action.Registry, concurrency int) *Executor {
 	if concurrency <= 0 {
 		concurrency = 1
@@ -83,9 +82,6 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 }
 
 // runParallel 并发执行，按主机缓冲输出。
-//
-// 开始执行时，实时输出 [Processing x/y] 提示；
-// 执行过程中的日志写入缓冲，执行完一次性输出。
 func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
@@ -99,7 +95,6 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			// 开始执行时，实时输出一行提示（不进缓冲）
 			log.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
 
 			var buf bytes.Buffer
@@ -108,7 +103,6 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer func() {
 				log.ResetOutput()
 
-				// 恢复 panic
 				if r := recover(); r != nil {
 					results[idx] = Result{
 						Host:    entry.Name,
@@ -117,11 +111,9 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 					}
 				}
 
-				// 输出缓冲
 				log.RawOutput(buf.String())
 			}()
 
-			// 缓冲内：主机分隔标题
 			log.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
 
 			err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
@@ -145,10 +137,18 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 }
 
 // runOnHost 对单台主机执行整条任务。
+//
+// 连接一次，整条任务复用；任务结束后关闭。
 func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
 	vars := mergeVars(globalVars, hostVars)
+
+	client, err := ssh.Connect(host)
+	if err != nil {
+		return fmt.Errorf("connect %s: %w", host.Host, err)
+	}
+	defer client.Close()
 
 	total := len(task.Steps)
 	showStep := total > 1
@@ -157,9 +157,8 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 		if i > 0 {
 			log.EmptyLine()
 		}
-
 		if showStep {
-			log.Step(i+1, len(task.Steps), step.Name)
+			log.Step(i+1, total, step.Name)
 		}
 
 		act := e.actions.Get(step.Action)
@@ -168,9 +167,10 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 		}
 
 		ctx := &action.Context{
-			Host: host,
-			Vars: vars,
-			With: step.With,
+			Host:   host,
+			Vars:   vars,
+			With:   step.With,
+			Client: client,
 		}
 
 		if err := act.Execute(ctx); err != nil {
