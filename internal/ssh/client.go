@@ -15,13 +15,10 @@ import (
 // DefaultPort 是默认 SSH 端口。
 const DefaultPort = 22
 
-// ConnectTimeout 是连接超时。
-const ConnectTimeout = 30 * time.Second
+// DefaultConnectTimeout 是默认连接超时。
+const DefaultConnectTimeout = 10 * time.Second
 
 // Client 包装 SSH 连接。
-//
-// 一个 Client 持有一条 SSH 连接和一个复用的 SFTP 会话。
-// Client 不是并发安全的，同一时刻只应被一个 goroutine 使用。
 type Client struct {
 	conn *ssh.Client
 	sftp *sftp.Client
@@ -29,9 +26,15 @@ type Client struct {
 }
 
 // Connect 建立 SSH 连接。
-func Connect(host *config.Host) (*Client, error) {
+//
+// timeout 为 0 时使用 DefaultConnectTimeout。
+func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
 	if host.Host == "" {
 		return nil, fmt.Errorf("host is empty")
+	}
+
+	if timeout <= 0 {
+		timeout = DefaultConnectTimeout
 	}
 
 	authMethods, err := buildAuthMethods(host)
@@ -48,7 +51,7 @@ func Connect(host *config.Host) (*Client, error) {
 		User:            host.Username,
 		Auth:            authMethods,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         ConnectTimeout,
+		Timeout:         timeout,
 	}
 
 	addr := net.JoinHostPort(host.Host, fmt.Sprintf("%d", port))
@@ -104,8 +107,6 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 }
 
 // ListFiles 递归列出远程目录下的所有文件。
-//
-// 返回完整远程路径，不含目录项。
 func (c *Client) ListFiles(root string) ([]string, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {

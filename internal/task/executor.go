@@ -22,18 +22,26 @@ type Result struct {
 
 // Executor 执行任务。
 type Executor struct {
-	actions     *action.Registry
-	concurrency int
+	actions        *action.Registry
+	concurrency    int
+	connectTimeout time.Duration
 }
 
 // NewExecutor 创建执行器。
-func NewExecutor(actions *action.Registry, concurrency int) *Executor {
+//
+// concurrency 为并发数，<=0 时按 1 处理。
+// connectTimeout 为连接超时秒数，<=0 时使用默认值。
+func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int) *Executor {
 	if concurrency <= 0 {
 		concurrency = 1
 	}
+	if connectTimeout <= 0 {
+		connectTimeout = 10
+	}
 	return &Executor{
-		actions:     actions,
-		concurrency: concurrency,
+		actions:        actions,
+		concurrency:    concurrency,
+		connectTimeout: time.Duration(connectTimeout) * time.Second,
 	}
 }
 
@@ -144,7 +152,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 	vars := mergeVars(globalVars, hostVars)
 
-	client, err := ssh.Connect(host)
+	client, err := ssh.Connect(host, e.connectTimeout)
 	if err != nil {
 		return fmt.Errorf("connect %s: %w", host.Host, err)
 	}

@@ -7,13 +7,14 @@ import (
 )
 
 var (
-	inventoryFile string
-	listOnly      bool
-	yesFlag       bool
-	portFlag      int
-	userFlag      string
-	passwordFlag  string
-	concurrency   int
+	inventoryFile  string
+	listOnly       bool
+	yesFlag        bool
+	portFlag       int
+	userFlag       string
+	passwordFlag   string
+	concurrency    int
+	connectTimeout int
 )
 
 var rootCmd = &cobra.Command{
@@ -35,7 +36,6 @@ var rootCmd = &cobra.Command{
 
 // Execute 是 CLI 入口。
 func Execute() error {
-	// 禁用命令字母排序，按 AddCommand 顺序显示
 	cobra.EnableCommandSorting = false
 	return rootCmd.Execute()
 }
@@ -44,10 +44,8 @@ func init() {
 
 	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\n")
 
-	// 隐藏 completion
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
-	// 全局 flag
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i",
 		utils.DefaultInventory, "Inventory file")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l",
@@ -62,8 +60,9 @@ func init() {
 		"", "Override password (not recommended)")
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c",
 		1, "Number of concurrent connections")
+	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "",
+		10, "Connection timeout in seconds")
 
-	// 子命令
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(commandCmd)

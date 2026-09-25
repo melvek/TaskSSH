@@ -35,7 +35,6 @@ func runBuiltinTask(taskName string, hosts []string, with map[string]any) error 
 
 // executeTask 是公共执行入口。
 func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) error {
-	// 任务开始就清理密码缓存，保证本次任务不受上次影响
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
@@ -59,7 +58,6 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 	log.EmptyLine()
 
-	// -l 只列主机，直接返回
 	if listOnly {
 		return nil
 	}
@@ -76,10 +74,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	actions := action.NewRegistry()
-	executor := task.NewExecutor(actions, concurrency)
+	executor := task.NewExecutor(actions, concurrency, connectTimeout)
 	results := executor.Run(t, entries, globalVars)
 
-	// 摘要
 	success, failed := 0, 0
 	var failedHosts []string
 	for _, r := range results {
