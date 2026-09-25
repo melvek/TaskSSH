@@ -30,6 +30,6 @@ var scriptCmd = &cobra.Command{
 func init() {
 	scriptCmd.Flags().StringVarP(&scriptFile, "file", "f", "", "Local script file")
 	scriptCmd.Flags().StringVarP(&scriptDest, "dest", "d", "/tmp", "Remote directory")
-	scriptCmd.Flags().BoolVarP(&scriptRemove, "remove", "R", false, "Remove script after execution")
+	scriptCmd.Flags().BoolVarP(&scriptRemove, "remove", "r", false, "Remove script after execution")
 	scriptCmd.Flags().BoolVarP(&scriptForce, "force", "F", false, "Overwrite existing script")
 }

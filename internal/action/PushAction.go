@@ -47,10 +47,9 @@ func (a *PushAction) Execute(ctx *Context) error {
 	}
 
 	force := toBool(ctx.With["force"])
-	backup := toBool(ctx.With["backup"])
 	useZip := toBool(ctx.With["zip"])
 
-	policy := ssh.NewPolicy(force, backup)
+	policy := ssh.NewPolicy(force)
 
 	if info.IsDir() {
 		if useZip {
