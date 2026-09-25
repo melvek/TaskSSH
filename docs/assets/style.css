@@ -563,7 +563,7 @@ h3 {
 /* ============ Commands ============ */
 .commands {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
@@ -971,7 +971,7 @@ footer .footer-links {
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
     letter-spacing: -0.3px;
-    scroll-margin-top: calc(var(--header-h) + 20px);
+    scroll-margin-top: 20px;
 }
 
 .docs-content h2:first-of-type {

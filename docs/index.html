@@ -51,7 +51,7 @@
             <div class="download-dropdown">
                 <button class="btn btn-primary" onclick="toggleDownloadMenu(event)">
                     Download
-                    <span class="version-badge" id="releaseVersion"></span>
+                    <span class="version-badge" id="releaseVersion">latest</span>
                     <span class="caret"></span>
                 </button>
                 <div class="download-menu" id="downloadMenu">
@@ -96,22 +96,22 @@
             <div class="feature">
                 <div class="icon">🧩</div>
                 <h3>原子能力</h3>
-                <p>内建 <code>command</code> / <code>push</code> / <code>fetch</code> 三种 action，可独立使用，亦可组合为流程。</p>
+                <p>内建 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> 四种 action，可独立使用，亦可组合为流程。</p>
             </div>
             <div class="feature">
-                <div class="icon">🔀</div>
-                <h3>变量替换</h3>
-                <p>三层变量（全局 / 组 / 主机）配合严格模式。同一配置适配多套环境，未解析变量将直接报错。</p>
+                <div class="icon">📁</div>
+                <h3>目录传输</h3>
+                <p><code>push</code> / <code>fetch</code> 支持目录。默认递归逐文件，加 <code>-z</code> 则打包传输。</p>
             </div>
             <div class="feature">
-                <div class="icon">🛡️</div>
-                <h3>严格模式</h3>
-                <p>未解析的变量直接报错，避免命令作用于非预期路径。</p>
+                <div class="icon">🔑</div>
+                <h3>密码加密</h3>
+                <p>AES-256-GCM 加密清单中的密码。密钥由用户管理，不硬编码在二进制中。</p>
             </div>
             <div class="feature">
-                <div class="icon">⚡</div>
-                <h3>并发执行</h3>
-                <p>通过 <code>-c</code> 指定并发数，日志按主机缓冲，避免交错输出。</p>
+                <div class="icon">🔍</div>
+                <h3>Dry-run</h3>
+                <p><code>--dry-run</code> 显示每台主机每个步骤将执行的内容，不实际执行，便于执行前确认。</p>
             </div>
         </div>
     </div>
@@ -120,12 +120,12 @@
 <section id="start">
     <div class="container">
         <h2>快速开始</h2>
-        <p class="section-sub">下载、定义清单、执行任务</p>
+        <p class="section-sub">创建密钥、定义清单、执行任务</p>
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
-                <h3>下载</h3>
-                <p>从 GitHub Releases 下载对应平台的二进制，或通过 <code>go build -o taskssh main.go</code> 从源码构建。</p>
+                <h3>创建密钥文件</h3>
+                <p>用于加密清单中的密码。只需创建一次：<code>openssl rand -base64 32 &gt; ~/.taskssh/vault-key</code></p>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
@@ -150,7 +150,6 @@
           file: "./dist/${app_name}-${version}.jar"
           dest: "${service_path}"
           force: true
-          backup: true
       - name: "重启服务"
         action: command
         with:
@@ -161,7 +160,7 @@
         with:
           command: "curl -sf http://localhost:8080/health"</code></pre>
             <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
-                执行：<code>taskssh release prod-trans -i inventory.yaml -y</code>
+                执行：<code>taskssh release prod -i inventory.yaml -y</code>
             </p>
         </div>
     </div>
@@ -170,7 +169,7 @@
 <section id="tasks" class="alt">
     <div class="container">
         <h2>内置任务</h2>
-        <p class="section-sub">三种原子 Action，覆盖常规批量运维场景</p>
+        <p class="section-sub">四种原子 Action，覆盖常规批量运维场景</p>
         <div class="commands">
             <div class="command-card">
                 <h3>command</h3>
@@ -179,17 +178,23 @@
             </div>
             <div class="command-card">
                 <h3>push</h3>
-                <p>上传文件至远程主机</p>
+                <p>上传文件或目录到远程</p>
                 <pre class="language-bash"><code>taskssh push prod -f app.jar -d /opt/app/</code></pre>
             </div>
             <div class="command-card">
                 <h3>fetch</h3>
-                <p>从远程主机下载文件</p>
+                <p>从远程下载文件或目录</p>
                 <pre class="language-bash"><code>taskssh fetch prod -f /var/log/app.log -d ./logs/</code></pre>
+            </div>
+            <div class="command-card">
+                <h3>script</h3>
+                <p>上传本地脚本并执行</p>
+                <pre class="language-bash"><code>taskssh script prod -f ./deploy.sh -r</code></pre>
             </div>
         </div>
     </div>
 </section>
+
 <section id="docs" class="alt">
     <div class="container">
         <h2>文档</h2>
@@ -197,7 +202,7 @@
         <div class="docs-grid">
             <a href="document.html" class="doc-link">
                 <strong>使用文档</strong>
-                <span>指定主机、清单、任务、认证</span>
+                <span>清单、任务、Action、变量、认证</span>
             </a>
             <a href="https://github.com/melvek/TaskSSH/blob/main/README.md" class="doc-link" target="_blank" rel="noopener">
                 <strong>README</strong>
@@ -229,7 +234,6 @@
             <a href="#features">特性</a>
             <a href="#start">快速开始</a>
             <a href="#tasks">内置任务</a>
-            <a href="#compare">对比</a>
             <a href="#docs">文档</a>
             <a href="https://github.com/melvek/TaskSSH" target="_blank" rel="noopener">GitHub</a>
         </div>
