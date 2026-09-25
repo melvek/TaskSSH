@@ -19,11 +19,9 @@ type Overrides struct {
 
 // HostEntry 是目标主机的一项。
 type HostEntry struct {
-	Name       string      // 显示名，组内主机是 "组名/主机名"
-	Host       config.Host // Host.Host 为最终连接用的 IP
-	Vars       resolve.Vars
-	InputHost  string // 用户原始输入或清单里写的主机标识
-	ResolvedIP string // 解析后的 IP，用于显示
+	Name string      // 显示名：组内主机为 "组名/主机名"，独立主机为输入值
+	Host config.Host // Host.Host 为最终连接用的 IP
+	Vars resolve.Vars
 }
 
 // ResolveHosts 解析目标主机列表。
@@ -37,12 +35,14 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	var entries []HostEntry
 
 	for _, name := range hostNames {
+		// 1. 组名
 		if group, ok := inv.Servers[name]; ok {
 			groupEntries := resolveGroup(name, &group, inv)
 			entries = append(entries, groupEntries...)
 			continue
 		}
 
+		// 2. "组名/主机名"
 		if strings.Contains(name, "/") {
 			entry, err := resolveGroupHost(name, inv)
 			if err != nil {
@@ -54,6 +54,7 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 			}
 		}
 
+		// 3. 组内主机名
 		entry, err := findHostInGroups(name, inv)
 		if err != nil {
 			return nil, err
@@ -63,6 +64,7 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 			continue
 		}
 
+		// 4. 独立主机
 		entries = append(entries, resolveStandalone(name, inv))
 	}
 
@@ -70,6 +72,7 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	return entries, nil
 }
 
+// resolveGroupHost 解析 "组名/主机名" 格式。
 func resolveGroupHost(name string, inv *config.Inventory) (*HostEntry, error) {
 	parts := strings.SplitN(name, "/", 2)
 	if len(parts) != 2 {
@@ -105,36 +108,33 @@ func resolveGroupHost(name string, inv *config.Inventory) (*HostEntry, error) {
 	return nil, fmt.Errorf("internal error: host %q not found after resolve", target)
 }
 
+// findHostInGroups 在所有组内查找同名主机。
 func findHostInGroups(name string, inv *config.Inventory) (*HostEntry, error) {
-	type match struct {
-		groupName string
-	}
-
-	var matches []match
+	var matchedGroups []string
 
 	for groupName, group := range inv.Servers {
 		if _, ok := group.Hosts[name]; ok {
-			matches = append(matches, match{groupName})
+			matchedGroups = append(matchedGroups, groupName)
 		}
 	}
 
-	if len(matches) == 0 {
+	if len(matchedGroups) == 0 {
 		return nil, nil
 	}
 
-	if len(matches) > 1 {
-		names := make([]string, 0, len(matches))
-		for _, m := range matches {
-			names = append(names, fmt.Sprintf("%s/%s", m.groupName, name))
+	if len(matchedGroups) > 1 {
+		sort.Strings(matchedGroups)
+		names := make([]string, 0, len(matchedGroups))
+		for _, g := range matchedGroups {
+			names = append(names, fmt.Sprintf("%s/%s", g, name))
 		}
-		sort.Strings(names)
 		return nil, fmt.Errorf(
 			"ambiguous host name %q, matched multiple groups: %v\n"+
 				"use \"group/host\" format to specify explicitly, e.g. %s",
 			name, names, names[0])
 	}
 
-	groupName := matches[0].groupName
+	groupName := matchedGroups[0]
 	group := inv.Servers[groupName]
 	groupEntries := resolveGroup(groupName, &group, inv)
 
@@ -149,6 +149,7 @@ func findHostInGroups(name string, inv *config.Inventory) (*HostEntry, error) {
 	return nil, nil
 }
 
+// applyOverrides 应用 CLI 覆盖。
 func applyOverrides(entries []HostEntry, ov Overrides) {
 	for i := range entries {
 		if ov.Port > 0 {
@@ -163,6 +164,12 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 	}
 }
 
+// resolveGroup 展开服务器组。
+//
+// 合并顺序（优先级从低到高）：
+//  1. global_vars
+//  2. group.vars
+//  3. host（主机级）
 func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) []HostEntry {
 	var entries []HostEntry
 
@@ -184,26 +191,21 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 			vars[k] = v
 		}
 
-		inputHost := host.Host
-		resolvedIP := resolveHostIP(inputHost)
-
-		// Host.Host 填最终连接用的 IP
-		if resolvedIP != "" {
-			host.Host = resolvedIP
+		if ip := resolveHostIP(host.Host); ip != "" {
+			host.Host = ip
 		}
 
 		entries = append(entries, HostEntry{
-			Name:       fmt.Sprintf("%s/%s", groupName, name),
-			Host:       host,
-			Vars:       vars,
-			InputHost:  inputHost,
-			ResolvedIP: resolvedIP,
+			Name: fmt.Sprintf("%s/%s", groupName, name),
+			Host: host,
+			Vars: vars,
 		})
 	}
 
 	return entries
 }
 
+// resolveStandalone 解析独立主机。
 func resolveStandalone(hostName string, inv *config.Inventory) HostEntry {
 	host := config.Host{
 		Host: hostName,
@@ -215,17 +217,14 @@ func resolveStandalone(hostName string, inv *config.Inventory) HostEntry {
 		vars[k] = v
 	}
 
-	resolvedIP := resolveHostIP(hostName)
-	if resolvedIP != "" {
-		host.Host = resolvedIP
+	if ip := resolveHostIP(hostName); ip != "" {
+		host.Host = ip
 	}
 
 	return HostEntry{
-		Name:       hostName,
-		Host:       host,
-		Vars:       vars,
-		InputHost:  hostName,
-		ResolvedIP: resolvedIP,
+		Name: hostName,
+		Host: host,
+		Vars: vars,
 	}
 }
 

@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"net"
 	"os"
 	"strings"
 
@@ -66,11 +65,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 
 	log.Section("Target hosts")
 	for _, e := range entries {
-		// 独立主机且输入是 IP：只显示 IP
-		if e.Name == e.InputHost && net.ParseIP(e.InputHost) != nil {
+		if e.Name == e.Host.Host {
 			log.Info("%s", e.Host.Host)
 		} else {
-			// 其他：显示 "Name : Host"
 			log.ListItem(e.Name, e.Host.Host)
 		}
 	}
