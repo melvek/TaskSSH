@@ -38,7 +38,7 @@ func (a *ScriptAction) Execute(ctx *Context) error {
 
 	log.Info("Upload script %s to %s", localAbs, remote)
 
-	policy := ssh.NewPolicy(params.force, false)
+	policy := ssh.NewPolicy(params.force)
 
 	finalPath, err := ctx.Client.Upload(localAbs, remote, policy)
 	if err != nil {

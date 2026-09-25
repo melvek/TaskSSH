@@ -26,8 +26,6 @@ var rawKey string
 var ErrNoKey = errors.New("no encryption key available")
 
 // SetRawKey 设置本次会话使用的密钥。
-//
-// 用于加密时先交互输入、再调用 Encrypt 的场景，避免 Encrypt 再次提示。
 func SetRawKey(key string) {
 	rawKey = key
 }
@@ -37,7 +35,7 @@ func ClearRawKey() {
 	rawKey = ""
 }
 
-// Encrypt 加密明文。
+// Encrypt 加密明文，返回 Base64 编码的密文。
 func Encrypt(plain string) (string, error) {
 	key, err := loadKey()
 	if err != nil {
@@ -63,7 +61,7 @@ func Encrypt(plain string) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Decrypt 解密密文。
+// Decrypt 解密 Base64 编码的密文。
 func Decrypt(encoded string) (string, error) {
 	key, err := loadKey()
 	if err != nil {
@@ -99,11 +97,6 @@ func Decrypt(encoded string) (string, error) {
 }
 
 // loadKey 派生 32 字节密钥。
-//
-// 优先级：
-//  1. 本次会话缓存的 rawKey
-//  2. --secret-key-file
-//  3. 交互输入
 func loadKey() ([]byte, error) {
 	raw, err := loadRawKey()
 	if err != nil {
@@ -126,10 +119,6 @@ func loadRawKey() (string, error) {
 }
 
 // readKeyFile 从文件读密钥。
-//
-// 支持两种形式：
-//   - 普通文本文件，内容即密钥
-//   - 可执行文件，执行输出作为密钥
 func readKeyFile(path string) (string, error) {
 	expanded := expandHome(path)
 

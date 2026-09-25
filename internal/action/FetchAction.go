@@ -144,7 +144,7 @@ func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
 		shellQuote(remoteZip),
 		shellQuote(baseName),
 	)
-	log.Info("Execute zip: %s", zipCmd)
+	log.Info("Execute zip files ...")
 
 	result, err := ctx.Client.Exec(zipCmd)
 	if err != nil {

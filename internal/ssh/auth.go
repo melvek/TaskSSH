@@ -40,10 +40,11 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 
 	// 2/3/4. 密码相关
 	if host.Password != "" {
-		// 解密一次，闭包捕获值（不是指针）
-		pwd := decryptPassword(host.Password)
+		pwd, err := decryptPassword(host.Password)
+		if err != nil {
+			return nil, err
+		}
 
-		// keyboard-interactive：闭包捕获密码
 		methods = append(methods, ssh.KeyboardInteractive(func(
 			name, instruction string, questions []string, echos []bool,
 		) ([]string, error) {
@@ -57,10 +58,8 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 			return answers, nil
 		}))
 
-		// password 后备
 		methods = append(methods, ssh.Password(pwd))
 	} else if host.IdentityFile == "" {
-		// 4. 终端交互
 		methods = append(methods, ssh.PasswordCallback(func() (string, error) {
 			return PromptPassword(), nil
 		}))
@@ -86,7 +85,11 @@ func loadPrivateKey(path, encryptedPassphrase string) (ssh.Signer, error) {
 		return ssh.ParsePrivateKey(data)
 	}
 
-	passphrase := decryptPassword(encryptedPassphrase)
+	passphrase, err := decryptPassword(encryptedPassphrase)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt passphrase: %w", err)
+	}
+
 	return ssh.ParsePrivateKeyWithPassphrase(data, []byte(passphrase))
 }
 
@@ -101,13 +104,23 @@ func expandHome(path string) string {
 	return path
 }
 
-// decryptPassword 尝试解密密码。解密失败时视为明文。
-func decryptPassword(encrypted string) string {
+// decryptPassword 解密清单中的密码。
+//
+// 强制要求密文：
+//   - 空字符串：返回空
+//   - 非空：必须是 'taskssh encrypt' 生成的密文
+//   - 解密失败：报错
+func decryptPassword(encrypted string) (string, error) {
+	if encrypted == "" {
+		return "", nil
+	}
+
 	plain, err := secret.Decrypt(encrypted)
 	if err != nil {
-		return encrypted
+		return "", fmt.Errorf(
+			"decrypt password: %w (ensure the value is encrypted by 'taskssh encrypt')", err)
 	}
-	return plain
+	return plain, nil
 }
 
 // PromptPassword 从终端读取密码，结果缓存。
