@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -15,78 +16,48 @@ type ScriptAction struct{}
 
 func (a *ScriptAction) Name() string { return "script" }
 
+type scriptParams struct {
+	file   string
+	dest   string
+	remove bool
+	force  bool
+}
+
 func (a *ScriptAction) Execute(ctx *Context) error {
-	// 1. 解析 file
-	fileRaw, ok := ctx.With["file"]
-	if !ok {
-		return fmt.Errorf("script action requires 'file' parameter")
-	}
-	fileStr := fmt.Sprintf("%v", fileRaw)
-	if fileStr == "" {
-		return fmt.Errorf("script action requires non-empty 'file' parameter")
-	}
-	local, err := ctx.Vars.Replace(fileStr)
+	params, err := parseScriptWith(ctx.With, ctx.Vars)
 	if err != nil {
 		return err
 	}
 
-	localAbs, err := filepath.Abs(local)
+	localAbs, err := filepath.Abs(params.file)
 	if err != nil {
-		return fmt.Errorf("resolve path %s: %w", local, err)
+		return fmt.Errorf("resolve path %s: %w", params.file, err)
 	}
 
-	// 2. 解析 dest，默认 /tmp
-	dest := "/tmp"
-	if destRaw, ok := ctx.With["dest"]; ok {
-		s := fmt.Sprintf("%v", destRaw)
-		if s != "" {
-			dest, err = ctx.Vars.Replace(s)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// 3. 解析 remove / force
-	remove := toBool(ctx.With["remove"])
-	force := toBool(ctx.With["force"])
-
-	policy := ssh.NewPolicy(force, false)
-
-	// 4. 计算远程最终路径：dest 以 / 结尾视为目录
-	remote := dest
-	if strings.HasSuffix(dest, "/") {
-		remote = path.Join(dest, filepath.Base(localAbs))
-	}
+	remote := resolveScriptPath(params.dest, localAbs)
 
 	log.Info("Upload script %s to %s", localAbs, remote)
 
-	client, err := ssh.Connect(ctx.Host)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+	policy := ssh.NewPolicy(params.force, false)
 
-	finalPath, err := client.Upload(localAbs, remote, policy)
+	finalPath, err := ctx.Client.Upload(localAbs, remote, policy)
 	if err != nil {
 		return err
 	}
 
-	// 5. 赋予执行权限
-	if _, err := client.Exec(fmt.Sprintf("chmod +x %s", shellQuote(finalPath))); err != nil {
+	if _, err := ctx.Client.Exec(fmt.Sprintf("chmod +x %s", shellQuote(finalPath))); err != nil {
 		return fmt.Errorf("chmod script: %w", err)
 	}
 
-	// 6. 执行脚本
 	cmd := shellQuote(finalPath)
-	if remove {
-		// 执行后删除，不论成功失败
-		cmd = fmt.Sprintf("%s; rc=$?; rm -f %s; exit $rc", cmd, shellQuote(finalPath))
+	if params.remove {
+		cmd = fmt.Sprintf("%s; rc=$?; rm -f %s; exit $rc",
+			cmd, shellQuote(finalPath))
 	}
 
 	log.Info("Execute script: %s", finalPath)
 
-	result, err := client.Exec(cmd)
+	result, err := ctx.Client.Exec(cmd)
 	if err != nil {
 		return err
 	}
@@ -96,7 +67,42 @@ func (a *ScriptAction) Execute(ctx *Context) error {
 	return nil
 }
 
-// shellQuote 对路径做最小限度的 shell 转义。
-func shellQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+func parseScriptWith(with map[string]any, vars resolve.Vars) (*scriptParams, error) {
+	fileRaw, ok := with["file"]
+	if !ok {
+		return nil, fmt.Errorf("script action requires 'file' parameter")
+	}
+	fileStr := fmt.Sprintf("%v", fileRaw)
+	if fileStr == "" {
+		return nil, fmt.Errorf("script action requires non-empty 'file' parameter")
+	}
+	file, err := vars.Replace(fileStr)
+	if err != nil {
+		return nil, err
+	}
+
+	dest := "/tmp"
+	if destRaw, ok := with["dest"]; ok {
+		s := fmt.Sprintf("%v", destRaw)
+		if s != "" {
+			dest, err = vars.Replace(s)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return &scriptParams{
+		file:   file,
+		dest:   dest,
+		remove: toBool(with["remove"]),
+		force:  toBool(with["force"]),
+	}, nil
+}
+
+func resolveScriptPath(dest, localAbs string) string {
+	if strings.HasSuffix(dest, "/") {
+		return path.Join(dest, filepath.Base(localAbs))
+	}
+	return dest
 }

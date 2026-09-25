@@ -29,12 +29,10 @@ func (c *Client) Exec(command string) (*ExecResult, error) {
 	}
 	defer session.Close()
 
-	// 当前 goroutine 的输出目标
 	out := log.GetOutput()
 
 	var stdout, stderr bytes.Buffer
 
-	// 同时写到输出目标和缓冲
 	session.Stdout = io.MultiWriter(out, &stdout)
 	session.Stderr = io.MultiWriter(out, &stderr)
 

@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/pkg/sftp"
 )
 
 // Download 从远程下载文件到指定的本地路径。
@@ -32,11 +30,10 @@ func (c *Client) Download(remotePath, localPath string) error {
 		return fmt.Errorf("local path is empty")
 	}
 
-	sftpClient, err := sftp.NewClient(c.conn)
+	sftpClient, err := c.getSFTP()
 	if err != nil {
-		return fmt.Errorf("create sftp: %w", err)
+		return err
 	}
-	defer sftpClient.Close()
 
 	info, err := sftpClient.Stat(remotePath)
 	if err != nil {

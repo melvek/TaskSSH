@@ -12,13 +12,19 @@ import (
 	"mestrap.com/taskssh/internal/config"
 )
 
+// DefaultPort 是默认 SSH 端口。
 const DefaultPort = 22
 
+// ConnectTimeout 是连接超时。
 const ConnectTimeout = 30 * time.Second
 
 // Client 包装 SSH 连接。
+//
+// 一个 Client 持有一条 SSH 连接和一个复用的 SFTP 会话。
+// Client 不是并发安全的，同一时刻只应被一个 goroutine 使用。
 type Client struct {
 	conn *ssh.Client
+	sftp *sftp.Client
 	host *config.Host
 }
 
@@ -54,25 +60,41 @@ func Connect(host *config.Host) (*Client, error) {
 	return &Client{conn: conn, host: host}, nil
 }
 
-// Close 关闭连接。
+// Close 关闭 SFTP 会话和 SSH 连接。
 func (c *Client) Close() error {
+	if c.sftp != nil {
+		c.sftp.Close()
+		c.sftp = nil
+	}
 	if c.conn != nil {
 		return c.conn.Close()
 	}
 	return nil
 }
 
-// Stat 返回远程路径的信息。
-func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
+// getSFTP 返回复用的 SFTP 会话，首次调用时创建。
+func (c *Client) getSFTP() (*sftp.Client, error) {
 	if c.conn == nil {
 		return nil, fmt.Errorf("client not connected")
 	}
+	if c.sftp != nil {
+		return c.sftp, nil
+	}
 
-	sftpClient, err := sftp.NewClient(c.conn)
+	s, err := sftp.NewClient(c.conn)
 	if err != nil {
 		return nil, fmt.Errorf("create sftp: %w", err)
 	}
-	defer sftpClient.Close()
+	c.sftp = s
+	return c.sftp, nil
+}
+
+// Stat 返回远程路径的信息。
+func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
+	sftpClient, err := c.getSFTP()
+	if err != nil {
+		return nil, err
+	}
 
 	info, err := sftpClient.Stat(remotePath)
 	if err != nil {
@@ -85,15 +107,10 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 //
 // 返回完整远程路径，不含目录项。
 func (c *Client) ListFiles(root string) ([]string, error) {
-	if c.conn == nil {
-		return nil, fmt.Errorf("client not connected")
-	}
-
-	sftpClient, err := sftp.NewClient(c.conn)
+	sftpClient, err := c.getSFTP()
 	if err != nil {
-		return nil, fmt.Errorf("create sftp: %w", err)
+		return nil, err
 	}
-	defer sftpClient.Close()
 
 	walker := sftpClient.Walk(root)
 
@@ -120,15 +137,10 @@ func (c *Client) ListFiles(root string) ([]string, error) {
 
 // MkdirAll 在远程递归创建目录。
 func (c *Client) MkdirAll(remotePath string) error {
-	if c.conn == nil {
-		return fmt.Errorf("client not connected")
-	}
-
-	sftpClient, err := sftp.NewClient(c.conn)
+	sftpClient, err := c.getSFTP()
 	if err != nil {
-		return fmt.Errorf("create sftp: %w", err)
+		return err
 	}
-	defer sftpClient.Close()
 
 	if err := sftpClient.MkdirAll(remotePath); err != nil {
 		return fmt.Errorf("mkdir %s: %w", remotePath, err)

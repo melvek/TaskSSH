@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+
 	"mestrap.com/taskssh/internal/log"
 )
 
@@ -49,11 +50,10 @@ func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (s
 		return "", fmt.Errorf("local path is a directory: %s", localPath)
 	}
 
-	sftpClient, err := sftp.NewClient(c.conn)
+	sftpClient, err := c.getSFTP()
 	if err != nil {
-		return "", fmt.Errorf("create sftp: %w", err)
+		return "", err
 	}
-	defer sftpClient.Close()
 
 	finalPath, err := resolveRemotePath(sftpClient, localPath, remotePath)
 	if err != nil {
