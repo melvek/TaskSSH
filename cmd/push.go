@@ -9,6 +9,7 @@ var (
 	pushDest   string
 	pushForce  bool
 	pushBackup bool
+	pushZip    bool
 )
 
 var pushCmd = &cobra.Command{
@@ -22,6 +23,7 @@ var pushCmd = &cobra.Command{
 			"dest":   pushDest,
 			"force":  pushForce,
 			"backup": pushBackup,
+			"zip":    pushZip,
 		}
 		return runBuiltinTask("push", args, with)
 	},
@@ -32,4 +34,5 @@ func init() {
 	pushCmd.Flags().StringVarP(&pushDest, "dest", "d", "", "Remote destination")
 	pushCmd.Flags().BoolVarP(&pushForce, "force", "F", false, "Overwrite existing files")
 	pushCmd.Flags().BoolVarP(&pushBackup, "backup", "B", false, "Backup before overwrite")
+	pushCmd.Flags().BoolVarP(&pushZip, "zip", "z", false, "Zip directory before upload (requires unzip on remote)")
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"mestrap.com/taskssh/internal/log"
-	"mestrap.com/taskssh/internal/ssh"
 )
 
 // CommandAction 执行远程命令。
@@ -30,13 +29,7 @@ func (a *CommandAction) Execute(ctx *Context) error {
 
 	log.Info("Execute command: %s", cmd)
 
-	client, err := ssh.Connect(ctx.Host)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
-	result, err := client.Exec(cmd)
+	result, err := ctx.Client.Exec(cmd)
 	if err != nil {
 		return err
 	}
