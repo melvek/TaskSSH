@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"mestrap.com/taskssh/internal/config"
-	"mestrap.com/taskssh/internal/secret"
 )
 
 // 密码缓存，避免多台主机重复输入。
@@ -26,6 +25,8 @@ var (
 //  2. keyboard-interactive（用密码应答）
 //  3. password（后备）
 //  4. 终端交互（未配置任何认证时）
+//
+// host 中的 Password 和 Passphrase 均为明文，由 task 层在合并时解密。
 func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
@@ -40,10 +41,7 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 
 	// 2/3/4. 密码相关
 	if host.Password != "" {
-		pwd, err := decryptPassword(host.Password)
-		if err != nil {
-			return nil, err
-		}
+		pwd := host.Password
 
 		methods = append(methods, ssh.KeyboardInteractive(func(
 			name, instruction string, questions []string, echos []bool,
@@ -73,7 +71,9 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 }
 
 // loadPrivateKey 加载私钥。
-func loadPrivateKey(path, encryptedPassphrase string) (ssh.Signer, error) {
+//
+// passphrase 为明文。
+func loadPrivateKey(path, passphrase string) (ssh.Signer, error) {
 	expanded := expandHome(path)
 
 	data, err := os.ReadFile(expanded)
@@ -81,13 +81,8 @@ func loadPrivateKey(path, encryptedPassphrase string) (ssh.Signer, error) {
 		return nil, fmt.Errorf("read key: %w", err)
 	}
 
-	if encryptedPassphrase == "" {
+	if passphrase == "" {
 		return ssh.ParsePrivateKey(data)
-	}
-
-	passphrase, err := decryptPassword(encryptedPassphrase)
-	if err != nil {
-		return nil, fmt.Errorf("decrypt passphrase: %w", err)
 	}
 
 	return ssh.ParsePrivateKeyWithPassphrase(data, []byte(passphrase))
@@ -102,25 +97,6 @@ func expandHome(path string) string {
 		}
 	}
 	return path
-}
-
-// decryptPassword 解密清单中的密码。
-//
-// 强制要求密文：
-//   - 空字符串：返回空
-//   - 非空：必须是 'taskssh encrypt' 生成的密文
-//   - 解密失败：报错
-func decryptPassword(encrypted string) (string, error) {
-	if encrypted == "" {
-		return "", nil
-	}
-
-	plain, err := secret.Decrypt(encrypted)
-	if err != nil {
-		return "", fmt.Errorf(
-			"decrypt password: %w (ensure the value is encrypted by 'taskssh encrypt')", err)
-	}
-	return plain, nil
 }
 
 // PromptPassword 从终端读取密码，结果缓存。

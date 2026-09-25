@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/secret"
 	"mestrap.com/taskssh/internal/utils"
 )
@@ -59,7 +60,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u",
 		"", "Override username")
 	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p",
-		"", "Override password (not recommended)")
+		"", "Override password (plaintext, not recommended)")
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c",
 		1, "Number of concurrent connections")
 	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "",
@@ -69,6 +70,11 @@ func init() {
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		secret.SecretKeyFile = secretKeyFile
+
+		if passwordFlag != "" {
+			log.Warn("Passing password via command line is insecure; " +
+				"use 'taskssh encrypt' and inventory file instead")
+		}
 	}
 
 	rootCmd.AddCommand(encryptCmd)
