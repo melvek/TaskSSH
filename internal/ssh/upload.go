@@ -29,6 +29,8 @@ func NewPolicy(force bool) OverwritePolicy {
 }
 
 // Upload 上传本地文件到远程，返回最终远程路径。
+//
+// dry-run 时跳过实际传输，返回目标路径。
 func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (string, error) {
 	if c.conn == nil {
 		return "", fmt.Errorf("client not connected")
@@ -50,6 +52,10 @@ func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (s
 	finalPath, err := resolveRemotePath(sftpClient, localPath, remotePath)
 	if err != nil {
 		return "", err
+	}
+
+	if c.dryRun {
+		return finalPath, nil
 	}
 
 	if exists(sftpClient, finalPath) {

@@ -20,15 +20,17 @@ const DefaultConnectTimeout = 10 * time.Second
 
 // Client 包装 SSH 连接。
 type Client struct {
-	conn *ssh.Client
-	sftp *sftp.Client
-	host *config.Host
+	conn   *ssh.Client
+	sftp   *sftp.Client
+	host   *config.Host
+	dryRun bool
 }
 
 // Connect 建立 SSH 连接。
 //
 // timeout 为 0 时使用 DefaultConnectTimeout。
-func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
+// dryRun 为 true 时，后续的 Exec / Upload / Download / MkdirAll 将被跳过。
+func Connect(host *config.Host, timeout time.Duration, dryRun bool) (*Client, error) {
 	if host.Host == "" {
 		return nil, fmt.Errorf("host is empty")
 	}
@@ -60,7 +62,11 @@ func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
 		return nil, fmt.Errorf("connect %s: %w", addr, err)
 	}
 
-	return &Client{conn: conn, host: host}, nil
+	return &Client{
+		conn:   conn,
+		host:   host,
+		dryRun: dryRun,
+	}, nil
 }
 
 // Close 关闭 SFTP 会话和 SSH 连接。
@@ -73,6 +79,11 @@ func (c *Client) Close() error {
 		return c.conn.Close()
 	}
 	return nil
+}
+
+// DryRun 返回是否处于 dry-run 模式。
+func (c *Client) DryRun() bool {
+	return c.dryRun
 }
 
 // getSFTP 返回复用的 SFTP 会话，首次调用时创建。
@@ -93,6 +104,8 @@ func (c *Client) getSFTP() (*sftp.Client, error) {
 }
 
 // Stat 返回远程路径的信息。
+//
+// 只读操作，dry-run 时也正常执行。
 func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {
@@ -107,6 +120,8 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 }
 
 // ListFiles 递归列出远程目录下的所有文件。
+//
+// 只读操作，dry-run 时也正常执行。
 func (c *Client) ListFiles(root string) ([]string, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {
@@ -137,7 +152,13 @@ func (c *Client) ListFiles(root string) ([]string, error) {
 }
 
 // MkdirAll 在远程递归创建目录。
+//
+// dry-run 时跳过。
 func (c *Client) MkdirAll(remotePath string) error {
+	if c.dryRun {
+		return nil
+	}
+
 	sftpClient, err := c.getSFTP()
 	if err != nil {
 		return err

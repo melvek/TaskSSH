@@ -9,15 +9,7 @@ import (
 
 // Download 从远程下载文件到指定的本地路径。
 //
-// localPath 必须是完整的文件路径（含文件名），调用方负责：
-//   - 解析 -d 参数（目录 / 文件）
-//   - 目录时拼接主机子目录
-//   - 目录时拼接远程文件名
-//
-// 本方法只做三件事：
-//   - 校验远程文件存在且不是目录
-//   - 创建本地父目录
-//   - 复制文件内容
+// dry-run 时跳过实际下载。
 func (c *Client) Download(remotePath, localPath string) error {
 	if c.conn == nil {
 		return fmt.Errorf("client not connected")
@@ -41,6 +33,10 @@ func (c *Client) Download(remotePath, localPath string) error {
 	}
 	if info.IsDir() {
 		return fmt.Errorf("remote path is a directory: %s (please pack it first)", remotePath)
+	}
+
+	if c.dryRun {
+		return nil
 	}
 
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {

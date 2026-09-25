@@ -18,9 +18,15 @@ type ExecResult struct {
 }
 
 // Exec 执行命令，输出实时写入当前 goroutine 的输出目标。
+//
+// dry-run 时跳过实际执行，返回空结果。
 func (c *Client) Exec(command string) (*ExecResult, error) {
 	if c.conn == nil {
 		return nil, fmt.Errorf("client not connected")
+	}
+
+	if c.dryRun {
+		return &ExecResult{ExitCode: 0}, nil
 	}
 
 	session, err := c.conn.NewSession()

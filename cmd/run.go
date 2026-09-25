@@ -56,13 +56,12 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	for _, e := range entries {
 		log.ListItem(e.Name, e.Host.Host)
 	}
-	log.EmptyLine()
 
-	if listOnly {
+	if listOnly && !dryRun {
 		return nil
 	}
 
-	if !yesFlag {
+	if !yesFlag && !dryRun {
 		if !confirm("Confirm to proceed") {
 			return nil
 		}
@@ -74,8 +73,12 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	actions := action.NewRegistry()
-	executor := task.NewExecutor(actions, concurrency, connectTimeout)
+	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun)
 	results := executor.Run(t, entries, globalVars)
+
+	if dryRun {
+		return nil
+	}
 
 	success, failed := 0, 0
 	var failedHosts []string
@@ -101,7 +104,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 
 // confirm 询问用户。
 func confirm(message string) bool {
-	fmt.Printf("%s (y/n): ", message)
+	fmt.Printf("\n%s (y/n): ", message)
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')

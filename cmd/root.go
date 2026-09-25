@@ -18,6 +18,7 @@ var (
 	concurrency    int
 	connectTimeout int
 	secretKeyFile  string
+	dryRun         bool
 )
 
 var rootCmd = &cobra.Command{
@@ -53,6 +54,8 @@ func init() {
 		utils.DefaultInventory, "Inventory file")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l",
 		false, "List target hosts only")
+	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "",
+		false, "Show what would be executed without actually running")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y",
 		false, "Skip confirmation")
 	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P",

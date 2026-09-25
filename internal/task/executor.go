@@ -25,13 +25,11 @@ type Executor struct {
 	actions        *action.Registry
 	concurrency    int
 	connectTimeout time.Duration
+	dryRun         bool
 }
 
 // NewExecutor 创建执行器。
-//
-// concurrency 为并发数，<=0 时按 1 处理。
-// connectTimeout 为连接超时秒数，<=0 时使用默认值。
-func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int) *Executor {
+func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int, dryRun bool) *Executor {
 	if concurrency <= 0 {
 		concurrency = 1
 	}
@@ -42,12 +40,17 @@ func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int) 
 		actions:        actions,
 		concurrency:    concurrency,
 		connectTimeout: time.Duration(connectTimeout) * time.Second,
+		dryRun:         dryRun,
 	}
 }
 
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	log.Section("Start")
+	if e.dryRun {
+		log.Section("Dry run (no changes will be made)")
+	} else {
+		log.Section("Start")
+	}
 
 	if task.Description != "" {
 		log.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
@@ -56,9 +59,11 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 	}
 
 	log.Info("Targets: %d", len(hosts))
-	log.Info("Concurrency: %d", e.concurrency)
+	if !e.dryRun {
+		log.Info("Concurrency: %d", e.concurrency)
+	}
 
-	if e.concurrency == 1 {
+	if e.concurrency == 1 || e.dryRun {
 		return e.runSerial(task, hosts, globalVars)
 	}
 	return e.runParallel(task, hosts, globalVars)
@@ -81,7 +86,7 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 
 		if err != nil {
 			log.Error("%s: %v", entry.Name, err)
-		} else {
+		} else if !e.dryRun {
 			log.Success("%s OK", entry.Name)
 		}
 	}
@@ -134,7 +139,7 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 
 			if err != nil {
 				log.Error("%s: %v", entry.Name, err)
-			} else {
+			} else if !e.dryRun {
 				log.Success("%s OK", entry.Name)
 			}
 		}(i, entry)
@@ -146,13 +151,13 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 
 // runOnHost 对单台主机执行整条任务。
 //
-// 连接一次，整条任务复用；任务结束后关闭。
+// dry-run 时也建立连接，但 Exec / Upload / Download / MkdirAll 被跳过。
 func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
 	vars := mergeVars(globalVars, hostVars)
 
-	client, err := ssh.Connect(host, e.connectTimeout)
+	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
 	if err != nil {
 		return fmt.Errorf("connect %s: %w", host.Host, err)
 	}
@@ -185,7 +190,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			return fmt.Errorf("step %s: %w", step.Name, err)
 		}
 
-		if step.Delay > 0 {
+		if step.Delay > 0 && !e.dryRun {
 			log.Info("Waiting %ds...", step.Delay)
 			time.Sleep(time.Duration(step.Delay) * time.Second)
 		}
