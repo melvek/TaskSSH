@@ -9,19 +9,33 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/term"
 )
 
-// secKey 是加密密钥。
-//
-// 编译时可通过 -ldflags 注入：
-//
-//	go build -ldflags "-X 'mestrap.com/taskssh/internal/secret.secKey=真实密钥'"
-//
-// 未注入时使用默认值（仅用于开发）。
-var secKey = "c7624159-ca0f-4078-9dc3-f4cd1da6a9f6"
+// SecretKeyFile 记录 --secret-key-file 的值，由 cmd 层设置。
+var SecretKeyFile = ""
+
+// rawKey 缓存本次会话的密钥，避免重复提示。
+var rawKey string
 
 // ErrNoKey 表示未设置密钥。
 var ErrNoKey = errors.New("no encryption key available")
+
+// SetRawKey 设置本次会话使用的密钥。
+//
+// 用于加密时先交互输入、再调用 Encrypt 的场景，避免 Encrypt 再次提示。
+func SetRawKey(key string) {
+	rawKey = key
+}
+
+// ClearRawKey 清除缓存的密钥。
+func ClearRawKey() {
+	rawKey = ""
+}
 
 // Encrypt 加密明文。
 func Encrypt(plain string) (string, error) {
@@ -85,10 +99,113 @@ func Decrypt(encoded string) (string, error) {
 }
 
 // loadKey 派生 32 字节密钥。
+//
+// 优先级：
+//  1. 本次会话缓存的 rawKey
+//  2. --secret-key-file
+//  3. 交互输入
 func loadKey() ([]byte, error) {
-	if secKey == "" {
-		return nil, ErrNoKey
+	raw, err := loadRawKey()
+	if err != nil {
+		return nil, err
 	}
-	h := sha256.Sum256([]byte(secKey))
+
+	h := sha256.Sum256([]byte(raw))
 	return h[:], nil
+}
+
+// loadRawKey 获取原始密钥字符串。
+func loadRawKey() (string, error) {
+	if rawKey != "" {
+		return rawKey, nil
+	}
+	if SecretKeyFile != "" {
+		return readKeyFile(SecretKeyFile)
+	}
+	return promptKey()
+}
+
+// readKeyFile 从文件读密钥。
+//
+// 支持两种形式：
+//   - 普通文本文件，内容即密钥
+//   - 可执行文件，执行输出作为密钥
+func readKeyFile(path string) (string, error) {
+	expanded := expandHome(path)
+
+	info, err := os.Stat(expanded)
+	if err != nil {
+		return "", fmt.Errorf("stat key file %s: %w", expanded, err)
+	}
+
+	if info.Mode().Perm()&0o111 != 0 {
+		return runKeyScript(expanded)
+	}
+
+	data, err := os.ReadFile(expanded)
+	if err != nil {
+		return "", fmt.Errorf("read key file %s: %w", expanded, err)
+	}
+
+	key := strings.TrimSpace(string(data))
+	if key == "" {
+		return "", fmt.Errorf("key file %s is empty", expanded)
+	}
+
+	return key, nil
+}
+
+// expandHome 展开 ~ 为当前用户 home 目录。
+func expandHome(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
+}
+
+// promptKey 从终端读取密钥，无回显。
+func promptKey() (string, error) {
+	return promptKeyPrompt("Secret key: ")
+}
+
+// PromptKeyConfirm 从终端读取密钥并要求确认（用于加密）。
+func PromptKeyConfirm() (string, error) {
+	first, err := promptKeyPrompt("Secret key: ")
+	if err != nil {
+		return "", err
+	}
+
+	second, err := promptKeyPrompt("Confirm secret key: ")
+	if err != nil {
+		return "", err
+	}
+
+	if first != second {
+		return "", fmt.Errorf("secret keys do not match")
+	}
+
+	return first, nil
+}
+
+// promptKeyPrompt 读取密钥，可指定提示语。
+func promptKeyPrompt(prompt string) (string, error) {
+	fmt.Fprint(os.Stderr, prompt)
+
+	var keyBytes []byte
+	keyBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", fmt.Errorf("read secret key: %w", err)
+	}
+
+	fmt.Fprintln(os.Stderr)
+
+	key := strings.TrimSpace(string(keyBytes))
+	if key == "" {
+		return "", fmt.Errorf("secret key is empty")
+	}
+
+	return key, nil
 }

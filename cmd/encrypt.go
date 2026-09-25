@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"mestrap.com/taskssh/internal/log"
@@ -12,11 +14,20 @@ var encryptCmd = &cobra.Command{
 	Short: "Encrypt a string",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// 加密时交互输入两次（确认），或从文件读
+		if secret.SecretKeyFile == "" {
+			key, err := secret.PromptKeyConfirm()
+			if err != nil {
+				return err
+			}
+			secret.SetRawKey(key)
+		}
+
 		cipher, err := secret.Encrypt(args[0])
 		if err != nil {
 			return err
 		}
-		log.Info("%s", cipher)
+		fmt.Println(cipher)
 		return nil
 	},
 }
@@ -30,7 +41,10 @@ var decryptCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Info("%s", plain)
+		fmt.Println(plain)
 		return nil
 	},
 }
+
+// 防止 log 未使用
+var _ = log.Info

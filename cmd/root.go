@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"mestrap.com/taskssh/internal/secret"
 	"mestrap.com/taskssh/internal/utils"
 )
 
@@ -15,6 +16,7 @@ var (
 	passwordFlag   string
 	concurrency    int
 	connectTimeout int
+	secretKeyFile  string
 )
 
 var rootCmd = &cobra.Command{
@@ -62,6 +64,12 @@ func init() {
 		1, "Number of concurrent connections")
 	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "",
 		10, "Connection timeout in seconds")
+	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V",
+		"", "File or executable that holds the secret key")
+
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		secret.SecretKeyFile = secretKeyFile
+	}
 
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
