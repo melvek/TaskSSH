@@ -92,11 +92,11 @@ set CGO_ENABLED=
 REM ---- 复制示例文件 ----
 echo.
 echo [6/6] Preparing package files...
-if exist inventory.example.yaml (
-    copy inventory.example.yaml "%DIST%\" >nul
-    echo   Copied: inventory.example.yaml
+if exist testdata/inventory.yaml (
+    copy testdata/inventory.yaml "%DIST%\" >nul
+    echo   Copied: inventory.yaml
 ) else (
-    echo   [WARN] inventory.example.yaml not found, skipped
+    echo   [WARN] inventory.yaml not found, skipped
 )
 if exist README.md (
     copy README.md "%DIST%\" >nul

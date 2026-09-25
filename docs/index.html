@@ -321,6 +321,17 @@
 </script>
 
 <script src="assets/prism.js"></script>
+<script>
+  // 让 Prism 高亮自定义命令 taskssh
+  if (window.Prism && Prism.languages.bash) {
+    Prism.languages.insertBefore('bash', 'function', {
+      'taskssh': {
+        pattern: /\btaskssh(?:\s+(?:run|command|push|fetch|script|encrypt|decrypt))?/,
+        alias: 'function'
+      }
+    });
+  }
+</script>
 
 </body>
 </html>

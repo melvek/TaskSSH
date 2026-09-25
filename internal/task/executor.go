@@ -26,21 +26,29 @@ type Executor struct {
 	concurrency    int
 	connectTimeout time.Duration
 	dryRun         bool
+	cliVars        resolve.Vars
 }
 
 // NewExecutor 创建执行器。
-func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int, dryRun bool) *Executor {
+//
+// cliVars 是 CLI -D 传入的变量，优先级最高，覆盖清单中的所有同名变量。
+func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
+	dryRun bool, cliVars resolve.Vars) *Executor {
 	if concurrency <= 0 {
 		concurrency = 1
 	}
 	if connectTimeout <= 0 {
 		connectTimeout = 10
 	}
+	if cliVars == nil {
+		cliVars = make(resolve.Vars)
+	}
 	return &Executor{
 		actions:        actions,
 		concurrency:    concurrency,
 		connectTimeout: time.Duration(connectTimeout) * time.Second,
 		dryRun:         dryRun,
+		cliVars:        cliVars,
 	}
 }
 
@@ -152,10 +160,22 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 // runOnHost 对单台主机执行整条任务。
 //
 // dry-run 时也建立连接，但 Exec / Upload / Download / MkdirAll 被跳过。
+//
+// 变量合并顺序：
+//
+//	global_vars -> 组 vars -> 主机 Extra -> CLI -D -> execId（运行时）
 func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
 	vars := mergeVars(globalVars, hostVars)
+
+	// CLI 变量优先级最高
+	for k, v := range e.cliVars {
+		vars[k] = v
+	}
+
+	// execId 由运行时注入，覆盖一切
+	vars["execId"] = generateExecID()
 
 	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
 	if err != nil {

@@ -19,6 +19,7 @@ var (
 	connectTimeout int
 	secretKeyFile  string
 	dryRun         bool
+	cliVars        []string
 )
 
 var rootCmd = &cobra.Command{
@@ -70,6 +71,8 @@ func init() {
 		10, "Connection timeout in seconds")
 	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V",
 		"", "File or executable that holds the secret key")
+	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D",
+		nil, "Set variable (key=value), can be repeated")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		secret.SecretKeyFile = secretKeyFile

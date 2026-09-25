@@ -1,25 +1,132 @@
+# ==============================================================================
+# TaskSSH 示例清单
+# ==============================================================================
+#
+# 执行：
+#   taskssh deploy prod -y
+#
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# global_vars：全局默认值
+# ------------------------------------------------------------------------------
+#
+# 专有字段：
+#   host           主机地址（通常不在此处配置）
+#   port           SSH 端口，默认 22
+#   username       登录用户名
+#   password       密码（必须密文）
+#   identity_file  私钥路径，支持 ~
+#   passphrase     私钥 passphrase（必须密文）
+#
+# 其他字段进入变量池，可用 ${变量名} 引用。
+
 global_vars:
-  username: web
-  password: z0UcevwRf6s+tSsx8wVhy4qwAR3K2S9pVg0gfjjfHYrOjw==
+  port: 22
+  username: deploy
+  # password: "encrypted-password"
+  # identity_file: ~/.ssh/id_rsa
+  # passphrase: "encrypted-passphrase"
+  
+  # 自定义的其它字段，可使用 ${app_name} 引用
+  app_name: myapp
+  version: 1.0.0
+
+# ------------------------------------------------------------------------------
+# servers：服务器组
+# ------------------------------------------------------------------------------
+#
+# vars 与 global_vars 结构相同，可覆盖任意字段。
+# 组内主机继承组 vars，主机可再覆盖。
 
 servers:
-  web_server:
+  prod:
     vars:
-      service_path: /app/web/
+      port: 22
+      username: deploy
+      # password: "encrypted-password"
+      # identity_file: ~/.ssh/id_rsa
+      # passphrase: "encrypted-passphrase"
+
+      service_path: /opt/myapp/
+      env: prod
+
     hosts:
-      web_1: 172.21.1.74
+      # 简写：主机名: IP，其余字段从组 vars / global_vars 继承
+      web1: 192.168.1.10
+
+      # 完整写法：所有字段将覆盖 vars 及 global_vars 中的同名属性
+      web2:
+        host: 192.168.1.11
+        port: 2222
+        username: root
+        password: "encrypted-password"
+        # identity_file: ~/.ssh/id_rsa
+        # passphrase: "encrypted-passphrase"
+
+        # 其他字段进入 Extra，可用 ${字段名} 引用
+        role: db
+        db_port: 3306
+
+# ------------------------------------------------------------------------------
+# tasks：任务
+# ------------------------------------------------------------------------------
+#
+# step 字段：
+#   name    步骤名（可选）
+#   action  command / push / fetch / script
+#   with    action 参数，值支持 ${var}
+#   delay   执行后等待秒数（可选，默认 0）
 
 tasks:
-  release:
+  # 自定义的任务名称，对应执行时的任务名称
+  deploy:
+    # 任务描述信息
+    description: "部署服务"
     steps:
-      - name: "上传新版本"
-        action: push
-        with:
-          file: "./dist/${app_name}.jar"
-          dest: "${service_path}"
-          force: true
+      # command：在远程主机执行命令
+      # with.command  要执行的命令（必填）
       - name: "重启服务"
         action: command
         with:
           command: "systemctl restart ${app_name}"
-        delay: 5
+
+      # push：上传本地文件或目录到远程
+      # with.file    本地文件或目录路径（必填）
+      # with.dest    远程目标路径（必填，或从 service_path 变量读取）
+      # with.force   布尔值。覆盖已存在的远程文件，默认 false（已存在则报错）
+      # with.zip     布尔值。目录上传时本地打包后上传，默认 false
+      #               传 true 时依赖远程安装 unzip
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/${app_name}-${version}.jar"
+          dest: "${service_path}"
+          force: true
+
+      # fetch：从远程下载文件或目录到本地
+      # with.file     远程文件或目录路径（必填）
+      # with.dest     本地目标路径，默认 ./
+      #               以 / 结尾视为目录，按 dest/<主机标识>/<文件名> 存放
+      # with.zip      布尔值。目录下载时远程打包后下载，默认 false
+      #                传 true 时依赖远程安装 zip
+      # with.tmp_dir  远程临时目录，默认 /tmp，仅 zip 时生效
+      - name: "下载日志"
+        action: fetch
+        with:
+          file: "/var/log/${app_name}.log"
+          dest: "./logs/"
+
+      # script：上传本地脚本到远程并执行
+      # with.file    本地脚本文件路径（必填）
+      # with.dest    脚本在远程的存放目录，默认 /tmp
+      #               最终路径为 dest/<脚本文件名>
+      # with.remove  布尔值。执行后删除远程脚本，默认 false
+      # with.force   布尔值。覆盖已存在的远程脚本，默认 false（已存在则报错）
+      - name: "执行健康检查脚本"
+        action: script
+        with:
+          file: "./scripts/health.sh"
+          dest: "/tmp"
+          remove: true
+          force: true
