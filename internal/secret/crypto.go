@@ -19,6 +19,12 @@ import (
 // SecretKeyFile 记录 --secret-key-file 的值，由 cmd 层设置。
 var SecretKeyFile = ""
 
+// DefaultKeyFile 是默认密钥文件路径。
+const DefaultKeyFile = "~/.taskssh/vault-key"
+
+// EnvKeyFile 是密钥文件路径的环境变量名。
+const EnvKeyFile = "TASKSSH_SECRET_KEY_FILE"
+
 // rawKey 缓存本次会话的密钥，避免重复提示。
 var rawKey string
 
@@ -108,17 +114,38 @@ func loadKey() ([]byte, error) {
 }
 
 // loadRawKey 获取原始密钥字符串。
+//
+// 优先级：
+//  1. 本次会话缓存的 rawKey
+//  2. --secret-key-file
+//  3. TASKSSH_SECRET_KEY_FILE 环境变量
+//  4. 默认路径 ~/.taskssh/key
+//  5. 交互输入
 func loadRawKey() (string, error) {
 	if rawKey != "" {
 		return rawKey, nil
 	}
+
 	if SecretKeyFile != "" {
 		return readKeyFile(SecretKeyFile)
 	}
+
+	if path := os.Getenv(EnvKeyFile); path != "" {
+		return readKeyFile(path)
+	}
+
+	if fileExists(DefaultKeyFile) {
+		return readKeyFile(DefaultKeyFile)
+	}
+
 	return promptKey()
 }
 
 // readKeyFile 从文件读密钥。
+//
+// 支持两种形式：
+//   - 普通文本文件，内容即密钥
+//   - 可执行文件，执行输出作为密钥
 func readKeyFile(path string) (string, error) {
 	expanded := expandHome(path)
 
@@ -142,6 +169,16 @@ func readKeyFile(path string) (string, error) {
 	}
 
 	return key, nil
+}
+
+// fileExists 判断文件是否存在且不是目录。
+func fileExists(path string) bool {
+	expanded := expandHome(path)
+	info, err := os.Stat(expanded)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
 }
 
 // expandHome 展开 ~ 为当前用户 home 目录。

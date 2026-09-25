@@ -6,6 +6,7 @@ import (
 
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/resolve"
+	"mestrap.com/taskssh/internal/secret"
 )
 
 // Overrides 是 CLI 覆盖参数。
@@ -24,8 +25,8 @@ type HostEntry struct {
 
 // ResolveHosts 解析目标主机列表。
 //
-// hostNames 可以是组名，也可以是独立主机名。
-// ov 中的非零值会覆盖所有主机的对应字段。
+// 合并顺序：global -> group -> host，host 优先。
+// 合并后解密密码和 passphrase，使 Host 中的敏感字段为明文。
 func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
 	var entries []HostEntry
 
@@ -41,10 +42,15 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	}
 
 	applyOverrides(entries, ov)
+
+	if err := decryptSecrets(entries, ov.Password); err != nil {
+		return nil, err
+	}
+
 	return entries, nil
 }
 
-// applyOverrides 应用 CLI 覆盖。
+// applyOverrides 应用 CLI 覆盖（不含密码）。
 func applyOverrides(entries []HostEntry, ov Overrides) {
 	for i := range entries {
 		if ov.Port > 0 {
@@ -53,22 +59,45 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 		if ov.Username != "" {
 			entries[i].Host.Username = ov.Username
 		}
-		if ov.Password != "" {
-			entries[i].Host.Password = ov.Password
-		}
 	}
 }
 
+// decryptSecrets 解密主机密码和 passphrase。
+//
+// 规则：
+//   - CLI 密码优先：非空时直接写入，视为明文，不解密
+//   - 清单密码：必须能解密，失败即报错
+//   - passphrase：只能来自清单，必须能解密
+func decryptSecrets(entries []HostEntry, cliPassword string) error {
+	for i := range entries {
+		// 密码
+		if cliPassword != "" {
+			entries[i].Host.Password = cliPassword
+		} else if entries[i].Host.Password != "" {
+			plain, err := secret.Decrypt(entries[i].Host.Password)
+			if err != nil {
+				return fmt.Errorf(
+					"host %s: decrypt password: %w (ensure the value is encrypted by 'taskssh encrypt')",
+					entries[i].Name, err)
+			}
+			entries[i].Host.Password = plain
+		}
+
+		// passphrase
+		if entries[i].Host.Passphrase != "" {
+			plain, err := secret.Decrypt(entries[i].Host.Passphrase)
+			if err != nil {
+				return fmt.Errorf(
+					"host %s: decrypt passphrase: %w (ensure the value is encrypted by 'taskssh encrypt')",
+					entries[i].Name, err)
+			}
+			entries[i].Host.Passphrase = plain
+		}
+	}
+	return nil
+}
+
 // resolveGroup 展开服务器组。
-//
-// 合并顺序（优先级从低到高）：
-//  1. global_vars
-//  2. group.vars
-//  3. host（主机级，本来就有的值）
-//
-// Merge 的语义是"目标已有值则跳过"，所以：
-//   - 先把 global 合并到 groupVars，组的值优先
-//   - 再把合并后的 groupVars 合并到 host，主机的值优先
 func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) []HostEntry {
 	var entries []HostEntry
 
@@ -78,13 +107,11 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 	}
 	sort.Strings(names)
 
-	// 全局合并到组（组优先）
 	groupVars := group.Vars
 	groupVars.Merge(&inv.GlobalVars)
 
 	for _, name := range names {
 		host := group.Hosts[name]
-		// 组合并到主机（主机优先）
 		host.Merge(&groupVars)
 
 		vars := make(resolve.Vars, len(host.Extra))
