@@ -27,6 +27,7 @@ type Executor struct {
 	connectTimeout time.Duration
 	dryRun         bool
 	cliVars        resolve.Vars
+	execID         string
 }
 
 // NewExecutor 创建执行器。
@@ -52,6 +53,13 @@ func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
 	}
 }
 
+// ExecID 返回本次执行的唯一标识。
+//
+// 仅在 Run 执行后有效。
+func (e *Executor) ExecID() string {
+	return e.execID
+}
+
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	if e.dryRun {
@@ -70,6 +78,9 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 	if !e.dryRun {
 		log.Info("Concurrency: %d", e.concurrency)
 	}
+
+	// 整批共享一个 execId
+	e.execID = generateExecID()
 
 	if e.concurrency == 1 || e.dryRun {
 		return e.runSerial(task, hosts, globalVars)
@@ -175,7 +186,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	}
 
 	// execId 由运行时注入，覆盖一切
-	vars["execId"] = generateExecID()
+	vars["execId"] = e.execID
 
 	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
 	if err != nil {

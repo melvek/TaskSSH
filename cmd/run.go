@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 
@@ -65,7 +66,13 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 
 	log.Section("Target hosts")
 	for _, e := range entries {
-		log.ListItem(e.Name, e.Host.Host)
+		// 独立主机且输入是 IP：只显示 IP
+		if e.Name == e.InputHost && net.ParseIP(e.InputHost) != nil {
+			log.Info("%s", e.Host.Host)
+		} else {
+			// 其他：显示 "Name : Host"
+			log.ListItem(e.Name, e.Host.Host)
+		}
 	}
 
 	if listOnly && !dryRun {
@@ -106,6 +113,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	if len(failedHosts) > 0 {
 		log.Hint("Failed hosts: %v", failedHosts)
 	}
+
+	log.Section("Execution ID")
+	log.Info("%s", executor.ExecID())
 
 	if failed > 0 {
 		return fmt.Errorf("%d host(s) failed", failed)
