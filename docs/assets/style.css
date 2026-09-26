@@ -211,6 +211,7 @@ nav {
 /* ============ Hero ============ */
 .hero {
     text-align: center;
+    height: 420px;
     padding: 88px 0 72px;
     background:
         radial-gradient(600px 300px at 50% 0%, var(--primary-light), transparent 70%);
@@ -249,7 +250,7 @@ nav {
     gap: 16px;
     justify-content: center;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: top;
 }
 
 /* ============ 按钮 ============ */
@@ -268,6 +269,21 @@ nav {
     background: none;
     font-family: inherit;
     line-height: 1.4;
+    height: 48px;
+}
+
+/* 版本号文字 */
+.version-text {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-light);
+    text-align: center;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.version-text:empty {
+    display: none;
 }
 
 .btn:focus,
@@ -726,18 +742,25 @@ footer .footer-links {
         font-size: 32px;
     }
 
+    /* 按钮组顶部对齐 */
     .buttons {
-        flex-direction: column;
-        width: 100%;
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: top;   /* 关键：顶部对齐 */
     }
 
-    .btn {
-        width: 100%;
-        text-align: center;
+    /* 只给 hero 区按钮组里的按钮固定高度 */
+    .buttons .btn {
+        height: 48px;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 
     .download-dropdown {
-        width: 100%;
+        position: relative;
+        display: inline-block;
     }
 
     .download-dropdown .btn {
@@ -749,6 +772,20 @@ footer .footer-links {
         transform: none;
         width: 100%;
         min-width: 0;
+    }
+
+    /* 版本号文字 */
+    .version-text {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--text-light);
+        text-align: center;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .version-text:empty {
+        display: none;
     }
 
     .install-bar {

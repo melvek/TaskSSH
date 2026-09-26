@@ -17,7 +17,7 @@
     <meta name="twitter:description" content="单文件、无依赖、YAML 驱动。通过一份清单定义服务器与任务。">
 
     <link rel="stylesheet" href="assets/prism.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css?version=2.1.0">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
@@ -49,29 +49,29 @@
         </p>
         <div class="buttons">
             <div class="download-dropdown">
-                <button class="btn btn-primary" onclick="toggleDownloadMenu(event)">
-                    Download
-                    <span class="version-badge" id="releaseVersion">latest</span>
-                    <span class="caret"></span>
-                </button>
-                <div class="download-menu" id="downloadMenu">
-                    <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-windows-amd64.zip">
-                        <span>🪟</span> Windows <em>amd64</em>
-                    </a>
-                    <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-amd64.zip">
-                        <span>🐧</span> Linux <em>amd64</em>
-                    </a>
-                    <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-arm64.zip">
-                        <span>🐧</span> Linux <em>arm64</em>
-                    </a>
-                    <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-amd64.zip">
-                        <span>🍎</span> macOS <em>Intel</em>
-                    </a>
-                    <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-arm64.zip">
-                        <span>🍎</span> macOS <em>Apple Silicon</em>
-                    </a>
-                </div>
+            <button class="btn btn-primary" onclick="toggleDownloadMenu(event)">
+                Download
+                <span class="caret"></span>
+            </button>
+            <div class="download-menu" id="downloadMenu">
+                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-windows-amd64.zip">
+                    <span>🪟</span> Windows <em>amd64</em>
+                </a>
+                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-amd64.zip">
+                    <span>🐧</span> Linux <em>amd64</em>
+                </a>
+                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-arm64.zip">
+                    <span>🐧</span> Linux <em>arm64</em>
+                </a>
+                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-amd64.zip">
+                    <span>🍎</span> macOS <em>Intel</em>
+                </a>
+                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-arm64.zip">
+                    <span>🍎</span> macOS <em>Apple Silicon</em>
+                </a>
             </div>
+            <div class="version-text" id="releaseVersion"></div>
+        </div>
             <a href="#start" class="btn btn-secondary">快速开始</a>
             <a href="https://github.com/melvek/TaskSSH" class="btn btn-secondary" target="_blank" rel="noopener">GitHub</a>
         </div>
@@ -309,12 +309,13 @@
     });
 
     /* ============ 获取最新 Release 版本号 ============ */
+   /* ============ 获取最新 Release 版本号 ============ */
     fetch('https://img.shields.io/github/v/release/melvek/TaskSSH.json')
         .then(res => res.json())
         .then(data => {
             const el = document.getElementById('releaseVersion');
             if (el && data.value) {
-                el.textContent = data.value.replace(/^v/, '');
+                el.textContent = '最新版本：' + data.value.replace(/^v/, '');
             }
         })
         .catch(err => console.error('获取版本失败:', err));
