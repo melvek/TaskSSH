@@ -116,8 +116,8 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		log.Hint("Failed hosts: %v", failedHosts)
 	}
 
-	log.Section("Execution ID")
-	log.Info("%s", executor.ExecID())
+	log.Info("----------------------")
+	log.Info("Execution ID: %s", executor.ExecID())
 
 	if failed > 0 {
 		return fmt.Errorf("%d host(s) failed", failed)
