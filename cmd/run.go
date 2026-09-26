@@ -44,6 +44,11 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
+	// dry-run 提示放在最前面，让用户一开始就知道
+	if dryRun {
+		log.Warn("Dry run (no changes will be made)")
+	}
+
 	cliVarMap, err := parseCLIVars(cliVars)
 	if err != nil {
 		return err

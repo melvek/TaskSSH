@@ -9,6 +9,7 @@ import (
 
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/resolve"
+	"mestrap.com/taskssh/internal/secret"
 )
 
 // Overrides 是 CLI 覆盖参数。
@@ -53,6 +54,11 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	entries = dedupeEntries(entries)
 
 	applyOverrides(entries, ov)
+
+	if err := decryptSecrets(entries, ov.Password); err != nil {
+		return nil, err
+	}
+
 	return entries, nil
 }
 
@@ -189,10 +195,42 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 		if ov.Username != "" {
 			entries[i].Host.Username = ov.Username
 		}
-		if ov.Password != "" {
-			entries[i].Host.Password = ov.Password
+	}
+}
+
+// decryptSecrets 解密主机密码和 passphrase。
+//
+// 规则：
+//   - CLI 密码优先：非空时直接写入，视为明文，不解密
+//   - 清单密码：必须能解密，失败即报错
+//   - passphrase：只能来自清单，必须能解密
+func decryptSecrets(entries []HostEntry, cliPassword string) error {
+	for i := range entries {
+		// 密码
+		if cliPassword != "" {
+			entries[i].Host.Password = cliPassword
+		} else if entries[i].Host.Password != "" {
+			plain, err := secret.Decrypt(entries[i].Host.Password)
+			if err != nil {
+				return fmt.Errorf(
+					"host %s: decrypt password: %w (ensure the value is encrypted by 'taskssh encrypt')",
+					entries[i].Name, err)
+			}
+			entries[i].Host.Password = plain
+		}
+
+		// passphrase
+		if entries[i].Host.Passphrase != "" {
+			plain, err := secret.Decrypt(entries[i].Host.Passphrase)
+			if err != nil {
+				return fmt.Errorf(
+					"host %s: decrypt passphrase: %w (ensure the value is encrypted by 'taskssh encrypt')",
+					entries[i].Name, err)
+			}
+			entries[i].Host.Passphrase = plain
 		}
 	}
+	return nil
 }
 
 // resolveGroup 展开服务器组。

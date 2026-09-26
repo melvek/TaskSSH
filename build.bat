@@ -32,6 +32,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+set LDFLAGS=-s -w 
+
 set CGO_ENABLED=0
 
 REM ---- 1. Linux amd64 ----

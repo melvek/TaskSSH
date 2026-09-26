@@ -7,7 +7,7 @@ import (
 )
 
 func TestEvalWhen_Empty(t *testing.T) {
-	ok, err := evalWhen("", resolve.Vars{})
+	ok, _, err := evalWhen("", resolve.Vars{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestEvalWhen_Eq(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, tt.vars)
+			got, _, err := evalWhen(tt.expr, tt.vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -52,7 +52,7 @@ func TestEvalWhen_Neq(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, tt.vars)
+			got, _, err := evalWhen(tt.expr, tt.vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -82,7 +82,7 @@ func TestEvalWhen_NumericCompare(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, vars)
+			got, _, err := evalWhen(tt.expr, vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -108,7 +108,7 @@ func TestEvalWhen_StringCompare(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, vars)
+			got, _, err := evalWhen(tt.expr, vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -153,7 +153,7 @@ func TestEvalWhen_In(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, tt.vars)
+			got, _, err := evalWhen(tt.expr, tt.vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -176,7 +176,7 @@ func TestEvalWhen_And(t *testing.T) {
 		{"{{env}} == uat && {{role}} == web", false},
 	}
 	for _, tt := range tests {
-		got, err := evalWhen(tt.expr, vars)
+		got, _, err := evalWhen(tt.expr, vars)
 		if err != nil {
 			t.Fatalf("expr %q: %v", tt.expr, err)
 		}
@@ -197,7 +197,7 @@ func TestEvalWhen_Or(t *testing.T) {
 		{"{{env}} == prod || {{env}} == dev", false},
 	}
 	for _, tt := range tests {
-		got, err := evalWhen(tt.expr, vars)
+		got, _, err := evalWhen(tt.expr, vars)
 		if err != nil {
 			t.Fatalf("expr %q: %v", tt.expr, err)
 		}
@@ -211,7 +211,7 @@ func TestEvalWhen_Mixed(t *testing.T) {
 	vars := resolve.Vars{"env": "prod", "role": "db"}
 
 	// 优先级：&& 高于 ||，等价于 (env==prod && role==web) || role==db
-	got, err := evalWhen("{{env}} == prod && {{role}} == web || {{role}} == db", vars)
+	got, _, err := evalWhen("{{env}} == prod && {{role}} == web || {{role}} == db", vars)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -221,14 +221,14 @@ func TestEvalWhen_Mixed(t *testing.T) {
 }
 
 func TestEvalWhen_Unresolved(t *testing.T) {
-	_, err := evalWhen("{{unknown}} == prod", resolve.Vars{})
+	_, _, err := evalWhen("{{unknown}} == prod", resolve.Vars{})
 	if err == nil {
 		t.Fatal("expected error for unresolved var, got nil")
 	}
 }
 
 func TestEvalWhen_Unsupported(t *testing.T) {
-	_, err := evalWhen("{{env}}", resolve.Vars{"env": "prod"})
+	_, _, err := evalWhen("{{env}}", resolve.Vars{"env": "prod"})
 	if err == nil {
 		t.Fatal("expected error for unsupported expression, got nil")
 	}
@@ -264,7 +264,7 @@ func TestEvalWhen_Complex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := evalWhen(tt.expr, vars)
+			got, _, err := evalWhen(tt.expr, vars)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

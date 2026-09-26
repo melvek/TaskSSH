@@ -25,28 +25,33 @@ import (
 // 求值前先对表达式做变量替换。
 // 不支持括号改变优先级；&& 优先级高于 ||。
 // 不支持算术运算、函数调用。
-func evalWhen(expr string, vars resolve.Vars) (bool, error) {
+// evalWhen 求值 when 表达式。
+//
+// 返回：
+//   - bool：条件是否满足
+//   - string：变量替换后的表达式，用于日志
+//   - error：求值错误
+func evalWhen(expr string, vars resolve.Vars) (bool, string, error) {
 	if expr == "" {
-		return true, nil
+		return true, expr, nil
 	}
 
 	expanded, err := vars.Replace(expr)
 	if err != nil {
-		return false, err
+		return false, expr, err
 	}
 
-	// 按 || 分割，任一为 true 则返回 true
 	orParts := strings.Split(expanded, "||")
 	for _, orPart := range orParts {
 		ok, err := evalAnd(orPart)
 		if err != nil {
-			return false, err
+			return false, expanded, err
 		}
 		if ok {
-			return true, nil
+			return true, expanded, nil
 		}
 	}
-	return false, nil
+	return false, expanded, nil
 }
 
 // evalAnd 处理 && 连接的条件。

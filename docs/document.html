@@ -60,6 +60,7 @@
                 <div class="nav-group-title">任务定义</div>
                 <ul class="docs-nav-list">
                     <li><a href="#task-step">step 字段</a></li>
+                    <li><a href="#task-when">条件执行 when</a></li>
                     <li><a href="#task-compose">组合内置 action</a></li>
                     <li><a href="#task-example">完整示例</a></li>
                 </ul>
@@ -329,7 +330,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <code>{{role}}</code> 引用。
         </p>
 
-        <h3>主机查找</h3>
+                <h3>主机查找</h3>
 
         <p>执行任务时，位置参数可以是以下任意一种：</p>
 
@@ -344,12 +345,98 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                     <tr><td>组内主机名</td><td><code>web1</code></td><td>唯一匹配时返回该主机；多组同名时报错</td></tr>
                     <tr><td>独立主机名</td><td><code>localhost</code></td><td>不在任何组内时，按独立主机处理</td></tr>
                     <tr><td>IP 地址</td><td><code>192.168.1.10</code></td><td>直接作为主机地址</td></tr>
+                    <tr><td>主机模式</td><td><code>web[1-3]</code></td><td>按模式展开为多台主机，仅支持在命令中展开</td></tr>
                 </tbody>
             </table>
         </div>
 
         <p>
             主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
+        </p>
+
+        <h3>主机模式展开</h3>
+
+        <p>
+            位置参数支持模式语法，可一次指定多台主机。支持以下形式：
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>语法</th><th>示例</th><th>展开结果</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>数字范围</td>
+                        <td><code>web[1-3]</code></td>
+                        <td><code>web1 web2 web3</code></td>
+                    </tr>
+                    <tr>
+                        <td>前导零</td>
+                        <td><code>web[01-03]</code></td>
+                        <td><code>web01 web02 web03</code></td>
+                    </tr>
+                    <tr>
+                        <td>枚举</td>
+                        <td><code>web[a,b,c]</code></td>
+                        <td><code>weba webb webc</code></td>
+                    </tr>
+                    <tr>
+                        <td>混合</td>
+                        <td><code>web[1-3,5,7-9]</code></td>
+                        <td><code>web1 web2 web3 web5 web7 web8 web9</code></td>
+                    </tr>
+                    <tr>
+                        <td>字符范围</td>
+                        <td><code>node[a-c]</code></td>
+                        <td><code>nodea nodeb nodec</code></td>
+                    </tr>
+                    <tr>
+                        <td>多段组合</td>
+                        <td><code>web[1-2].dc[beijing,wuhan].com</code></td>
+                        <td>4 个主机名（笛卡尔积）</td>
+                    </tr>
+                    <tr>
+                        <td>IP 范围</td>
+                        <td><code>10.0.0.[1-10]</code></td>
+                        <td><code>10.0.0.1</code> 到 <code>10.0.0.10</code></td>
+                    </tr>
+                    <tr>
+                        <td>组名前缀</td>
+                        <td><code>prod/web[1-3]</code></td>
+                        <td><code>prod/web1</code> 到 <code>prod/web3</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code># 数字范围
+taskssh command web[1-3] -e "uptime" -y
+
+# 前导零
+taskssh command web[01-03] -e "uptime" -y
+
+# 枚举
+taskssh command web[a,b,c] -e "uptime" -y
+
+# 混合
+taskssh command web[1-3,5,7-9] -e "uptime" -y
+
+# 多段组合
+taskssh command web[1-2].dc[beijing,wuhan].com -e "uptime" -y
+
+# IP 范围
+taskssh command 10.0.0.[1-10] -e "uptime" -y
+
+# 组名前缀
+taskssh release prod/web[1-3] -y
+
+# 查看展开后的主机列表
+taskssh release web[1-3] -l</code></pre>
+
+        <p>
+            展开后按 <code>host:port</code> 去重，避免重复执行。展开模式与主机查找是解耦的：
+            先展开为多个主机名，再对每个主机名走原有的查找逻辑。
         </p>
 
         <h3>变量合并优先级</h3>
@@ -410,7 +497,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
 
         <p>每个 step 表示一次 action 调用，其字段定义如下：</p>
 
-        <div class="table-wrap">
+                <div class="table-wrap">
             <table>
                 <thead>
                     <tr><th>字段</th><th>必填</th><th>说明</th></tr>
@@ -420,7 +507,8 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                     <tr><td><code>action</code></td><td>是</td><td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code></td></tr>
                     <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>{{var}}</code> 变量替换</td></tr>
                     <tr><td><code>delay</code></td><td>否</td><td>本步骤执行后等待的秒数，默认 0</td></tr>
-                    <tr><td><code>ignore_errors</code></td><td>否</td><td>忽略当前步骤的错误，继续执行，默认 `false`</td></tr>
+                    <tr><td><code>ignore_errors</code></td><td>否</td><td>该 step 失败时输出警告但不中断后续步骤，默认 false</td></tr>
+                    <tr><td><code>when</code></td><td>否</td><td>条件表达式，满足时才执行，默认无</td></tr>
                 </tbody>
             </table>
         </div>
@@ -430,6 +518,120 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <code>push</code> 支持 <code>file</code> / <code>dest</code> / <code>force</code> /
             <code>zip</code> 四个参数。
         </p>
+
+        <h3>ignore_errors</h3>
+
+        <p>
+            标记为 <code>ignore_errors: true</code> 的 step，执行失败时输出警告日志，
+            但不中断当前主机的后续步骤。
+        </p>
+
+        <pre class="language-yaml"><code>- name: "清理临时文件"
+action: command
+  with:
+    command: "rm -f /tmp/deploy-*.tmp"
+  ignore_errors: true</code></pre>
+
+        <p>
+            注意：该字段仅作用于 step 执行失败。连接失败属于主机级问题，
+            会跳过该主机的所有步骤，并在摘要中计为失败主机，不受此字段影响。
+        </p>
+
+                <h2 id="task-when">条件执行 when</h2>
+
+        <p>
+            step 可通过 <code>when</code> 字段声明执行条件。条件求值为 <code>true</code> 时才执行，
+            否则输出 <code>Skip step</code> 并继续下一步。
+        </p>
+
+        <pre class="language-yaml"><code>tasks:
+  release:
+    steps:
+      - name: "备份数据库"
+        action: command
+        when: "{{env}} == prod"
+        with:
+          command: "pg_dump mydb > /backup/mydb.sql"</code></pre>
+
+        <h3>支持的运算符</h3>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>运算符</th><th>示例</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>==</code></td><td><code>{{env}} == prod</code></td><td>相等</td></tr>
+                    <tr><td><code>!=</code></td><td><code>{{env}} != prod</code></td><td>不等</td></tr>
+                    <tr><td><code>&gt;</code></td><td><code>{{version}} &gt; 2</code></td><td>大于</td></tr>
+                    <tr><td><code>&gt;=</code></td><td><code>{{version}} &gt;= 2</code></td><td>大于等于</td></tr>
+                    <tr><td><code>&lt;</code></td><td><code>{{version}} &lt; 5</code></td><td>小于</td></tr>
+                    <tr><td><code>&lt;=</code></td><td><code>{{version}} &lt;= 5</code></td><td>小于等于</td></tr>
+                    <tr><td><code>in</code></td><td><code>{{role}} in (web,db)</code></td><td>在列表中</td></tr>
+                    <tr><td><code>&amp;&amp;</code></td><td><code>{{env}} == prod &amp;&amp; {{role}} == web</code></td><td>逻辑与</td></tr>
+                    <tr><td><code>||</code></td><td><code>{{env}} == prod || {{env}} == uat</code></td><td>逻辑或</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>数值与字符串比较</h3>
+
+        <p>
+            <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code>
+            的左右两侧若均能解析为数字，则按数字比较，否则按字符串比较。
+        </p>
+
+        <pre class="language-yaml"><code># 数字比较
+when: "{{version}} >= 2"
+
+# 字符串比较
+when: "{{name}} > abc"</code></pre>
+
+        <div class="callout warn">
+            <span class="co-icon">⚠️</span>
+            <p>
+                数字比较使用 <code>float64</code>。版本号如 <code>1.10</code> 与
+                <code>1.2</code> 的比较结果可能不符合直觉（<code>1.10</code> 被解析为
+                <code>1.1</code>，小于 <code>1.2</code>）。如需精确比较，建议使用整数版本号。
+            </p>
+        </div>
+
+        <h3>列表匹配 in</h3>
+
+        <p>
+            <code>in</code> 右侧为逗号分隔的列表，可加括号也可不加：
+        </p>
+
+        <pre class="language-yaml"><code>when: "{{role}} in (web,db,cache)"
+when: "{{role}} in web,db,cache"</code></pre>
+
+        <h3>逻辑组合</h3>
+
+        <p>
+            <code>&amp;&amp;</code> 优先级高于 <code>||</code>。
+            例如 <code>a &amp;&amp; b || c &amp;&amp; d</code> 等价于
+            <code>(a &amp;&amp; b) || (c &amp;&amp; d)</code>。
+        </p>
+
+        <pre class="language-yaml"><code>- name: "生产环境备份数据库"
+  action: command
+  when: "{{env}} == prod && {{role}} == db"
+  with:
+    command: "pg_dump mydb > /backup/mydb.sql"
+
+- name: "非生产环境启用调试"
+  action: command
+  when: "{{env}} != prod"
+  with:
+    command: "systemctl restart {{app_name}} --debug"</code></pre>
+
+        <h3>限制</h3>
+
+        <ul>
+            <li>不支持括号改变优先级。</li>
+            <li>不支持算术运算、函数调用。</li>
+            <li>条件求值前，表达式中的 <code>{{var}}</code> 会先做变量替换；未解析的变量会导致 step 失败。</li>
+        </ul>
 
         <h2 id="task-compose">组合内置 action</h2>
 
@@ -1303,10 +1505,22 @@ taskssh decrypt "xxxxx"</code></pre>
             通过 <code>-c</code> 提高并发。并发数建议从 3～5 开始。
         </p>
 
-        <h3>任务执行失败时是否会中断？</h3>
+        <h3>ignore_errors 对连接失败有效吗？</h3>
         <p>
-            默认情况下，失败将中断当前主机的后续步骤，其他主机继续执行。任务结束后输出
-            成功/失败摘要，并列出失败主机。
+            无效。<code>ignore_errors</code> 只作用于 step 本身执行失败。
+            连接失败属于主机级问题，会跳过该主机的所有后续步骤，并在摘要中计为失败主机。
+        </p>
+
+        <h3>when 条件不满足时会怎样？</h3>
+        <p>
+            step 被跳过，输出 <code>Skip step &lt;name&gt; (when: ...)</code>，
+            继续执行下一个 step。跳过的 step 不计入失败。
+        </p>
+
+        <h3>when 中可以使用未定义的变量吗？</h3>
+        <p>
+            不可以。条件求值前会对 <code>{{var}}</code> 做变量替换，
+            未解析的变量会导致该 step 失败并中断当前主机。
         </p>
 
         <h3>密码是否可以使用明文？</h3>

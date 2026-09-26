@@ -31,6 +31,8 @@ type Executor struct {
 }
 
 // NewExecutor 创建执行器。
+//
+// cliVars 是 CLI -D 传入的变量，优先级最高，覆盖清单中的所有同名变量。
 func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
 	dryRun bool, cliVars resolve.Vars) *Executor {
 	if concurrency <= 0 {
@@ -60,9 +62,8 @@ func (e *Executor) ExecID() string {
 
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	if e.dryRun {
-		log.Section("Dry run (no changes will be made)")
-	} else {
+	// dry-run 时提示已在 executeTask 开头输出，这里不再重复
+	if !e.dryRun {
 		log.Section("Start")
 	}
 
@@ -178,10 +179,12 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 	vars := mergeVars(globalVars, hostVars)
 
+	// CLI 变量优先级最高
 	for k, v := range e.cliVars {
 		vars[k] = v
 	}
 
+	// execId 由运行时注入，覆盖一切
 	vars["execId"] = e.execID
 
 	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
@@ -203,12 +206,12 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 		// 条件判断
 		if step.When != "" {
-			ok, err := evalWhen(step.When, vars)
+			ok, expanded, err := evalWhen(step.When, vars)
 			if err != nil {
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
-				log.Info("Skip step %s (when: %s)", step.Name, step.When)
+				log.Info("Skipped, condition not met: %s", expanded)
 				continue
 			}
 		}
