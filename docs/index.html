@@ -147,13 +147,13 @@
       - name: "上传新版本"
         action: push
         with:
-          file: "./dist/${app_name}-${version}.jar"
-          dest: "${service_path}"
+          file: "./dist/{{app_name}}-{{version}}.jar"
+          dest: "{{service_path}}"
           force: true
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"
+          command: "systemctl restart {{app_name}}"
         delay: 5
       - name: "健康检查"
         action: command

@@ -31,8 +31,6 @@ type Executor struct {
 }
 
 // NewExecutor 创建执行器。
-//
-// cliVars 是 CLI -D 传入的变量，优先级最高，覆盖清单中的所有同名变量。
 func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
 	dryRun bool, cliVars resolve.Vars) *Executor {
 	if concurrency <= 0 {
@@ -218,7 +216,11 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 		}
 
 		if err := act.Execute(ctx); err != nil {
-			return fmt.Errorf("step %s: %w", step.Name, err)
+			if step.IgnoreErrors {
+				log.Warn("step %s failed but ignored: %v", step.Name, err)
+			} else {
+				return fmt.Errorf("step %s: %w", step.Name, err)
+			}
 		}
 
 		if step.Delay > 0 && !e.dryRun {

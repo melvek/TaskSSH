@@ -207,7 +207,7 @@ tasks:
         action: push
         with:
           file: "./dist/app.jar"
-          dest: "${service_path}"
+          dest: "{{service_path}}"
           force: true
       - name: "重启服务"
         action: command
@@ -281,7 +281,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
         <p>
             上例中，<code>username</code> 与 <code>password</code> 为连接凭据，用于 SSH 认证；
             <code>app_name</code> 与 <code>version</code> 为用户自定义变量，可在任务中通过
-            <code>${app_name}</code> 语法引用。
+            <code>{{app_name}}</code> 语法引用。
         </p>
 
         <h2 id="inventory-servers">servers</h2>
@@ -326,7 +326,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
         <p>
             除上述专有字段外，其余字段将进入主机的 <code>Extra</code> 映射，
             参与变量替换。例如为主机声明 <code>role: db</code>，任务中即可通过
-            <code>${role}</code> 引用。
+            <code>{{role}}</code> 引用。
         </p>
 
         <h3>主机查找</h3>
@@ -383,13 +383,13 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
       - name: "上传新版本"
         action: push
         with:
-          file: "./dist/${app_name}-${version}.jar"
-          dest: "${service_path}"
+          file: "./dist/{{app_name}}-{{version}}.jar"
+          dest: "{{service_path}}"
           force: true
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"
+          command: "systemctl restart {{app_name}}"
         delay: 5</code></pre>
 
         <p>
@@ -418,7 +418,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                 <tbody>
                     <tr><td><code>name</code></td><td>否</td><td>步骤名称，仅用于日志输出</td></tr>
                     <tr><td><code>action</code></td><td>是</td><td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code></td></tr>
-                    <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>${var}</code> 变量替换</td></tr>
+                    <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>{{var}}</code> 变量替换</td></tr>
                     <tr><td><code>delay</code></td><td>否</td><td>本步骤执行后等待的秒数，默认 0</td></tr>
                 </tbody>
             </table>
@@ -444,19 +444,19 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
       - name: "备份当前版本"
         action: command
         with:
-          command: "cp ${service_path}${app_name}.jar ${service_path}${app_name}.jar.bak"
+          command: "cp {{service_path}}{{app_name}}.jar {{service_path}}{{app_name}}.jar.bak"
 
       - name: "上传新版本"
         action: push
         with:
-          file: "./dist/${app_name}-${version}.jar"
-          dest: "${service_path}"
+          file: "./dist/{{app_name}}-{{version}}.jar"
+          dest: "{{service_path}}"
           force: true
 
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"
+          command: "systemctl restart {{app_name}}"
         delay: 5
 
       - name: "健康检查"
@@ -506,24 +506,24 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
       - name: "创建版本目录"
         action: command
         with:
-          command: "mkdir -p ${service_path}/releases/${date}_${execId}"
+          command: "mkdir -p {{service_path}}/releases/{{date}}_{{execId}}"
 
       - name: "上传新版本"
         action: push
         with:
           file: "./dist/app.jar"
-          dest: "${service_path}/releases/${date}_${execId}/"
+          dest: "{{service_path}}/releases/{{date}}_{{execId}}/"
           force: true
 
       - name: "切换软链接"
         action: command
         with:
-          command: "ln -sfn ${service_path}/releases/${date}_${execId} ${service_path}/current"
+          command: "ln -sfn {{service_path}}/releases/{{date}}_{{execId}} {{service_path}}/current"
 
       - name: "查看软链接指向"
         action: command
         with:
-          command: "ls -l ${service_path}/current"</code></pre>
+          command: "ls -l {{service_path}}/current"</code></pre>
 
         <h3>模式五：多环境复用同一任务</h3>
 
@@ -566,14 +566,14 @@ tasks:
       - name: "上传新版本"
         action: push
         with:
-          file: "./dist/${app_name}-${version}.jar"
-          dest: "${service_path}"
+          file: "./dist/{{app_name}}-{{version}}.jar"
+          dest: "{{service_path}}"
           force: true
 
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"
+          command: "systemctl restart {{app_name}}"
         delay: 5</code></pre>
 
         <p>执行方式：</p>
@@ -605,13 +605,13 @@ taskssh release uat -y</code></pre>
         <pre class="language-yaml"><code>- name: "重启服务"
   action: command
   with:
-    command: "systemctl restart ${app_name}"</code></pre>
+    command: "systemctl restart {{app_name}}"</code></pre>
 
         <div class="callout">
             <span class="co-icon">ℹ️</span>
             <p>
-                命令中的 <code>$VAR</code> 将原样传递给远程 shell 解析；<code>${VAR}</code>
-                则会被 TaskSSH 作为变量处理。
+                TaskSSH 变量使用 <code>{{var}}</code> 语法；命令中的 <code>$VAR</code> 和
+                <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
             </p>
         </div>
 
@@ -843,7 +843,8 @@ Execute command: systemctl restart myapp</code></pre>
         <h2 id="variables">变量替换</h2>
 
         <p>
-            TaskSSH 支持在 <code>inventory.yaml</code> 中使用 <code>${变量名}</code> 语法进行变量替换。
+            TaskSSH 支持在 <code>inventory.yaml</code> 中使用 <code>{{变量名}}</code> 语法进行变量替换。
+            花括号内允许前后空格，<code>{{ var }}</code> 与 <code>{{var}}</code> 等价。
         </p>
 
         <h3>变量来源与优先级</h3>
@@ -882,7 +883,7 @@ Execute command: systemctl restart myapp</code></pre>
         <pre class="language-yaml"><code>global_vars:
   app_name: myapp
   version: 1.0.0
-  package: "${app_name}-${version}.jar"   # 递归展开后的结果
+  package: "{{app_name}}-{{version}}.jar"   # 递归展开后的结果
 
 servers:
   prod:
@@ -897,33 +898,35 @@ tasks:
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"</code></pre>
+          command: "systemctl restart {{app_name}}"</code></pre>
 
         <h3>未解析变量的处理</h3>
 
         <p>
-            TaskSSH 对变量替换采用严格模式：若某 <code>${变量名}</code> 在所有来源中均未定义，
+            TaskSSH 对变量替换采用严格模式：若某 <code>{{变量名}}</code> 在所有来源中均未定义，
             执行将立即中断并报错，而非以空字符串替换后继续运行。
         </p>
 
         <div class="callout warn">
             <span class="co-icon">⚠️</span>
             <p>
-                例如 <code>rm -rf ${target_dir}</code>，若 <code>target_dir</code> 未定义，
+                例如 <code>rm -rf {{target_dir}}</code>，若 <code>target_dir</code> 未定义，
                 该命令不会被执行。
             </p>
         </div>
 
         <h3>shell 变量与 TaskSSH 变量</h3>
 
-        <p>若命令中需要引用 shell 变量，应使用不带花括号的写法：</p>
-
-        <pre class="language-bash"><code>taskssh command prod -e "echo $HOME" -y</code></pre>
-
         <p>
-            <code>$HOME</code> 将原样传递至远程 shell；<code>${HOME}</code> 则被 TaskSSH
-            视为变量引用处理。
+            TaskSSH 变量使用 <code>{{var}}</code> 语法。命令中的 <code>$VAR</code> 与
+            <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
         </p>
+
+        <pre class="language-bash"><code># shell 变量，原样传给远程
+taskssh command prod -e "echo $HOME" -y
+
+# TaskSSH 变量，执行前替换
+taskssh command prod -e "echo {{app_name}}" -y</code></pre>
 
         <h2 id="builtin-vars">内置变量</h2>
 
@@ -939,12 +942,12 @@ tasks:
                 </thead>
                 <tbody>
                     <tr>
-                        <td><code>${date}</code></td>
+                        <td><code>{{date}}</code></td>
                         <td>当前日期，格式 <code>YYYYMMDD</code></td>
                         <td><code>20260926</code></td>
                     </tr>
                     <tr>
-                        <td><code>${execId}</code></td>
+                        <td><code>{{execId}}</code></td>
                         <td>本次执行的唯一标识，8 位 Base36（数字 + 大写字母）</td>
                         <td><code>0K8X7A2B</code></td>
                     </tr>
@@ -990,24 +993,24 @@ tasks:
       - name: "创建版本目录"
         action: command
         with:
-          command: "mkdir -p ${service_path}/releases/${date}_${execId}"
+          command: "mkdir -p {{service_path}}/releases/{{date}}_{{execId}}"
 
       - name: "上传新版本"
         action: push
         with:
           file: "./dist/app.jar"
-          dest: "${service_path}/releases/${date}_${execId}/"
+          dest: "{{service_path}}/releases/{{date}}_{{execId}}/"
           force: true
 
       - name: "切换软链接"
         action: command
         with:
-          command: "ln -sfn ${service_path}/releases/${date}_${execId} ${service_path}/current"
+          command: "ln -sfn {{service_path}}/releases/{{date}}_{{execId}} {{service_path}}/current"
 
       - name: "查看软链接指向"
         action: command
         with:
-          command: "ls -l ${service_path}/current"</code></pre>
+          command: "ls -l {{service_path}}/current"</code></pre>
 
         <p>
             回退时，通过 <code>-D revert_id=&lt;date&gt;_&lt;execId&gt;</code> 指定目标版本目录：
@@ -1020,17 +1023,17 @@ tasks:
       - name: "校验目标存在"
         action: command
         with:
-          command: "test -d ${service_path}/releases/${revert_id}"
+          command: "test -d {{service_path}}/releases/{{revert_id}}"
 
       - name: "回退软链接"
         action: command
         with:
-          command: "ln -sfn ${service_path}/releases/${revert_id} ${service_path}/current"
+          command: "ln -sfn {{service_path}}/releases/{{revert_id}} {{service_path}}/current"
 
       - name: "查看软链接指向"
         action: command
         with:
-          command: "ls -l ${service_path}/current"</code></pre>
+          command: "ls -l {{service_path}}/current"</code></pre>
 
         <pre class="language-bash"><code>taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
 

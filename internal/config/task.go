@@ -8,8 +8,9 @@ type Task struct {
 
 // Step 是任务中的一步，引用一个 Action。
 type Step struct {
-	Name   string                 `yaml:"name"`
-	Action string                 `yaml:"action"`
-	With   map[string]interface{} `yaml:"with"`
-	Delay  int                    `yaml:"delay"`
+	Name         string                 `yaml:"name"`
+	Action       string                 `yaml:"action"`
+	With         map[string]interface{} `yaml:"with"`
+	Delay        int                    `yaml:"delay"`
+	IgnoreErrors bool                   `yaml:"ignore_errors"`
 }

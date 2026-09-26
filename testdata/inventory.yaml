@@ -19,7 +19,7 @@
 #   identity_file  私钥路径，支持 ~
 #   passphrase     私钥 passphrase（必须密文）
 #
-# 其他字段进入变量池，可用 ${变量名} 引用。
+# 其他字段进入变量池，可用 {{变量名}} 引用。
 
 global_vars:
   port: 22
@@ -28,7 +28,7 @@ global_vars:
   # identity_file: ~/.ssh/id_rsa
   # passphrase: "encrypted-passphrase"
   
-  # 自定义的其它字段，可使用 ${app_name} 引用
+  # 自定义的其它字段，可使用 {{app_name}} 引用
   app_name: myapp
   version: 1.0.0
 
@@ -64,7 +64,7 @@ servers:
         # identity_file: ~/.ssh/id_rsa
         # passphrase: "encrypted-passphrase"
 
-        # 其他字段进入 Extra，可用 ${字段名} 引用
+        # 其他字段进入 Extra，可用 {{字段名}} 引用
         role: db
         db_port: 3306
 
@@ -75,7 +75,7 @@ servers:
 # step 字段：
 #   name    步骤名（可选）
 #   action  command / push / fetch / script
-#   with    action 参数，值支持 ${var}
+#   with    action 参数，值支持 {{var}}
 #   delay   执行后等待秒数（可选，默认 0）
 
 tasks:
@@ -89,7 +89,7 @@ tasks:
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart ${app_name}"
+          command: "systemctl restart {{app_name}}"
 
       # push：上传本地文件或目录到远程
       # with.file    本地文件或目录路径（必填）
@@ -97,11 +97,12 @@ tasks:
       # with.force   布尔值。覆盖已存在的远程文件，默认 false（已存在则报错）
       # with.zip     布尔值。目录上传时本地打包后上传，默认 false
       #               传 true 时依赖远程安装 unzip
+      # ignore_errors 当步骤执行
       - name: "上传新版本"
         action: push
         with:
-          file: "./dist/${app_name}-${version}.jar"
-          dest: "${service_path}"
+          file: "./dist/{{app_name}}-{{version}}.jar"
+          dest: "{{service_path}}"
           force: true
 
       # fetch：从远程下载文件或目录到本地
@@ -114,7 +115,7 @@ tasks:
       - name: "下载日志"
         action: fetch
         with:
-          file: "/var/log/${app_name}.log"
+          file: "/var/log/{{app_name}}.log"
           dest: "./logs/"
 
       # script：上传本地脚本到远程并执行
@@ -130,3 +131,4 @@ tasks:
           dest: "/tmp"
           remove: true
           force: true
+        ignore_errors: true
