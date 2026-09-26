@@ -89,6 +89,8 @@
                 <div class="nav-group-title">进阶</div>
                 <ul class="docs-nav-list">
                     <li><a href="#variables">变量替换</a></li>
+                    <li><a href="#builtin-vars">内置变量</a></li>
+                    <li><a href="#cli-vars">CLI 变量注入</a></li>
                     <li><a href="#vault">Vault 密钥</a></li>
                     <li><a href="#multi-env">多环境</a></li>
                     <li><a href="#auth">认证方式</a></li>
@@ -161,7 +163,7 @@ echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
 
         <h2 id="quickstart">快速开始</h2>
 
-        <p>标准使用流程包含四个阶段：创建密钥、编写清单、加密密码、执行任务。</p>
+        <p>标准使用流程包含四个阶段：创建密钥、加密密码、编写清单、执行任务。</p>
 
         <h3>1. 创建密钥文件</h3>
 
@@ -327,6 +329,29 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <code>${role}</code> 引用。
         </p>
 
+        <h3>主机查找</h3>
+
+        <p>执行任务时，位置参数可以是以下任意一种：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>形式</th><th>示例</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>组名</td><td><code>prod</code></td><td>展开该组下所有主机</td></tr>
+                    <tr><td>组名/主机名</td><td><code>prod/web1</code></td><td>精确到单台主机</td></tr>
+                    <tr><td>组内主机名</td><td><code>web1</code></td><td>唯一匹配时返回该主机；多组同名时报错</td></tr>
+                    <tr><td>独立主机名</td><td><code>localhost</code></td><td>不在任何组内时，按独立主机处理</td></tr>
+                    <tr><td>IP 地址</td><td><code>192.168.1.10</code></td><td>直接作为主机地址</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
+        </p>
+
         <h3>变量合并优先级</h3>
 
         <p>主机最终获得的变量池按以下顺序合并，优先级由低到高：</p>
@@ -334,12 +359,12 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>层级</th><th>来源</th><th>说明</th></tr>
+                    <tr><th>层级</th><th>来源</th><th>作用范围</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>1</td><td><code>global_vars</code></td><td>全局默认值</td></tr>
-                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组级变量</td></tr>
-                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>主机级变量，优先级最高</td></tr>
+                    <tr><td>1</td><td><code>global_vars</code></td><td>所有主机</td></tr>
+                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组内主机</td></tr>
+                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>单台主机</td></tr>
                 </tbody>
             </table>
         </div>
@@ -473,7 +498,34 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
           remove: true
           force: true</code></pre>
 
-        <h3>模式四：多环境复用同一任务</h3>
+        <h3>模式四：版本目录与软链接切换</h3>
+
+        <pre class="language-yaml"><code>tasks:
+  deploy:
+    steps:
+      - name: "创建版本目录"
+        action: command
+        with:
+          command: "mkdir -p ${service_path}/releases/${date}_${execId}"
+
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/app.jar"
+          dest: "${service_path}/releases/${date}_${execId}/"
+          force: true
+
+      - name: "切换软链接"
+        action: command
+        with:
+          command: "ln -sfn ${service_path}/releases/${date}_${execId} ${service_path}/current"
+
+      - name: "查看软链接指向"
+        action: command
+        with:
+          command: "ls -l ${service_path}/current"</code></pre>
+
+        <h3>模式五：多环境复用同一任务</h3>
 
         <p>
             任务本身不与环境绑定，环境差异由组级变量承载。例如 <code>service_path</code>
@@ -801,20 +853,26 @@ Execute command: systemctl restart myapp</code></pre>
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>层级</th><th>来源</th><th>说明</th></tr>
+                    <tr><th>层级</th><th>来源</th><th>作用范围</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>1</td><td><code>global_vars</code></td><td>全局默认值</td></tr>
-                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组级变量</td></tr>
-                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>主机级变量，优先级最高</td></tr>
-                    <tr><td>4</td><td>CLI <code>-P / -u / -p</code></td><td>仅覆盖端口 / 用户名 / 密码</td></tr>
+                    <tr><td>1</td><td><code>global_vars</code></td><td>所有主机</td></tr>
+                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组内主机</td></tr>
+                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>单台主机</td></tr>
+                    <tr><td>4</td><td>CLI <code>-D/--define</code></td><td>所有主机</td></tr>
+                    <tr><td>5</td><td><code>date</code> / <code>execId</code></td><td>所有主机（运行时注入）</td></tr>
                 </tbody>
             </table>
         </div>
 
         <p>
-            注意：CLI 选项仅覆盖连接三要素，不会将 <code>-e / -f / -d</code> 注入变量池。
-            命令参数通过 <code>with</code> 传递给对应 action。
+            前四层合并后形成每台主机的变量池，因此不同主机最终的同名变量值可能不同。
+            <code>date</code> 与 <code>execId</code> 为运行时全局注入，所有主机共享同一值。
+        </p>
+
+        <p>
+            注意：CLI 选项 <code>-P / -u / -p</code> 仅覆盖连接三要素，不会将
+            <code>-e / -f / -d</code> 注入变量池。命令参数通过 <code>with</code> 传递给对应 action。
         </p>
 
         <h3>递归展开</h3>
@@ -866,6 +924,163 @@ tasks:
             <code>$HOME</code> 将原样传递至远程 shell；<code>${HOME}</code> 则被 TaskSSH
             视为变量引用处理。
         </p>
+
+        <h2 id="builtin-vars">内置变量</h2>
+
+        <p>
+            除清单与 CLI 定义的变量外，TaskSSH 在运行时注入以下内置变量。
+            这些变量<strong>全局共享</strong>：一次任务执行只生成一次，所有目标主机使用同一个值。
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>变量</th><th>说明</th><th>示例值</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>${date}</code></td>
+                        <td>当前日期，格式 <code>YYYYMMDD</code></td>
+                        <td><code>20260926</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>${execId}</code></td>
+                        <td>本次执行的唯一标识，8 位 Base36（数字 + 大写字母）</td>
+                        <td><code>0K8X7A2B</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            内置变量为保留变量，不可被清单或 CLI <code>-D</code> 覆盖。
+        </p>
+
+        <h3>date</h3>
+
+        <p>
+            <code>date</code> 为清单加载时的日期，格式 <code>YYYYMMDD</code>。
+            一次任务执行只生成一次，所有主机共享同一值。
+        </p>
+
+        <p>
+            注意：<code>date</code> 是 TaskSSH 的内置变量，会覆盖清单中的同名变量。
+            如需在命令中使用 shell 的 <code>date</code> 命令，请使用 <code>$(date ...)</code>。
+        </p>
+
+        <h3>execId</h3>
+
+        <p>
+            <code>execId</code> 为本次任务执行的唯一标识，用于生成唯一目录名、版本标识等。
+        </p>
+
+        <ul>
+            <li>生成方式：纯随机，8 位 Base36</li>
+            <li>字符集：<code>0-9</code> 与 <code>A-Z</code></li>
+            <li>空间：<code>36^8 ≈ 2.82 × 10^12</code></li>
+            <li>不携带时间戳，不具备字典序，不可用于排序</li>
+            <li>一次任务执行生成一次，所有主机共享同一值</li>
+        </ul>
+
+        <p>典型用法：</p>
+
+        <pre class="language-yaml"><code>tasks:
+  deploy:
+    steps:
+      - name: "创建版本目录"
+        action: command
+        with:
+          command: "mkdir -p ${service_path}/releases/${date}_${execId}"
+
+      - name: "上传新版本"
+        action: push
+        with:
+          file: "./dist/app.jar"
+          dest: "${service_path}/releases/${date}_${execId}/"
+          force: true
+
+      - name: "切换软链接"
+        action: command
+        with:
+          command: "ln -sfn ${service_path}/releases/${date}_${execId} ${service_path}/current"
+
+      - name: "查看软链接指向"
+        action: command
+        with:
+          command: "ls -l ${service_path}/current"</code></pre>
+
+        <p>
+            回退时，通过 <code>-D revert_id=&lt;date&gt;_&lt;execId&gt;</code> 指定目标版本目录：
+        </p>
+
+        <pre class="language-yaml"><code>tasks:
+  revert:
+    description: "回退到指定版本"
+    steps:
+      - name: "校验目标存在"
+        action: command
+        with:
+          command: "test -d ${service_path}/releases/${revert_id}"
+
+      - name: "回退软链接"
+        action: command
+        with:
+          command: "ln -sfn ${service_path}/releases/${revert_id} ${service_path}/current"
+
+      - name: "查看软链接指向"
+        action: command
+        with:
+          command: "ls -l ${service_path}/current"</code></pre>
+
+        <pre class="language-bash"><code>taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
+
+        <h2 id="cli-vars">CLI 变量注入</h2>
+
+        <p>
+            通过 <code>-D/--define</code> 参数可在命令行注入变量，优先级最高，
+            覆盖清单中的所有同名变量，作用于所有目标主机。
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-D</code></td><td><code>--define</code></td><td>key=value</td><td>定义变量，可重复</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <pre class="language-bash"><code># 单变量
+taskssh deploy prod -D version=1.2.3 -y
+
+# 多变量
+taskssh deploy prod -D version=1.2.3 -D env=uat -y
+
+# 回退到指定版本
+taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
+
+        <h3>规则</h3>
+
+        <ul>
+            <li>格式为 <code>key=value</code>，key 与 value 均做 trim。</li>
+            <li>value 可包含 <code>=</code>，以第一个 <code>=</code> 分隔。</li>
+            <li>重复的 key 以后出现的为准。</li>
+            <li>不能覆盖保留变量（<code>date</code> / <code>execId</code>）。</li>
+        </ul>
+
+        <h3>优先级</h3>
+
+        <p>变量优先级从低到高：</p>
+
+        <ol>
+            <li><code>global_vars</code></li>
+            <li><code>servers.&lt;组名&gt;.vars</code></li>
+            <li>主机专有字段与 <code>Extra</code></li>
+            <li>CLI <code>-D/--define</code></li>
+            <li><code>date</code> / <code>execId</code>（运行时注入，不可覆盖）</li>
+        </ol>
 
         <h2 id="vault">Vault 密钥</h2>
 
@@ -991,6 +1206,7 @@ taskssh release uat -y</code></pre>
                     <tr><td><code>-p</code></td><td><code>--password</code></td><td>string</td><td>覆盖密码（明文，不推荐）</td></tr>
                     <tr><td><code>-c</code></td><td><code>--concurrency</code></td><td>int</td><td>并发数，默认 1（串行）</td></tr>
                     <tr><td><code>-y</code></td><td><code>--yes</code></td><td>—</td><td>跳过执行前确认</td></tr>
+                    <tr><td><code>-D</code></td><td><code>--define</code></td><td>key=value</td><td>定义变量，可重复</td></tr>
                     <tr><td>—</td><td><code>--connect-timeout</code></td><td>int</td><td>连接超时秒数，默认 10</td></tr>
                     <tr><td><code>-V</code></td><td><code>--secret-key-file</code></td><td>file</td><td>指定密钥文件或脚本</td></tr>
                     <tr><td>—</td><td><code>--dry-run</code></td><td>—</td><td>显示执行计划，不实际执行</td></tr>
@@ -1038,6 +1254,9 @@ taskssh release prod -P 2222 -u root -y
 # 并发执行
 taskssh release prod -c 5 -y
 
+# 注入变量
+taskssh deploy prod -D version=1.2.3 -y
+
 # 免清单，直接对指定主机执行命令
 taskssh command 10.0.0.1 -u deploy -e "uptime" -y
 
@@ -1057,7 +1276,8 @@ taskssh decrypt "xxxxx"</code></pre>
         <h3>执行时报变量未解析错误，如何处理？</h3>
         <p>
             请检查该变量是否在 <code>global_vars</code>、<code>servers.vars</code> 或主机
-            <code>Extra</code> 中定义。未解析的变量会直接中断执行，属内置的严格策略。
+            <code>Extra</code> 中定义，或通过 CLI <code>-D</code> 传入。未解析的变量会直接中断执行，
+            属内置的严格策略。
         </p>
 
         <h3>为何在 tasks 段中定义 command 未生效？</h3>
@@ -1065,6 +1285,12 @@ taskssh decrypt "xxxxx"</code></pre>
             <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> /
             <code>encrypt</code> / <code>decrypt</code> 为保留命令名。CLI 路由优先于任务查找，
             因此同名任务不会被触发。请改用其他任务名。
+        </p>
+
+        <h3>执行时提示 <code>ambiguous host name</code> 是什么原因？</h3>
+        <p>
+            表示提供的主机名在多个组中都存在。请使用 <code>组名/主机名</code> 格式明确指定，
+            例如 <code>prod/web1</code>。
         </p>
 
         <h3>串行与并行应如何选择？</h3>
