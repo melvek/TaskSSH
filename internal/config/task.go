@@ -13,4 +13,5 @@ type Step struct {
 	With         map[string]interface{} `yaml:"with"`
 	Delay        int                    `yaml:"delay"`
 	IgnoreErrors bool                   `yaml:"ignore_errors"`
+	When         string                 `yaml:"when"`
 }

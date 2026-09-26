@@ -178,12 +178,10 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 	vars := mergeVars(globalVars, hostVars)
 
-	// CLI 变量优先级最高
 	for k, v := range e.cliVars {
 		vars[k] = v
 	}
 
-	// execId 由运行时注入，覆盖一切
 	vars["execId"] = e.execID
 
 	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
@@ -201,6 +199,18 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 		}
 		if showStep {
 			log.Step(i+1, total, step.Name)
+		}
+
+		// 条件判断
+		if step.When != "" {
+			ok, err := evalWhen(step.When, vars)
+			if err != nil {
+				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
+			}
+			if !ok {
+				log.Info("Skip step %s (when: %s)", step.Name, step.When)
+				continue
+			}
 		}
 
 		act := e.actions.Get(step.Action)

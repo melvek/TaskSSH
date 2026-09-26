@@ -420,6 +420,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                     <tr><td><code>action</code></td><td>是</td><td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code></td></tr>
                     <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>{{var}}</code> 变量替换</td></tr>
                     <tr><td><code>delay</code></td><td>否</td><td>本步骤执行后等待的秒数，默认 0</td></tr>
+                    <tr><td><code>ignore_errors</code></td><td>否</td><td>忽略当前步骤的错误，继续执行，默认 `false`</td></tr>
                 </tbody>
             </table>
         </div>
