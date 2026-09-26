@@ -27,7 +27,7 @@ global_vars:
   # password: "encrypted-password"
   # identity_file: ~/.ssh/id_rsa
   # passphrase: "encrypted-passphrase"
-  
+
   # 自定义的其它字段，可使用 {{app_name}} 引用
   app_name: myapp
   version: 1.0.0
@@ -73,10 +73,16 @@ servers:
 # ------------------------------------------------------------------------------
 #
 # step 字段：
-#   name    步骤名（可选）
-#   action  command / push / fetch / script
-#   with    action 参数，值支持 {{var}}
-#   delay   执行后等待秒数（可选，默认 0）
+#   name          步骤名（可选）
+#   action        command / push / fetch / script
+#   with          action 参数，值支持 {{var}}
+#   delay         执行后等待秒数（可选，默认 0）
+#   ignore_errors 布尔值。该 step 失败时输出警告但不中断后续步骤，默认 false
+#                 仅作用于 step 执行失败；连接失败仍视为主机级失败
+#   when          条件表达式，满足时才执行，默认无
+#                 支持 == != > >= < <= in && ||
+#                 && 优先级高于 ||，不支持括号
+#                 条件求值前会先对 {{var}} 做变量替换
 
 tasks:
   # 自定义的任务名称，对应执行时的任务名称
@@ -97,7 +103,6 @@ tasks:
       # with.force   布尔值。覆盖已存在的远程文件，默认 false（已存在则报错）
       # with.zip     布尔值。目录上传时本地打包后上传，默认 false
       #               传 true 时依赖远程安装 unzip
-      # ignore_errors 当步骤执行
       - name: "上传新版本"
         action: push
         with:
@@ -108,7 +113,7 @@ tasks:
       # fetch：从远程下载文件或目录到本地
       # with.file     远程文件或目录路径（必填）
       # with.dest     本地目标路径，默认 ./
-      #               以 / 结尾视为目录，按 dest/<主机标识>/<文件名> 存放
+      #                以 / 结尾视为目录，按 dest/<主机标识>/<文件名> 存放
       # with.zip      布尔值。目录下载时远程打包后下载，默认 false
       #                传 true 时依赖远程安装 zip
       # with.tmp_dir  远程临时目录，默认 /tmp，仅 zip 时生效
@@ -117,6 +122,15 @@ tasks:
         with:
           file: "/var/log/{{app_name}}.log"
           dest: "./logs/"
+
+      # command：条件执行示例
+      # when  条件表达式。支持 == != > >= < <= in && ||
+      #       && 优先级高于 ||，不支持括号
+      - name: "备份数据库"
+        action: command
+        when: "{{env}} == prod && {{role}} == db"
+        with:
+          command: "pg_dump mydb > /backup/mydb.sql"
 
       # script：上传本地脚本到远程并执行
       # with.file    本地脚本文件路径（必填）

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 
 	"mestrap.com/taskssh/internal/config"
@@ -26,50 +27,80 @@ type HostEntry struct {
 
 // ResolveHosts 解析目标主机列表。
 //
-// 查找顺序：
-//  1. 组名精确匹配 → 展开组内所有主机
-//  2. "组名/主机名" 格式 → 返回该主机
-//  3. 组内主机名精确匹配 → 唯一时返回该主机，多组同名时报错
-//  4. 独立主机名 / IP → 按独立主机处理
+// 步骤：
+//  1. 对每个输入做主机模式展开
+//  2. 对展开后的每个主机名做查找：
+//     组名 → 组名/主机名 → 组内主机名 → 独立主机
+//  3. 去重
 func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
 	var entries []HostEntry
 
 	for _, name := range hostNames {
-		// 1. 组名
-		if group, ok := inv.Servers[name]; ok {
-			groupEntries := resolveGroup(name, &group, inv)
-			entries = append(entries, groupEntries...)
-			continue
+		expanded, err := ExpandHostPattern(name)
+		if err != nil {
+			return nil, err
 		}
 
-		// 2. "组名/主机名"
-		if strings.Contains(name, "/") {
-			entry, err := resolveGroupHost(name, inv)
+		for _, item := range expanded {
+			sub, err := resolveSingleHost(item, inv)
 			if err != nil {
 				return nil, err
 			}
-			if entry != nil {
-				entries = append(entries, *entry)
-				continue
-			}
+			entries = append(entries, sub...)
 		}
+	}
 
-		// 3. 组内主机名
-		entry, err := findHostInGroups(name, inv)
+	entries = dedupeEntries(entries)
+
+	applyOverrides(entries, ov)
+	return entries, nil
+}
+
+// resolveSingleHost 解析单个主机名（不含模式）。
+func resolveSingleHost(name string, inv *config.Inventory) ([]HostEntry, error) {
+	// 1. 组名
+	if group, ok := inv.Servers[name]; ok {
+		return resolveGroup(name, &group, inv), nil
+	}
+
+	// 2. "组名/主机名"
+	if strings.Contains(name, "/") {
+		entry, err := resolveGroupHost(name, inv)
 		if err != nil {
 			return nil, err
 		}
 		if entry != nil {
-			entries = append(entries, *entry)
-			continue
+			return []HostEntry{*entry}, nil
 		}
-
-		// 4. 独立主机
-		entries = append(entries, resolveStandalone(name, inv))
 	}
 
-	applyOverrides(entries, ov)
-	return entries, nil
+	// 3. 组内主机名
+	entry, err := findHostInGroups(name, inv)
+	if err != nil {
+		return nil, err
+	}
+	if entry != nil {
+		return []HostEntry{*entry}, nil
+	}
+
+	// 4. 独立主机
+	return []HostEntry{resolveStandalone(name, inv)}, nil
+}
+
+// dedupeEntries 按 host:port 去重。
+func dedupeEntries(entries []HostEntry) []HostEntry {
+	seen := make(map[string]bool, len(entries))
+	result := make([]HostEntry, 0, len(entries))
+
+	for _, e := range entries {
+		key := e.Host.Host + ":" + strconv.Itoa(e.Host.Port)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, e)
+	}
+	return result
 }
 
 // resolveGroupHost 解析 "组名/主机名" 格式。
@@ -165,11 +196,6 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 }
 
 // resolveGroup 展开服务器组。
-//
-// 合并顺序（优先级从低到高）：
-//  1. global_vars
-//  2. group.vars
-//  3. host（主机级）
 func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) []HostEntry {
 	var entries []HostEntry
 
