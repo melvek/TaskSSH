@@ -1,5 +1,33 @@
 # 更新日志
 
+## [2.3.0] - 2026-09-27
+
+### Add
+
+- **`command`**：新增了 `-L/--local` 参数，可以在本地环境下执行传入的命令
+  - 依然需要指定 `hosts` 参数
+  - windows 默认使用 `cmd` 执行，其它环境使用 `sh` 执行
+  - 命名中的转义需要自行处理
+- 按组分批执行：
+  - 任务级 `serial`：每组内每批 N 台
+  - 任务级 `min_available`：每组至少留 N 台在跑
+  - CLI `-S/--serial`：覆盖任务级 serial
+  - CLI `--min-available`：覆盖任务级 min_available
+  - CLI `--stop-on-failure`：一批失败后停止后续批次（默认 true）
+- 调度模型：组间串行、批间串行、批内并发，批不跨组
+- dry-run 时打印完整执行队列（组 + 批 + 主机）
+
+
+### Changed
+
+- 优化了控制台消息的输出
+- **`dry run`**：执行 Dry-Run模式时，不再连接远程服务器
+- `ResolveHosts` 不再按 `host:port` 去重。同一台物理机上部署
+  多个服务（属于不同组）时，会分别执行。请用 `Target hosts`
+  列表和确认步骤校对目标主机。
+
+---
+
 ## [2.2.0] - 2026-09-26
 
 ### Add

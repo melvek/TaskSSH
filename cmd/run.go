@@ -94,8 +94,23 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 
 	// 一次性加载所有Action，之后根据任务创建执行器
 	actions := action.NewRegistry()
-	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun, cliVarMap)
-	results := executor.Run(t, entries, globalVars)
+	serial := t.Serial
+	if serialFlag >= 0 {
+		serial = serialFlag
+	}
+
+	minAvailable := t.MinAvailable
+	if minAvailableFlag >= 0 {
+		minAvailable = minAvailableFlag
+	}
+
+	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun, cliVarMap,
+		serial, minAvailable, stopOnFailureFlag)
+
+	results, err := executor.Run(t, entries, globalVars)
+	if err != nil {
+		return err
+	}
 
 	if dryRun {
 		return nil

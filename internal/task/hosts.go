@@ -51,7 +51,7 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 		}
 	}
 
-	entries = dedupeEntries(entries)
+	// entries = dedupeEntries(entries)
 
 	applyOverrides(entries, ov)
 

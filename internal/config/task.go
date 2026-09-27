@@ -2,8 +2,10 @@ package config
 
 // Task 是一个任务，由若干步骤组成。
 type Task struct {
-	Description string `yaml:"description,omitempty"`
-	Steps       []Step `yaml:"steps"`
+	Description  string `yaml:"description,omitempty"`
+	Serial       int    `yaml:"serial,omitempty"`
+	MinAvailable int    `yaml:"min_available,omitempty"`
+	Steps        []Step `yaml:"steps"`
 }
 
 // Step 是任务中的一步，引用一个 Action。

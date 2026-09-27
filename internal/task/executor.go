@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"maps"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,13 +30,23 @@ type Executor struct {
 	dryRun         bool
 	cliVars        resolve.Vars
 	execID         string
+	serial         int
+	minAvailable   int
+	stopOnFailure  bool
+}
+
+// Batch 是一批待执行的主机，属于同一组。
+type Batch struct {
+	Group string
+	Hosts []HostEntry
 }
 
 // NewExecutor 创建执行器。
 //
 // cliVars 是 CLI -D 传入的变量，优先级最高，覆盖清单中的所有同名变量。
 func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
-	dryRun bool, cliVars resolve.Vars) *Executor {
+	dryRun bool, cliVars resolve.Vars,
+	serial, minAvailable int, stopOnFailure bool) *Executor {
 	if concurrency <= 0 {
 		concurrency = 1
 	}
@@ -51,6 +62,9 @@ func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
 		connectTimeout: time.Duration(connectTimeout) * time.Second,
 		dryRun:         dryRun,
 		cliVars:        cliVars,
+		serial:         serial,
+		minAvailable:   minAvailable,
+		stopOnFailure:  stopOnFailure,
 	}
 }
 
@@ -61,8 +75,78 @@ func (e *Executor) ExecID() string {
 	return e.execID
 }
 
+// groupEntries 按 Name 的 "/" 前缀分组，返回组顺序和分组结果。
+func groupEntries(entries []HostEntry) ([]string, map[string][]HostEntry) {
+	order := []string{}
+	groups := map[string][]HostEntry{}
+
+	for _, e := range entries {
+		g := "standalone"
+		if i := strings.Index(e.Name, "/"); i > 0 {
+			g = e.Name[:i]
+		}
+		if _, ok := groups[g]; !ok {
+			order = append(order, g)
+		}
+		groups[g] = append(groups[g], e)
+	}
+	return order, groups
+}
+
+// planBatches 把主机列表规划成一条批队列。
+//
+// 规则：
+//   - 按组分块，组间顺序按 entries 里组第一次出现的顺序
+//   - 组内按 batchSize = min(serial, len(group)-minAvailable) 切片
+//   - 单台组单独一批，不参与 minAvailable 计算
+//   - len(group)-minAvailable <= 0 时报错
+func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error) {
+	if serial < 0 {
+		serial = 0
+	}
+	if minAvailable < 0 {
+		minAvailable = 0
+	}
+
+	order, groups := groupEntries(entries)
+	var plan []Batch
+
+	for _, gname := range order {
+		groupHosts := groups[gname]
+
+		// 单台组：直接一批
+		if len(groupHosts) == 1 {
+			plan = append(plan, Batch{Group: gname, Hosts: groupHosts})
+			continue
+		}
+
+		available := len(groupHosts) - minAvailable
+		if available <= 0 {
+			return nil, fmt.Errorf(
+				"group %s: min-available %d >= group size %d, cannot batch\n"+
+					"hint: reduce min-available in task config or override with --min-available",
+				gname, minAvailable, len(groupHosts))
+		}
+
+		batchSize := available
+		if serial > 0 {
+			batchSize = min(serial, available)
+		}
+
+		for start := 0; start < len(groupHosts); start += batchSize {
+			end := start + batchSize
+			if end > len(groupHosts) {
+				end = len(groupHosts)
+			}
+			plan = append(plan, Batch{Group: gname, Hosts: groupHosts[start:end]})
+		}
+	}
+
+	return plan, nil
+}
+
 // Run 对一批主机执行任务。
-func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
 	if !e.dryRun {
 		console.Section("Start")
 	}
@@ -78,15 +162,24 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 		console.Info("Concurrency: %d", e.concurrency)
 	}
 
-	// 整批共享一个 execId
 	e.execID = generateExecID()
 
-	if e.concurrency == 1 || e.dryRun {
-		// 串行执行
-		return e.runSerial(task, hosts, globalVars)
+	// 启用分批：serial > 0 或 minAvailable > 0
+	if e.serial > 0 || e.minAvailable > 0 {
+		plan, err := planBatches(hosts, e.serial, e.minAvailable)
+		if err != nil {
+			return nil, err
+		}
+		if e.dryRun {
+			printPlan(plan)
+		}
+		return e.runBatches(task, plan, globalVars), nil
 	}
-	// 并行执行
-	return e.runParallel(task, hosts, globalVars)
+
+	if e.concurrency == 1 || e.dryRun {
+		return e.runSerial(task, hosts, globalVars), nil
+	}
+	return e.runParallel(task, hosts, globalVars), nil
 }
 
 // runSerial 串行执行，实时输出。
@@ -251,10 +344,51 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	return nil
 }
 
+// runBatches 按批队列依次执行。
+func (e *Executor) runBatches(task *config.Task, plan []Batch, globalVars resolve.Vars) []Result {
+	var all []Result
+
+	for i, batch := range plan {
+		console.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
+			batch.Group, i+1, len(plan), len(batch.Hosts)))
+
+		var results []Result
+		if e.concurrency == 1 || e.dryRun {
+			results = e.runSerial(task, batch.Hosts, globalVars)
+		} else {
+			results = e.runParallel(task, batch.Hosts, globalVars)
+		}
+
+		all = append(all, results...)
+
+		if e.stopOnFailure {
+			for _, r := range results {
+				if !r.Success {
+					console.Error("Batch failed, stopping remaining batches")
+					return all
+				}
+			}
+		}
+	}
+
+	return all
+}
+
 // mergeVars 合并变量池：global -> host，host 优先。
 func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
 	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
 	maps.Copy(vars, globalVars)
 	maps.Copy(vars, hostVars)
 	return vars
+}
+
+// printPlan 在 dry-run 时打印完整执行队列。
+func printPlan(plan []Batch) {
+	console.Section("Execution Plan")
+	for i, batch := range plan {
+		console.Info("Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
+		for _, h := range batch.Hosts {
+			console.Info("  - %s [%s]", h.Name, h.Host.Host)
+		}
+	}
 }

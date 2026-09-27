@@ -89,6 +89,10 @@ func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.Ov
 func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
 	console.Info("Upload directory %s to %s (recursive)", localAbs, dest)
 
+	if ctx.DryRun {
+		return nil
+	}
+
 	base := filepath.Dir(localAbs)
 	rootRemote := path.Join(dest, filepath.Base(localAbs))
 	if err := ctx.Client.MkdirAll(rootRemote); err != nil {
