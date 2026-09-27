@@ -89,14 +89,12 @@ tasks:
   deploy:
     # 任务描述信息
     description: "部署服务"
+    # 每组内每批 2 台，至少留 1 台在跑
+    # 单台组不参与 min_available 计算，单独一批
+    # len(group) - min_available <= 0 时报错退出
+    serial: 2
+    min_available: 1
     steps:
-      # command：在远程主机执行命令
-      # with.command  要执行的命令（必填）
-      - name: "重启服务"
-        action: command
-        with:
-          command: "systemctl restart {{app_name}}"
-
       # push：上传本地文件或目录到远程
       # with.file    本地文件或目录路径（必填）
       # with.dest    远程目标路径（必填，或从 service_path 变量读取）
@@ -123,14 +121,13 @@ tasks:
           file: "/var/log/{{app_name}}.log"
           dest: "./logs/"
 
-      # command：条件执行示例
-      # when  条件表达式。支持 == != > >= < <= in && ||
-      #       && 优先级高于 ||，不支持括号
-      - name: "备份数据库"
+      # command：在远程主机执行命令
+      # with.command  要执行的命令（必填）
+      - name: "重启服务"
         action: command
-        when: "{{env}} == prod && {{role}} == db"
+        when: "{{env}} == prod && {{exeId}}==EX2D653B"
         with:
-          command: "pg_dump mydb > /backup/mydb.sql"
+          command: "systemctl restart {{app_name}}"
 
       # script：上传本地脚本到远程并执行
       # with.file    本地脚本文件路径（必填）
