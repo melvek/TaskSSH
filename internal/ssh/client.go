@@ -30,7 +30,8 @@ type Client struct {
 //
 // timeout 为 0 时使用 DefaultConnectTimeout。
 // dryRun 为 true 时，后续的 Exec / Upload / Download / MkdirAll 将被跳过。
-func Connect(host *config.Host, timeout time.Duration, dryRun bool) (*Client, error) {
+func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
+
 	if host.Host == "" {
 		return nil, fmt.Errorf("host is empty")
 	}
@@ -63,9 +64,8 @@ func Connect(host *config.Host, timeout time.Duration, dryRun bool) (*Client, er
 	}
 
 	return &Client{
-		conn:   conn,
-		host:   host,
-		dryRun: dryRun,
+		conn: conn,
+		host: host,
 	}, nil
 }
 
@@ -79,11 +79,6 @@ func (c *Client) Close() error {
 		return c.conn.Close()
 	}
 	return nil
-}
-
-// DryRun 返回是否处于 dry-run 模式。
-func (c *Client) DryRun() bool {
-	return c.dryRun
 }
 
 // getSFTP 返回复用的 SFTP 会话，首次调用时创建。

@@ -34,6 +34,10 @@ func (a *CommandAction) Execute(ctx *Context) error {
 
 	console.Info("Execute command: %s", cmd)
 
+	if ctx.DryRun {
+		return nil
+	}
+
 	result, err := ctx.Client.Exec(cmd)
 	if err != nil {
 		return err

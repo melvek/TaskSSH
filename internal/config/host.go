@@ -17,7 +17,7 @@ type Host struct {
 	Passphrase   string `yaml:"passphrase,omitempty"`
 
 	// Extra 存放未定义的字段，用于变量替换
-	Extra map[string]interface{} `yaml:",inline"`
+	Extra map[string]any `yaml:",inline"`
 }
 
 // UnmarshalYAML 支持主机的两种写法：
@@ -39,7 +39,7 @@ func (h *Host) UnmarshalYAML(value *yaml.Node) error {
 	*h = Host(raw)
 
 	if h.Extra == nil {
-		h.Extra = make(map[string]interface{})
+		h.Extra = make(map[string]any)
 	}
 	return nil
 }
@@ -70,7 +70,7 @@ func (h *Host) Merge(source *Host) {
 		h.Passphrase = source.Passphrase
 	}
 	if h.Extra == nil {
-		h.Extra = make(map[string]interface{})
+		h.Extra = make(map[string]any)
 	}
 	for k, v := range source.Extra {
 		if _, ok := h.Extra[k]; !ok {

@@ -74,11 +74,14 @@ func (a *PushAction) Execute(ctx *Context) error {
 func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
 	console.Info("Upload %s to %s", localAbs, dest)
 
+	if ctx.DryRun {
+		return nil
+	}
+
 	finalPath, err := ctx.Client.Upload(localAbs, dest, policy)
 	if err != nil {
 		return err
 	}
-
 	console.Success("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }

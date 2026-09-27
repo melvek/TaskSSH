@@ -20,12 +20,13 @@ type ExecResult struct {
 //
 // dry-run 时跳过实际执行，返回空结果。
 func (c *Client) Exec(command string) (*ExecResult, error) {
-	if c.conn == nil {
-		return nil, fmt.Errorf("client not connected")
-	}
 
 	if c.dryRun {
 		return &ExecResult{ExitCode: 0}, nil
+	}
+
+	if c.conn == nil {
+		return nil, fmt.Errorf("client not connected")
 	}
 
 	session, err := c.conn.NewSession()

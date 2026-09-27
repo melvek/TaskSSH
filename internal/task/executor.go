@@ -3,6 +3,7 @@ package task
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -62,7 +63,6 @@ func (e *Executor) ExecID() string {
 
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	// dry-run 时提示已在 executeTask 开头输出，这里不再重复
 	if !e.dryRun {
 		console.Section("Start")
 	}
@@ -82,8 +82,10 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 	e.execID = generateExecID()
 
 	if e.concurrency == 1 || e.dryRun {
+		// 串行执行
 		return e.runSerial(task, hosts, globalVars)
 	}
+	// 并行执行
 	return e.runParallel(task, hosts, globalVars)
 }
 
@@ -169,8 +171,6 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 
 // runOnHost 对单台主机执行整条任务。
 //
-// dry-run 时也建立连接，但 Exec / Upload / Download / MkdirAll 被跳过。
-//
 // 变量合并顺序：
 //
 //	global_vars -> 组 vars -> 主机 Extra -> CLI -D -> execId（运行时）
@@ -180,18 +180,21 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	vars := mergeVars(globalVars, hostVars)
 
 	// CLI 变量优先级最高
-	for k, v := range e.cliVars {
-		vars[k] = v
-	}
+	maps.Copy(vars, e.cliVars)
 
 	// execId 由运行时注入，覆盖一切
 	vars["execId"] = e.execID
 
-	client, err := ssh.Connect(host, e.connectTimeout, e.dryRun)
-	if err != nil {
-		return fmt.Errorf("connect %s: %w", host.Host, err)
+	var client *ssh.Client
+
+	if !e.dryRun {
+		c, err := ssh.Connect(host, e.connectTimeout)
+		if err != nil {
+			return fmt.Errorf("connect %s: %w", host.Host, err)
+		}
+		client = c
+		defer client.Close()
 	}
-	defer client.Close()
 
 	total := len(task.Steps)
 	showStep := total > 1
@@ -226,6 +229,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			Vars:   vars,
 			With:   step.With,
 			Client: client,
+			DryRun: e.dryRun,
 		}
 
 		if err := act.Execute(ctx); err != nil {
@@ -236,9 +240,11 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			}
 		}
 
-		if step.Delay > 0 && !e.dryRun {
+		if step.Delay > 0 {
 			console.Info("Waiting %ds...", step.Delay)
-			time.Sleep(time.Duration(step.Delay) * time.Second)
+			if !e.dryRun {
+				time.Sleep(time.Duration(step.Delay) * time.Second)
+			}
 		}
 	}
 
@@ -248,11 +254,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 // mergeVars 合并变量池：global -> host，host 优先。
 func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
 	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
-	for k, v := range globalVars {
-		vars[k] = v
-	}
-	for k, v := range hostVars {
-		vars[k] = v
-	}
+	maps.Copy(vars, globalVars)
+	maps.Copy(vars, hostVars)
 	return vars
 }

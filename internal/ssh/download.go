@@ -11,6 +11,11 @@ import (
 //
 // dry-run 时跳过实际下载。
 func (c *Client) Download(remotePath, localPath string) error {
+
+	if c.dryRun {
+		return nil
+	}
+
 	if c.conn == nil {
 		return fmt.Errorf("client not connected")
 	}

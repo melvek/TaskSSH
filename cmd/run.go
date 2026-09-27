@@ -123,6 +123,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 
 	console.Info("----------------------")
 	console.Info("Execution ID: %s", executor.ExecID())
+	console.EmptyLine()
 
 	return nil
 }

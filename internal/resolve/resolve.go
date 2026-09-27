@@ -13,7 +13,7 @@ type Vars map[string]any
 var placeholder = regexp.MustCompile(`\{\{\s*([^{}]+?)\s*\}\}`)
 
 // MaxDepth 是递归展开的最大层数。
-const MaxDepth = 4
+const MaxDepth = 5
 
 // Replace 对模板做变量替换。
 //

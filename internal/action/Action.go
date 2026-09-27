@@ -12,6 +12,7 @@ type Context struct {
 	Vars   resolve.Vars
 	With   any
 	Client *ssh.Client
+	DryRun bool
 }
 
 type Action interface {

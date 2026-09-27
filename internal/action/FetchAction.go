@@ -84,6 +84,10 @@ func (a *FetchAction) fetchFile(ctx *Context, remote, dest string) error {
 
 	console.Info("Download %s to %s", remote, finalPath)
 
+	if ctx.DryRun {
+		return nil
+	}
+
 	if err := ctx.Client.Download(remote, finalPath); err != nil {
 		return err
 	}
