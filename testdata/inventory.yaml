@@ -86,7 +86,7 @@ servers:
 
 tasks:
   # 自定义的任务名称，对应执行时的任务名称
-  deploy:
+  release:
     # 任务描述信息
     description: "部署服务"
     # 每组内每批 2 台，至少留 1 台在跑
@@ -126,6 +126,7 @@ tasks:
       - name: "重启服务"
         action: command
         when: "{{env}} == prod && {{exeId}}==EX2D653B"
+        delay: 5
         with:
           command: "systemctl restart {{app_name}}"
 
