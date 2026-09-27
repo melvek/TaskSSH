@@ -8,13 +8,13 @@
     <meta name="keywords" content="TaskSSH,SSH,批量运维,DevOps,自动化部署,YAML">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="TaskSSH - 轻量级批量运维工具">
-    <meta property="og:description" content="单文件、无依赖、YAML 驱动。通过一份清单定义服务器与任务，以单条命令完成完整流程。">
+    <meta property="og:title" content="TaskSSH - 轻量级批量运维部署工具">
+    <meta property="og:description" content="单文件、无依赖、YAML 驱动。一份清单，一条命令，一批服务器">
     <meta property="og:url" content="https://github.com/melvek/TaskSSH">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="TaskSSH - 轻量级批量运维工具">
-    <meta name="twitter:description" content="单文件、无依赖、YAML 驱动。通过一份清单定义服务器与任务。">
+    <meta name="twitter:description" content="单文件、无依赖、YAML 驱动。一份清单，一条命令，一批服务器">
 
     <link rel="stylesheet" href="assets/prism.css">
     <link rel="stylesheet" href="assets/style.css?version=2.1.0">
@@ -43,7 +43,7 @@
 <div class="hero">
     <div class="container">
         <img src="assets/logo.svg" alt="TaskSSH" width="256" style="margin-bottom: 20px;">
-        <p class="slogan">通过一份清单定义服务器与任务，以单条命令完成完整流程。</p>
+        <p class="slogan">一份清单，一条命令，一批服务器</p>
         <p class="sub-slogan">
             单文件<span class="dot">·</span>无依赖<span class="dot">·</span>YAML 驱动<span class="dot">·</span>跨平台
         </p>
@@ -109,9 +109,9 @@
                 <p>AES-256-GCM 加密清单中的密码。密钥由用户管理，不硬编码在二进制中。</p>
             </div>
             <div class="feature">
-                <div class="icon">🔍</div>
-                <h3>Dry-run</h3>
-                <p><code>--dry-run</code> 显示每台主机每个步骤将执行的内容，不实际执行，便于执行前确认。</p>
+                <div class="icon">📦</div>
+                <h3>按组分批</h3>
+                <p>通过 <code>serial</code> 与 <code>min_available</code> 控制每批主机数与安全余量，支持滚动部署与回退。</p>
             </div>
         </div>
     </div>
