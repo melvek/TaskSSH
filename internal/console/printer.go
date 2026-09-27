@@ -1,4 +1,4 @@
-// Package log 提供彩色终端输出。
+// Package console 提供彩色终端输出。
 //
 // 基于 fatih/color，自动检测终端是否支持颜色。
 // 设置环境变量 NO_COLOR=1 可强制禁用颜色。
@@ -6,7 +6,7 @@
 // 支持按 goroutine 缓冲输出：
 //   - 串行执行时直接输出到 os.Stdout
 //   - 并发执行时每个 goroutine 输出到独立缓冲，执行完统一输出
-package log
+package console
 
 import (
 	"fmt"

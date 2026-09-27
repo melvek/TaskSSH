@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"mestrap.com/taskssh/internal/action"
 )
 
 var (
@@ -17,11 +18,11 @@ var scriptCmd = &cobra.Command{
 	Long:  `将本地 shell 脚本上传到目标主机并执行。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		with := map[string]any{
-			"file":   scriptFile,
-			"dest":   scriptDest,
-			"remove": scriptRemove,
-			"force":  scriptForce,
+		with := action.ScriptWith{
+			File:   scriptFile,
+			Dest:   scriptDest,
+			Remove: scriptRemove,
+			Force:  scriptForce,
 		}
 		return runBuiltinTask("script", args, with)
 	},

@@ -6,8 +6,7 @@ import (
 	"io"
 
 	"golang.org/x/crypto/ssh"
-
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 )
 
 // ExecResult 是命令执行结果。
@@ -35,7 +34,7 @@ func (c *Client) Exec(command string) (*ExecResult, error) {
 	}
 	defer session.Close()
 
-	out := log.GetOutput()
+	out := console.GetOutput()
 
 	var stdout, stderr bytes.Buffer
 

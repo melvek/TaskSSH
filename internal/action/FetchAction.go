@@ -10,20 +10,33 @@ import (
 	"strings"
 	"time"
 
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 )
 
 // FetchAction 从远程下载文件或目录。
 type FetchAction struct{}
 
+var _ Action = &FetchAction{}
+
+type FetchWith struct {
+	File   string `yaml:"file"`
+	Dest   string `yaml:"dest"`
+	Zip    bool   `yaml:"zip"`
+	TmpDir string `yaml:"tmp_dir"`
+}
+
 func (a *FetchAction) Name() string { return "fetch" }
 
 func (a *FetchAction) Execute(ctx *Context) error {
-	fileRaw, ok := ctx.With["file"]
-	if !ok {
+	w, err := decodeWith[FetchWith](ctx.With)
+	if err != nil {
+		return err
+	}
+
+	if w.File == "" {
 		return fmt.Errorf("fetch action requires 'file' parameter")
 	}
-	fileStr := fmt.Sprintf("%v", fileRaw)
+	fileStr := fmt.Sprintf("%v", w.File)
 	if fileStr == "" {
 		return fmt.Errorf("fetch action requires non-empty 'file' parameter")
 	}
@@ -33,17 +46,12 @@ func (a *FetchAction) Execute(ctx *Context) error {
 	}
 
 	dest := "./"
-	if destRaw, ok := ctx.With["dest"]; ok {
-		s := fmt.Sprintf("%v", destRaw)
-		if s != "" {
-			dest, err = ctx.Vars.Replace(s)
-			if err != nil {
-				return err
-			}
+	if w.Dest != "" {
+		dest, err = ctx.Vars.Replace(w.Dest)
+		if err != nil {
+			return err
 		}
 	}
-
-	useZip := toBool(ctx.With["zip"])
 
 	info, err := ctx.Client.Stat(remote)
 	if err != nil {
@@ -51,8 +59,15 @@ func (a *FetchAction) Execute(ctx *Context) error {
 	}
 
 	if info.IsDir() {
-		if useZip {
-			return a.fetchDirZip(ctx, remote, dest)
+		if w.Zip {
+			tmpDir := "/tmp"
+			if w.TmpDir != "" {
+				tmpDir, err = ctx.Vars.Replace(w.TmpDir)
+				if err != nil {
+					return err
+				}
+			}
+			return a.fetchDirZip(ctx, remote, dest, tmpDir)
 		}
 		return a.fetchDirRecursive(ctx, remote, dest)
 	}
@@ -60,24 +75,26 @@ func (a *FetchAction) Execute(ctx *Context) error {
 	return a.fetchFile(ctx, remote, dest)
 }
 
+// 下载单个文件
 func (a *FetchAction) fetchFile(ctx *Context, remote, dest string) error {
 	finalPath, err := resolveFinalPath(dest, remote, ctx.Host.Host)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Download %s to %s", remote, finalPath)
+	console.Info("Download %s to %s", remote, finalPath)
 
 	if err := ctx.Client.Download(remote, finalPath); err != nil {
 		return err
 	}
 
-	log.Success("Downloaded: %s -> %s", remote, finalPath)
+	console.Success("Downloaded: %s -> %s", remote, finalPath)
 	return nil
 }
 
+// 下载文件夹
 func (a *FetchAction) fetchDirRecursive(ctx *Context, remote, dest string) error {
-	log.Info("Download directory %s to %s (recursive)", remote, dest)
+	console.Info("Download directory %s to %s (recursive)", remote, dest)
 
 	baseName := path.Base(remote)
 	hostID := buildHostID(ctx.Host.Host)
@@ -101,32 +118,21 @@ func (a *FetchAction) fetchDirRecursive(ctx *Context, remote, dest string) error
 			return fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
 		}
 
-		log.Info("Download %s to %s", rf, localPath)
+		console.Info("Download %s to %s", rf, localPath)
 
 		if err := ctx.Client.Download(rf, localPath); err != nil {
 			return err
 		}
 	}
 
-	log.Success("Directory downloaded: %s -> %s (%d files)", remote, rootLocal, len(files))
+	console.Success("Directory downloaded: %s -> %s (%d files)", remote, rootLocal, len(files))
 	return nil
 }
 
-func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
+// 下载压缩包
+func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string, tmpDir string) error {
 	baseName := path.Base(remote)
 	remoteDir := path.Dir(remote)
-
-	tmpDir := "/tmp"
-	if tmpRaw, ok := ctx.With["tmp_dir"]; ok {
-		s := fmt.Sprintf("%v", tmpRaw)
-		if s != "" {
-			v, err := ctx.Vars.Replace(s)
-			if err != nil {
-				return err
-			}
-			tmpDir = v
-		}
-	}
 
 	hostID := buildHostID(ctx.Host.Host)
 	remoteTmpDir := path.Join(tmpDir, "taskssh-fetch-"+hostID)
@@ -134,7 +140,7 @@ func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
 	zipName := fmt.Sprintf("%s.%d.zip", baseName, time.Now().UnixMicro())
 	remoteZip := path.Join(remoteTmpDir, zipName)
 
-	log.Info("Zip directory %s on remote", remote)
+	console.Info("Zip directory %s on remote", remote)
 
 	zipCmd := fmt.Sprintf(
 		`which zip &>/dev/null && { mkdir -p %s && cd %s && zip -r %s %s; } || `+
@@ -144,7 +150,7 @@ func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
 		shellQuote(remoteZip),
 		shellQuote(baseName),
 	)
-	log.Info("Execute zip files ...")
+	console.Info("Execute zip files ...")
 
 	result, err := ctx.Client.Exec(zipCmd)
 	if err != nil {
@@ -162,7 +168,7 @@ func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
 	localZip.Close()
 	defer os.Remove(localZipPath)
 
-	log.Info("Download zip %s to %s", remoteZip, localZipPath)
+	console.Info("Download zip %s to %s", remoteZip, localZipPath)
 
 	if err := ctx.Client.Download(remoteZip, localZipPath); err != nil {
 		return err
@@ -170,21 +176,22 @@ func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string) error {
 
 	rmCmd := fmt.Sprintf("rm -f %s", shellQuote(remoteZip))
 	if _, err := ctx.Client.Exec(rmCmd); err != nil {
-		log.Warn("Failed to remove remote zip: %v", err)
+		console.Warn("Failed to remove remote zip: %v", err)
 	}
 
 	rootLocal := filepath.Join(dest, hostID, baseName)
 
-	log.Info("Extract %s to %s", localZipPath, rootLocal)
+	console.Info("Extract %s to %s", localZipPath, rootLocal)
 
 	if err := extractZip(localZipPath, rootLocal); err != nil {
 		return fmt.Errorf("extract: %w", err)
 	}
 
-	log.Success("Directory downloaded: %s -> %s", remote, rootLocal)
+	console.Success("Directory downloaded: %s -> %s", remote, rootLocal)
 	return nil
 }
 
+// 解析完整远程路径
 func resolveFinalPath(dest, remotePath, host string) (string, error) {
 	if remotePath == "" {
 		return "", fmt.Errorf("remote path is empty")

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"mestrap.com/taskssh/internal/action"
 )
 
 var (
@@ -17,11 +18,11 @@ var fetchCmd = &cobra.Command{
 	Long:  `从远程服务器下载文件或目录。目录下载默认递归，加 -z 则远程打包后下载。本地已存在文件默认覆盖。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		with := map[string]any{
-			"file":    fetchFile,
-			"dest":    fetchDest,
-			"zip":     fetchZip,
-			"tmp_dir": fetchTmpDir,
+		with := action.FetchWith{
+			File:   fetchFile,
+			Dest:   fetchDest,
+			Zip:    fetchZip,
+			TmpDir: fetchTmpDir,
 		}
 		return runBuiltinTask("fetch", args, with)
 	},

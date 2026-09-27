@@ -6,39 +6,40 @@ import (
 	"path/filepath"
 	"strings"
 
-	"mestrap.com/taskssh/internal/log"
-	"mestrap.com/taskssh/internal/resolve"
+	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
 // ScriptAction 上传本地脚本并在远程执行。
 type ScriptAction struct{}
 
+var _ Action = &ScriptAction{}
+
 func (a *ScriptAction) Name() string { return "script" }
 
-type scriptParams struct {
-	file   string
-	dest   string
-	remove bool
-	force  bool
+type ScriptWith struct {
+	File   string `yaml:"file"`
+	Dest   string `yaml:"dest"`
+	Remove bool   `yaml:"remove"`
+	Force  bool   `yaml:"force"`
 }
 
 func (a *ScriptAction) Execute(ctx *Context) error {
-	params, err := parseScriptWith(ctx.With, ctx.Vars)
+	w, err := decodeWith[ScriptWith](ctx.With)
 	if err != nil {
 		return err
 	}
 
-	localAbs, err := filepath.Abs(params.file)
+	localAbs, err := filepath.Abs(w.File)
 	if err != nil {
-		return fmt.Errorf("resolve path %s: %w", params.file, err)
+		return fmt.Errorf("resolve path %s: %w", w.File, err)
 	}
 
-	remote := resolveScriptPath(params.dest, localAbs)
+	remote := resolveScriptPath(w.Dest, localAbs)
 
-	log.Info("Upload script %s to %s", localAbs, remote)
+	console.Info("Upload script %s to %s", localAbs, remote)
 
-	policy := ssh.NewPolicy(params.force)
+	policy := ssh.NewPolicy(w.Force)
 
 	finalPath, err := ctx.Client.Upload(localAbs, remote, policy)
 	if err != nil {
@@ -50,12 +51,12 @@ func (a *ScriptAction) Execute(ctx *Context) error {
 	}
 
 	cmd := shellQuote(finalPath)
-	if params.remove {
+	if w.Remove {
 		cmd = fmt.Sprintf("%s; rc=$?; rm -f %s; exit $rc",
 			cmd, shellQuote(finalPath))
 	}
 
-	log.Info("Execute script: %s", finalPath)
+	console.Info("Execute script: %s", finalPath)
 
 	result, err := ctx.Client.Exec(cmd)
 	if err != nil {
@@ -65,39 +66,6 @@ func (a *ScriptAction) Execute(ctx *Context) error {
 		return fmt.Errorf("script failed with exit code %d", result.ExitCode)
 	}
 	return nil
-}
-
-func parseScriptWith(with map[string]any, vars resolve.Vars) (*scriptParams, error) {
-	fileRaw, ok := with["file"]
-	if !ok {
-		return nil, fmt.Errorf("script action requires 'file' parameter")
-	}
-	fileStr := fmt.Sprintf("%v", fileRaw)
-	if fileStr == "" {
-		return nil, fmt.Errorf("script action requires non-empty 'file' parameter")
-	}
-	file, err := vars.Replace(fileStr)
-	if err != nil {
-		return nil, err
-	}
-
-	dest := "/tmp"
-	if destRaw, ok := with["dest"]; ok {
-		s := fmt.Sprintf("%v", destRaw)
-		if s != "" {
-			dest, err = vars.Replace(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return &scriptParams{
-		file:   file,
-		dest:   dest,
-		remove: toBool(with["remove"]),
-		force:  toBool(with["force"]),
-	}, nil
 }
 
 func resolveScriptPath(dest, localAbs string) string {

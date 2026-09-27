@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"mestrap.com/taskssh/internal/action"
 )
 
 var (
@@ -17,11 +18,11 @@ var pushCmd = &cobra.Command{
 	Long:  `将本地文件或目录上传到远程服务器。目录上传默认递归，加 -z 则打包上传。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		with := map[string]any{
-			"file":  pushFile,
-			"dest":  pushDest,
-			"force": pushForce,
-			"zip":   pushZip,
+		with := action.PushWith{
+			File:  pushFile,
+			Dest:  pushDest,
+			Force: pushForce,
+			Zip:   pushZip,
 		}
 		return runBuiltinTask("push", args, with)
 	},

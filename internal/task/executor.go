@@ -8,7 +8,7 @@ import (
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/ssh"
 )
@@ -64,18 +64,18 @@ func (e *Executor) ExecID() string {
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	// dry-run 时提示已在 executeTask 开头输出，这里不再重复
 	if !e.dryRun {
-		log.Section("Start")
+		console.Section("Start")
 	}
 
 	if task.Description != "" {
-		log.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
+		console.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
 	} else {
-		log.Info("Steps: %d", len(task.Steps))
+		console.Info("Steps: %d", len(task.Steps))
 	}
 
-	log.Info("Targets: %d", len(hosts))
+	console.Info("Targets: %d", len(hosts))
 	if !e.dryRun {
-		log.Info("Concurrency: %d", e.concurrency)
+		console.Info("Concurrency: %d", e.concurrency)
 	}
 
 	// 整批共享一个 execId
@@ -92,8 +92,8 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
-		log.EmptyLine()
-		log.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
+		console.EmptyLine()
+		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
 		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
 		results = append(results, Result{
@@ -103,9 +103,9 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 		})
 
 		if err != nil {
-			log.Error("%s: %v", entry.Name, err)
+			console.Error("%s: %v", entry.Name, err)
 		} else if !e.dryRun {
-			log.Success("%s OK", entry.Name)
+			console.Success("%s OK", entry.Name)
 		}
 	}
 
@@ -126,13 +126,13 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			log.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
+			console.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
 
 			var buf bytes.Buffer
-			log.SetOutput(&buf)
+			console.SetOutput(&buf)
 
 			defer func() {
-				log.ResetOutput()
+				console.ResetOutput()
 
 				if r := recover(); r != nil {
 					results[idx] = Result{
@@ -142,10 +142,10 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 					}
 				}
 
-				log.RawOutput(buf.String())
+				console.RawOutput(buf.String())
 			}()
 
-			log.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
+			console.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
 
 			err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
 
@@ -156,9 +156,9 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			}
 
 			if err != nil {
-				log.Error("%s: %v", entry.Name, err)
+				console.Error("%s: %v", entry.Name, err)
 			} else if !e.dryRun {
-				log.Success("%s OK", entry.Name)
+				console.Success("%s OK", entry.Name)
 			}
 		}(i, entry)
 	}
@@ -198,10 +198,10 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 	for i, step := range task.Steps {
 		if i > 0 {
-			log.EmptyLine()
+			console.EmptyLine()
 		}
 		if showStep {
-			log.Step(i+1, total, step.Name)
+			console.Step(i+1, total, step.Name)
 		}
 
 		// 条件判断
@@ -211,7 +211,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
-				log.Info("Skipped, condition not met: %s", expanded)
+				console.Info("Skipped, condition not met: %s", expanded)
 				continue
 			}
 		}
@@ -230,14 +230,14 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 		if err := act.Execute(ctx); err != nil {
 			if step.IgnoreErrors {
-				log.Warn("step %s failed but ignored: %v", step.Name, err)
+				console.Warn("step %s failed but ignored: %v", step.Name, err)
 			} else {
 				return fmt.Errorf("step %s: %w", step.Name, err)
 			}
 		}
 
 		if step.Delay > 0 && !e.dryRun {
-			log.Info("Waiting %ds...", step.Delay)
+			console.Info("Waiting %ds...", step.Delay)
 			time.Sleep(time.Duration(step.Delay) * time.Second)
 		}
 	}

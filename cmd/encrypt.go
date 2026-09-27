@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"mestrap.com/taskssh/internal/log"
 	"mestrap.com/taskssh/internal/secret"
 )
 
@@ -45,6 +44,3 @@ var decryptCmd = &cobra.Command{
 		return nil
 	},
 }
-
-// 防止 log 未使用
-var _ = log.Info

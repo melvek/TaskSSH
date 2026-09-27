@@ -8,25 +8,34 @@ import (
 	"path"
 	"path/filepath"
 
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
 // PushAction 上传文件或目录到远程。
 type PushAction struct{}
 
+var _ Action = &PushAction{}
+
 func (a *PushAction) Name() string { return "push" }
 
+type PushWith struct {
+	File  string `yaml:"file"`
+	Dest  string `yaml:"dest"`
+	Force bool   `yaml:"force"`
+	Zip   bool   `yaml:"zip"`
+}
+
 func (a *PushAction) Execute(ctx *Context) error {
-	fileRaw, ok := ctx.With["file"]
-	if !ok {
+	w, err := decodeWith[PushWith](ctx.With)
+	if err != nil {
+		return err
+	}
+	if w.File == "" {
 		return fmt.Errorf("push action requires 'file' parameter")
 	}
-	fileStr := fmt.Sprintf("%v", fileRaw)
-	if fileStr == "" {
-		return fmt.Errorf("push action requires non-empty 'file' parameter")
-	}
-	local, err := ctx.Vars.Replace(fileStr)
+
+	local, err := ctx.Vars.Replace(w.File)
 	if err != nil {
 		return err
 	}
@@ -41,40 +50,41 @@ func (a *PushAction) Execute(ctx *Context) error {
 		return fmt.Errorf("local file: %w", err)
 	}
 
-	dest, err := resolveDest(ctx)
+	if w.Dest == "" {
+		return fmt.Errorf("push action requires 'dest' parameter")
+	}
+
+	remote, err := ctx.Vars.Replace(w.Dest)
 	if err != nil {
 		return err
 	}
 
-	force := toBool(ctx.With["force"])
-	useZip := toBool(ctx.With["zip"])
-
-	policy := ssh.NewPolicy(force)
+	policy := ssh.NewPolicy(w.Force)
 
 	if info.IsDir() {
-		if useZip {
-			return a.pushDirZip(ctx, localAbs, dest, policy)
+		if w.Zip {
+			return a.pushDirZip(ctx, localAbs, remote, policy)
 		}
-		return a.pushDirRecursive(ctx, localAbs, dest, policy)
+		return a.pushDirRecursive(ctx, localAbs, remote, policy)
 	}
 
-	return a.pushFile(ctx, localAbs, dest, policy)
+	return a.pushFile(ctx, localAbs, remote, policy)
 }
 
 func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	log.Info("Upload %s to %s", localAbs, dest)
+	console.Info("Upload %s to %s", localAbs, dest)
 
 	finalPath, err := ctx.Client.Upload(localAbs, dest, policy)
 	if err != nil {
 		return err
 	}
 
-	log.Success("Uploaded: %s -> %s", localAbs, finalPath)
+	console.Success("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 
 func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	log.Info("Upload directory %s to %s (recursive)", localAbs, dest)
+	console.Info("Upload directory %s to %s (recursive)", localAbs, dest)
 
 	base := filepath.Dir(localAbs)
 	rootRemote := path.Join(dest, filepath.Base(localAbs))
@@ -110,12 +120,12 @@ func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, polic
 		return err
 	}
 
-	log.Success("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
+	console.Success("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
 	return nil
 }
 
 func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	log.Info("Zip directory %s", localAbs)
+	console.Info("Zip directory %s", localAbs)
 
 	zipPath, err := zipDir(localAbs)
 	if err != nil {
@@ -123,13 +133,13 @@ func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.
 	}
 	defer os.Remove(zipPath)
 
-	log.Info("Upload zip %s to %s", zipPath, dest)
+	console.Info("Upload zip %s to %s", zipPath, dest)
 
 	finalZip, err := ctx.Client.Upload(zipPath, dest, policy)
 	if err != nil {
 		return err
 	}
-	log.Success("Uploaded zip: %s -> %s", zipPath, finalZip)
+	console.Success("Uploaded zip: %s -> %s", zipPath, finalZip)
 
 	unzipCmd := fmt.Sprintf(
 		`which unzip &>/dev/null && { cd %s && unzip -o %s && rm -f %s; } || `+
@@ -139,7 +149,7 @@ func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.
 		shellQuote(finalZip),
 		shellQuote(finalZip),
 	)
-	log.Info("Execute unzip: %s", unzipCmd)
+	console.Info("Execute unzip: %s", unzipCmd)
 
 	result, err := ctx.Client.Exec(unzipCmd)
 	if err != nil {
@@ -149,36 +159,8 @@ func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.
 		return fmt.Errorf("unzip failed with exit code %d", result.ExitCode)
 	}
 
-	log.Success("Directory uploaded: %s -> %s", localAbs, dest)
+	console.Success("Directory uploaded: %s -> %s", localAbs, dest)
 	return nil
-}
-
-func resolveDest(ctx *Context) (string, error) {
-	if destRaw, ok := ctx.With["dest"]; ok {
-		s := fmt.Sprintf("%v", destRaw)
-		if s != "" {
-			return ctx.Vars.Replace(s)
-		}
-	}
-
-	if sp, ok := ctx.Vars["service_path"]; ok {
-		s := fmt.Sprintf("%v", sp)
-		if s != "" {
-			return s, nil
-		}
-	}
-
-	return "", fmt.Errorf("push action requires 'dest' parameter or 'service_path' variable")
-}
-
-func toBool(v any) bool {
-	switch x := v.(type) {
-	case bool:
-		return x
-	case string:
-		return x == "true" || x == "1" || x == "yes"
-	}
-	return false
 }
 
 func zipDir(dir string) (string, error) {

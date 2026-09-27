@@ -3,13 +3,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"mestrap.com/taskssh/internal/config"
 )
 
 // runDynamicTask 从 inventory.yaml 动态查找 task。
-func runDynamicTask(cmd *cobra.Command, args []string) error {
+func runDynamicTask(args []string) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err

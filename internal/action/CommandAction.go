@@ -3,31 +3,36 @@ package action
 import (
 	"fmt"
 
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 )
 
-// CommandAction 执行远程命令。
+// CommandAction 执行远程命令
 type CommandAction struct{}
+
+var _ Action = &CommandAction{}
+
+type CommandWith struct {
+	Command string `yaml:"command"`
+}
 
 func (a *CommandAction) Name() string { return "command" }
 
 func (a *CommandAction) Execute(ctx *Context) error {
-	raw, ok := ctx.With["command"]
-	if !ok {
-		return fmt.Errorf("command action requires 'command' parameter")
-	}
-
-	s := fmt.Sprintf("%v", raw)
-	if s == "" {
-		return fmt.Errorf("command action requires non-empty 'command' parameter")
-	}
-
-	cmd, err := ctx.Vars.Replace(s)
+	w, err := decodeWith[CommandWith](ctx.With)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Execute command: %s", cmd)
+	if w.Command == "" {
+		return fmt.Errorf("command action requires 'command' parameter")
+	}
+
+	cmd, err := ctx.Vars.Replace(w.Command)
+	if err != nil {
+		return err
+	}
+
+	console.Info("Execute command: %s", cmd)
 
 	result, err := ctx.Client.Exec(cmd)
 	if err != nil {

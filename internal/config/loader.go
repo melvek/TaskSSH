@@ -22,7 +22,7 @@ func Load(path string) (*Inventory, error) {
 
 	// 初始化 Extra
 	if inv.GlobalVars.Extra == nil {
-		inv.GlobalVars.Extra = make(map[string]interface{})
+		inv.GlobalVars.Extra = make(map[string]any)
 	}
 
 	// 注入 date 变量

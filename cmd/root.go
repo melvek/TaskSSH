@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/secret"
 	"mestrap.com/taskssh/internal/utils"
 )
@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 			cmd.Help()
 			return nil
 		}
-		return runDynamicTask(cmd, args)
+		return runDynamicTask(args)
 	},
 }
 
@@ -46,43 +46,32 @@ func Execute() error {
 }
 
 func init() {
-
+	// 覆盖默认的版本号样式
 	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\n")
-
+	// 隐藏自动补全命令
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
-
-	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i",
-		utils.DefaultInventory, "Inventory file")
-	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l",
-		false, "List target hosts only")
-	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "",
-		false, "Show what would be executed without actually running")
-	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y",
-		false, "Skip confirmation")
-	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P",
-		0, "Override port")
-	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u",
-		"", "Override username")
-	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p",
-		"", "Override password (plaintext, not recommended)")
-	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c",
-		1, "Number of concurrent connections")
-	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "",
-		10, "Connection timeout in seconds")
-	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V",
-		"", "File or executable that holds the secret key")
-	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D",
-		nil, "Set variable (key=value), can be repeated")
+	// 注册全局参数
+	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", utils.DefaultInventory, "Inventory file")
+	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
+	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
+	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation")
+	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "Override port")
+	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "Override username")
+	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "Override password (plaintext, not recommended)")
+	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 1, "Number of concurrent connections")
+	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "", 10, "Connection timeout in seconds")
+	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V", "", "File or executable that holds the secret key")
+	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D", nil, "Set variable (key=value), can be repeated")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		secret.SecretKeyFile = secretKeyFile
 
 		if passwordFlag != "" {
-			log.Warn("Passing password via command line is insecure; " +
-				"use 'taskssh encrypt' and inventory file instead")
+			console.Warn("Passing password via command line is insecure; use 'taskssh encrypt' and inventory file instead")
 		}
 	}
 
+	// 注册子命令
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(commandCmd)
@@ -92,6 +81,5 @@ func init() {
 }
 
 func buildLongDescription() string {
-	return utils.ProjectName + ` 是一个基于 SSH 的轻量级批量运维工具。
-https://taskssh.mestrap.com/`
+	return utils.ProjectName + " 是一个基于 SSH 的轻量级批量运维工具。\nhttps://taskssh.mestrap.com/"
 }

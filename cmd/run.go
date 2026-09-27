@@ -3,12 +3,13 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
-	"mestrap.com/taskssh/internal/log"
+	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/ssh"
 	"mestrap.com/taskssh/internal/task"
@@ -20,8 +21,8 @@ var reservedVars = map[string]bool{
 	"execId": true,
 }
 
-// runBuiltinTask 执行内置任务。
-func runBuiltinTask(taskName string, hosts []string, with map[string]any) error {
+// runBuiltinTask 执行内置任务
+func runBuiltinTask(taskName string, hosts []string, with any) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -44,9 +45,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
-	// dry-run 提示放在最前面，让用户一开始就知道
+	// dry-run 提醒
 	if dryRun {
-		log.Warn("Dry run (no changes will be made)")
+		console.Warn("Dry run (no changes will be made)")
 	}
 
 	cliVarMap, err := parseCLIVars(cliVars)
@@ -68,19 +69,20 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		return fmt.Errorf("no target hosts")
 	}
 
-	log.Section("Target hosts")
+	console.Section("Target hosts")
 	for _, e := range entries {
 		if e.Name == e.Host.Host {
-			log.Info("%s", e.Host.Host)
+			console.Info("%s", e.Host.Host)
 		} else {
-			log.ListItem(e.Name, e.Host.Host)
+			console.ListItem(e.Name, e.Host.Host)
 		}
 	}
 
-	if listOnly && !dryRun {
+	if listOnly {
 		return nil
 	}
 
+	// dry run 不需要确认操作
 	if !yesFlag && !dryRun {
 		if !confirm("Confirm to proceed") {
 			return nil
@@ -88,10 +90,9 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	globalVars := make(resolve.Vars)
-	for k, v := range inv.GlobalVars.Extra {
-		globalVars[k] = v
-	}
+	maps.Copy(globalVars, inv.GlobalVars.Extra)
 
+	// 一次性加载所有Action，之后根据任务创建执行器
 	actions := action.NewRegistry()
 	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun, cliVarMap)
 	results := executor.Run(t, entries, globalVars)
@@ -100,6 +101,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		return nil
 	}
 
+	// 整理执行结果，输出执行摘要信息
 	success, failed := 0, 0
 	var failedHosts []string
 	for _, r := range results {
@@ -111,17 +113,17 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		}
 	}
 
-	log.Summary(len(results), success, failed)
+	console.Summary(len(results), success, failed)
 	if len(failedHosts) > 0 {
-		log.Hint("Failed hosts: %v", failedHosts)
+		console.Hint("Failed hosts: %v", failedHosts)
 	}
-
-	log.Info("----------------------")
-	log.Info("Execution ID: %s", executor.ExecID())
-
 	if failed > 0 {
 		return fmt.Errorf("%d host(s) failed", failed)
 	}
+
+	console.Info("----------------------")
+	console.Info("Execution ID: %s", executor.ExecID())
+
 	return nil
 }
 
@@ -137,13 +139,13 @@ func parseCLIVars(vars []string) (resolve.Vars, error) {
 	out := make(resolve.Vars, len(vars))
 
 	for _, kv := range vars {
-		idx := strings.Index(kv, "=")
-		if idx < 0 {
+		before, after, ok := strings.Cut(kv, "=")
+		if !ok {
 			return nil, fmt.Errorf("invalid -D %q, expected key=value", kv)
 		}
 
-		key := strings.TrimSpace(kv[:idx])
-		val := strings.TrimSpace(kv[idx+1:])
+		key := strings.TrimSpace(before)
+		val := strings.TrimSpace(after)
 
 		if key == "" {
 			return nil, fmt.Errorf("invalid -D %q, key is empty", kv)
