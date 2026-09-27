@@ -5,8 +5,10 @@ import (
 	"mestrap.com/taskssh/internal/action"
 )
 
-var executeFlag string
-
+var (
+	executeFlag  string
+	executeLocal bool
+)
 var commandCmd = &cobra.Command{
 	Use:   "command [hosts...]",
 	Short: "Execute a remote command",
@@ -15,12 +17,13 @@ var commandCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		with := action.CommandWith{
 			Command: executeFlag,
+			Local:   executeLocal,
 		}
 		return runBuiltinTask("command", args, with)
 	},
 }
 
 func init() {
-	commandCmd.Flags().StringVarP(&executeFlag, "execute", "e",
-		"", "Command to execute")
+	commandCmd.Flags().StringVarP(&executeFlag, "execute", "e", "", "Command to execute")
+	commandCmd.Flags().BoolVarP(&executeLocal, "local", "L", false, "Execute command locally instead of remote")
 }
