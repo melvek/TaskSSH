@@ -331,7 +331,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <code>{{role}}</code> 引用。
         </p>
 
-                <h3>主机查找</h3>
+                 <h3>主机查找</h3>
 
         <p>执行任务时，位置参数可以是以下任意一种：</p>
 
@@ -346,98 +346,45 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                     <tr><td>组内主机名</td><td><code>web1</code></td><td>唯一匹配时返回该主机；多组同名时报错</td></tr>
                     <tr><td>独立主机名</td><td><code>localhost</code></td><td>不在任何组内时，按独立主机处理</td></tr>
                     <tr><td>IP 地址</td><td><code>192.168.1.10</code></td><td>直接作为主机地址</td></tr>
-                    <tr><td>主机模式</td><td><code>web[1-3]</code></td><td>按模式展开为多台主机，仅支持在命令中展开</td></tr>
+                    <tr><td>组匹配</td><td><code>g:web*</code></td><td>glob 匹配组名</td></tr>
+                    <tr><td>主机匹配</td><td><code>h:web*</code></td><td>glob 匹配所有组内主机名</td></tr>
+                    <tr><td>默认匹配</td><td><code>web*</code></td><td>同时匹配组名和主机名，去重合并</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <p>
-            主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
-        </p>
-
-        <h3>主机模式展开</h3>
+        <h3>glob 匹配</h3>
 
         <p>
-            位置参数支持模式语法，可一次指定多台主机。支持以下形式：
+            <code>g:</code> 前缀匹配组名，<code>h:</code> 前缀匹配主机名。
+            支持 glob 语法：
         </p>
 
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>语法</th><th>示例</th><th>展开结果</th></tr>
+                    <tr><th>模式</th><th>含义</th><th>示例</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>数字范围</td>
-                        <td><code>web[1-3]</code></td>
-                        <td><code>web1 web2 web3</code></td>
-                    </tr>
-                    <tr>
-                        <td>前导零</td>
-                        <td><code>web[01-03]</code></td>
-                        <td><code>web01 web02 web03</code></td>
-                    </tr>
-                    <tr>
-                        <td>枚举</td>
-                        <td><code>web[a,b,c]</code></td>
-                        <td><code>weba webb webc</code></td>
-                    </tr>
-                    <tr>
-                        <td>混合</td>
-                        <td><code>web[1-3,5,7-9]</code></td>
-                        <td><code>web1 web2 web3 web5 web7 web8 web9</code></td>
-                    </tr>
-                    <tr>
-                        <td>字符范围</td>
-                        <td><code>node[a-c]</code></td>
-                        <td><code>nodea nodeb nodec</code></td>
-                    </tr>
-                    <tr>
-                        <td>多段组合</td>
-                        <td><code>web[1-2].dc[beijing,wuhan].com</code></td>
-                        <td>4 个主机名（笛卡尔积）</td>
-                    </tr>
-                    <tr>
-                        <td>IP 范围</td>
-                        <td><code>10.0.0.[1-10]</code></td>
-                        <td><code>10.0.0.1</code> 到 <code>10.0.0.10</code></td>
-                    </tr>
-                    <tr>
-                        <td>组名前缀</td>
-                        <td><code>prod/web[1-3]</code></td>
-                        <td><code>prod/web1</code> 到 <code>prod/web3</code></td>
-                    </tr>
+                    <tr><td><code>*</code></td><td>任意多个字符</td><td><code>g:web*</code> 匹配 <code>web_server1</code></td></tr>
+                    <tr><td><code>?</code></td><td>任意单个字符</td><td><code>h:web?</code> 匹配 <code>web1</code></td></tr>
+                    <tr><td><code>[abc]</code></td><td>字符集合</td><td><code>h:web[12]</code> 匹配 <code>web1</code>、<code>web2</code></td></tr>
+                    <tr><td><code>[a-z]</code></td><td>范围</td><td><code>h:web[1-3]</code> 匹配 <code>web1</code>、<code>web2</code>、<code>web3</code></td></tr>
                 </tbody>
             </table>
         </div>
 
-        <pre class="language-bash"><code># 数字范围
-taskssh command web[1-3] -e "uptime" -y
+        <pre class="language-bash"><code># 所有以 web 开头的组
+taskssh command 'g:web*' -e "uptime" -y
 
-# 前导零
-taskssh command web[01-03] -e "uptime" -y
+# 所有组内以 web 开头的主机
+taskssh command 'h:web*' -e "uptime" -y
 
-# 枚举
-taskssh command web[a,b,c] -e "uptime" -y
-
-# 混合
-taskssh command web[1-3,5,7-9] -e "uptime" -y
-
-# 多段组合
-taskssh command web[1-2].dc[beijing,wuhan].com -e "uptime" -y
-
-# IP 范围
-taskssh command 10.0.0.[1-10] -e "uptime" -y
-
-# 组名前缀
-taskssh release prod/web[1-3] -y
-
-# 查看展开后的主机列表
-taskssh release web[1-3] -l</code></pre>
+# 默认匹配：组名和主机名都匹配
+taskssh command 'web*' -e "uptime" -y</code></pre>
 
         <p>
-            展开后按 <code>host:port</code> 去重，避免重复执行。展开模式与主机查找是解耦的：
-            先展开为多个主机名，再对每个主机名走原有的查找逻辑。
+            主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
         </p>
 
         <h3>变量合并优先级</h3>
@@ -1611,7 +1558,7 @@ taskssh release uat -y</code></pre>
 
         <h3>常用示例</h3>
 
-        <pre class="language-bash"><code># 执行自定义任务
+                <pre class="language-bash"><code># 执行自定义任务
 taskssh release prod -y
 
 # 指定清单文件
@@ -1631,6 +1578,11 @@ taskssh release prod -c 5 -y
 
 # 注入变量
 taskssh deploy prod -D version=1.2.3 -y
+
+# glob 匹配主机
+taskssh command 'g:web*' -e "uptime" -y
+taskssh command 'h:web*' -e "uptime" -y
+taskssh command 'web*' -e "uptime" -y
 
 # 免清单，直接对指定主机执行命令
 taskssh command 10.0.0.1 -u deploy -e "uptime" -y
