@@ -3,8 +3,8 @@ package task
 import (
 	"fmt"
 	"net"
+	"path"
 	"sort"
-	"strconv"
 	"strings"
 
 	"mestrap.com/taskssh/internal/config"
@@ -28,30 +28,27 @@ type HostEntry struct {
 
 // ResolveHosts 解析目标主机列表。
 //
-// 步骤：
-//  1. 对每个输入做主机模式展开
-//  2. 对展开后的每个主机名做查找：
-//     组名 → 组名/主机名 → 组内主机名 → 独立主机
-//  3. 去重
+// 输入支持以下形式：
+//
+//	prod                    精确匹配组名
+//	prod/web1               精确匹配 "组名/主机名"
+//	web1                    精确匹配组内主机名（多组同名时报错）
+//	192.168.1.10            独立主机或 IP
+//	g:web*                  glob 匹配组名
+//	h:web*                  glob 匹配组内主机名
+//	web*                    默认：同时匹配组名和主机名，去重合并
 func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
 	var entries []HostEntry
 
 	for _, name := range hostNames {
-		expanded, err := ExpandHostPattern(name)
+		sub, err := resolveSingleHost(name, inv)
 		if err != nil {
 			return nil, err
 		}
-
-		for _, item := range expanded {
-			sub, err := resolveSingleHost(item, inv)
-			if err != nil {
-				return nil, err
-			}
-			entries = append(entries, sub...)
-		}
+		entries = append(entries, sub...)
 	}
 
-	// entries = dedupeEntries(entries)
+	entries = dedupeEntries(entries)
 
 	applyOverrides(entries, ov)
 
@@ -62,14 +59,85 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	return entries, nil
 }
 
-// resolveSingleHost 解析单个主机名（不含模式）。
+// resolveSingleHost 解析单个主机名。
 func resolveSingleHost(name string, inv *config.Inventory) ([]HostEntry, error) {
-	// 1. 组名
+	// 前缀区分：g: 组，h: 主机
+	if strings.HasPrefix(name, "g:") {
+		return resolveByGroupPattern(name[2:], inv)
+	}
+	if strings.HasPrefix(name, "h:") {
+		return resolveByHostPattern(name[2:], inv)
+	}
+
+	return resolveDefault(name, inv)
+}
+
+// resolveByGroupPattern 只匹配组名。
+func resolveByGroupPattern(pattern string, inv *config.Inventory) ([]HostEntry, error) {
+	if pattern == "" {
+		return nil, fmt.Errorf("empty group pattern after 'g:'")
+	}
+
+	// 精确匹配
+	if group, ok := inv.Servers[pattern]; ok {
+		return resolveGroup(pattern, &group, inv), nil
+	}
+
+	// glob 匹配
+	if isGlobPattern(pattern) {
+		if groups := matchGroups(pattern, inv); len(groups) > 0 {
+			var entries []HostEntry
+			for _, g := range groups {
+				group := inv.Servers[g]
+				entries = append(entries, resolveGroup(g, &group, inv)...)
+			}
+			return entries, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no group matched: %s", pattern)
+}
+
+// resolveByHostPattern 只匹配组内主机名。
+func resolveByHostPattern(pattern string, inv *config.Inventory) ([]HostEntry, error) {
+	if pattern == "" {
+		return nil, fmt.Errorf("empty host pattern after 'h:'")
+	}
+
+	// 精确匹配组内主机
+	entry, err := findHostInGroups(pattern, inv)
+	if err != nil {
+		return nil, err
+	}
+	if entry != nil {
+		return []HostEntry{*entry}, nil
+	}
+
+	// glob 匹配
+	if isGlobPattern(pattern) {
+		if entries := matchHostsInGroups(pattern, inv); len(entries) > 0 {
+			return entries, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no host matched: %s", pattern)
+}
+
+// resolveDefault 默认行为：同时匹配组名和主机名。
+//
+// 顺序：
+//  1. 精确匹配组名
+//  2. 精确匹配 "组名/主机名"
+//  3. 精确匹配组内主机名
+//  4. glob 匹配：组名 + 主机名，累积去重
+//  5. 独立主机
+func resolveDefault(name string, inv *config.Inventory) ([]HostEntry, error) {
+	// 1. 精确匹配组名
 	if group, ok := inv.Servers[name]; ok {
 		return resolveGroup(name, &group, inv), nil
 	}
 
-	// 2. "组名/主机名"
+	// 2. 精确匹配 "组名/主机名"
 	if strings.Contains(name, "/") {
 		entry, err := resolveGroupHost(name, inv)
 		if err != nil {
@@ -80,7 +148,7 @@ func resolveSingleHost(name string, inv *config.Inventory) ([]HostEntry, error) 
 		}
 	}
 
-	// 3. 组内主机名
+	// 3. 精确匹配组内主机名
 	entry, err := findHostInGroups(name, inv)
 	if err != nil {
 		return nil, err
@@ -89,21 +157,92 @@ func resolveSingleHost(name string, inv *config.Inventory) ([]HostEntry, error) 
 		return []HostEntry{*entry}, nil
 	}
 
-	// 4. 独立主机
+	// 4. glob 匹配：组名 + 主机名，累积去重
+	if isGlobPattern(name) {
+		var entries []HostEntry
+
+		// 组名匹配
+		for _, g := range matchGroups(name, inv) {
+			group := inv.Servers[g]
+			entries = append(entries, resolveGroup(g, &group, inv)...)
+		}
+
+		// 主机名匹配
+		entries = append(entries, matchHostsInGroups(name, inv)...)
+
+		if len(entries) > 0 {
+			return dedupeEntries(entries), nil
+		}
+	}
+
+	// 5. 独立主机
 	return []HostEntry{resolveStandalone(name, inv)}, nil
 }
 
-// dedupeEntries 按 host:port 去重。
+// isGlobPattern 判断字符串是否含 glob 元字符。
+func isGlobPattern(s string) bool {
+	return strings.ContainsAny(s, "*?[")
+}
+
+// matchGroups 用 glob 匹配组名。
+func matchGroups(pattern string, inv *config.Inventory) []string {
+	var matched []string
+	for name := range inv.Servers {
+		if ok, _ := path.Match(pattern, name); ok {
+			matched = append(matched, name)
+		}
+	}
+	sort.Strings(matched)
+	return matched
+}
+
+// matchHostsInGroups 用 glob 匹配所有组内主机名。
+func matchHostsInGroups(pattern string, inv *config.Inventory) []HostEntry {
+	var entries []HostEntry
+
+	groupNames := make([]string, 0, len(inv.Servers))
+	for name := range inv.Servers {
+		groupNames = append(groupNames, name)
+	}
+	sort.Strings(groupNames)
+
+	for _, groupName := range groupNames {
+		group := inv.Servers[groupName]
+
+		hostNames := make([]string, 0, len(group.Hosts))
+		for name := range group.Hosts {
+			hostNames = append(hostNames, name)
+		}
+		sort.Strings(hostNames)
+
+		for _, hostName := range hostNames {
+			if ok, _ := path.Match(pattern, hostName); ok {
+				entry, err := resolveGroupHost(
+					fmt.Sprintf("%s/%s", groupName, hostName), inv)
+				if err == nil && entry != nil {
+					entries = append(entries, *entry)
+				}
+			}
+		}
+	}
+
+	return entries
+}
+
+// dedupeEntries 按 Name 去重。
+//
+// Name 的形态：
+//   - 组内主机：组名/主机名
+//   - 独立主机：输入值
 func dedupeEntries(entries []HostEntry) []HostEntry {
 	seen := make(map[string]bool, len(entries))
 	result := make([]HostEntry, 0, len(entries))
 
 	for _, e := range entries {
-		key := e.Host.Host + ":" + strconv.Itoa(e.Host.Port)
-		if seen[key] {
+		if seen[e.Name] {
 			continue
 		}
-		seen[key] = true
+		seen[e.Name] = true
 		result = append(result, e)
 	}
 	return result
@@ -167,8 +306,9 @@ func findHostInGroups(name string, inv *config.Inventory) (*HostEntry, error) {
 		}
 		return nil, fmt.Errorf(
 			"ambiguous host name %q, matched multiple groups: %v\n"+
-				"use \"group/host\" format to specify explicitly, e.g. %s",
-			name, names, names[0])
+				"use \"group/host\" format to specify explicitly, e.g. %s\n"+
+				"or use \"h:%s\" to match all hosts with this name",
+			name, names, names[0], name)
 	}
 
 	groupName := matchedGroups[0]
@@ -186,7 +326,9 @@ func findHostInGroups(name string, inv *config.Inventory) (*HostEntry, error) {
 	return nil, nil
 }
 
-// applyOverrides 应用 CLI 覆盖。
+// applyOverrides 应用 CLI 覆盖（端口、用户名）。
+//
+// 密码由 decryptSecrets 处理，不在此处。
 func applyOverrides(entries []HostEntry, ov Overrides) {
 	for i := range entries {
 		if ov.Port > 0 {
