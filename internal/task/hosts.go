@@ -28,6 +28,15 @@ type HostEntry struct {
 
 // ResolveHosts 解析目标主机列表。
 //
+// 输入分类：
+//   - 以 "!" 开头：exclude，从结果中排除
+//   - 其他：include，加入结果
+//
+// 规则：
+//   - 无 include 时，默认 include 为 g:*（所有组）
+//   - exclude 的任何错误都跳过，不中断
+//   - 按 Name 去重和过滤
+//
 // 输入支持以下形式：
 //
 //	prod                    精确匹配组名
@@ -37,10 +46,33 @@ type HostEntry struct {
 //	g:web*                  glob 匹配组名
 //	h:web*                  glob 匹配组内主机名
 //	web*                    默认：同时匹配组名和主机名，去重合并
+//	!g:web*                 排除：组名匹配 web* 的组
+//	!h:web1                 排除：主机名匹配 web1 的主机
 func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
-	var entries []HostEntry
+	var includes []string
+	var excludes []string
 
 	for _, name := range hostNames {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		if strings.HasPrefix(name, "!") {
+			excludes = append(excludes, name[1:])
+		} else {
+			includes = append(includes, name)
+		}
+	}
+
+	// 无 include：默认 g:*
+	if len(includes) == 0 {
+		includes = []string{"g:*"}
+	}
+
+	var entries []HostEntry
+
+	// 1. 处理 include
+	for _, name := range includes {
 		sub, err := resolveSingleHost(name, inv)
 		if err != nil {
 			return nil, err
@@ -49,6 +81,30 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 	}
 
 	entries = dedupeEntries(entries)
+
+	// 2. 处理 exclude
+	if len(excludes) > 0 {
+		excludeSet := make(map[string]bool)
+
+		for _, name := range excludes {
+			sub, err := resolveSingleHost(name, inv)
+			if err != nil {
+				// exclude 的任何错误都跳过
+				continue
+			}
+			for _, e := range sub {
+				excludeSet[e.Name] = true
+			}
+		}
+
+		filtered := make([]HostEntry, 0, len(entries))
+		for _, e := range entries {
+			if !excludeSet[e.Name] {
+				filtered = append(filtered, e)
+			}
+		}
+		entries = filtered
+	}
 
 	applyOverrides(entries, ov)
 
@@ -61,7 +117,6 @@ func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]Ho
 
 // resolveSingleHost 解析单个主机名。
 func resolveSingleHost(name string, inv *config.Inventory) ([]HostEntry, error) {
-	// 前缀区分：g: 组，h: 主机
 	if strings.HasPrefix(name, "g:") {
 		return resolveByGroupPattern(name[2:], inv)
 	}
@@ -124,13 +179,6 @@ func resolveByHostPattern(pattern string, inv *config.Inventory) ([]HostEntry, e
 }
 
 // resolveDefault 默认行为：同时匹配组名和主机名。
-//
-// 顺序：
-//  1. 精确匹配组名
-//  2. 精确匹配 "组名/主机名"
-//  3. 精确匹配组内主机名
-//  4. glob 匹配：组名 + 主机名，累积去重
-//  5. 独立主机
 func resolveDefault(name string, inv *config.Inventory) ([]HostEntry, error) {
 	// 1. 精确匹配组名
 	if group, ok := inv.Servers[name]; ok {
@@ -161,13 +209,11 @@ func resolveDefault(name string, inv *config.Inventory) ([]HostEntry, error) {
 	if isGlobPattern(name) {
 		var entries []HostEntry
 
-		// 组名匹配
 		for _, g := range matchGroups(name, inv) {
 			group := inv.Servers[g]
 			entries = append(entries, resolveGroup(g, &group, inv)...)
 		}
 
-		// 主机名匹配
 		entries = append(entries, matchHostsInGroups(name, inv)...)
 
 		if len(entries) > 0 {
@@ -230,10 +276,6 @@ func matchHostsInGroups(pattern string, inv *config.Inventory) []HostEntry {
 }
 
 // dedupeEntries 按 Name 去重。
-//
-// Name 的形态：
-//   - 组内主机：组名/主机名
-//   - 独立主机：输入值
 func dedupeEntries(entries []HostEntry) []HostEntry {
 	seen := make(map[string]bool, len(entries))
 	result := make([]HostEntry, 0, len(entries))
@@ -327,8 +369,6 @@ func findHostInGroups(name string, inv *config.Inventory) (*HostEntry, error) {
 }
 
 // applyOverrides 应用 CLI 覆盖（端口、用户名）。
-//
-// 密码由 decryptSecrets 处理，不在此处。
 func applyOverrides(entries []HostEntry, ov Overrides) {
 	for i := range entries {
 		if ov.Port > 0 {
@@ -341,14 +381,8 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 }
 
 // decryptSecrets 解密主机密码和 passphrase。
-//
-// 规则：
-//   - CLI 密码优先：非空时直接写入，视为明文，不解密
-//   - 清单密码：必须能解密，失败即报错
-//   - passphrase：只能来自清单，必须能解密
 func decryptSecrets(entries []HostEntry, cliPassword string) error {
 	for i := range entries {
-		// 密码
 		if cliPassword != "" {
 			entries[i].Host.Password = cliPassword
 		} else if entries[i].Host.Password != "" {
@@ -361,7 +395,6 @@ func decryptSecrets(entries []HostEntry, cliPassword string) error {
 			entries[i].Host.Password = plain
 		}
 
-		// passphrase
 		if entries[i].Host.Passphrase != "" {
 			plain, err := secret.Decrypt(entries[i].Host.Passphrase)
 			if err != nil {
@@ -435,10 +468,6 @@ func resolveStandalone(hostName string, inv *config.Inventory) HostEntry {
 }
 
 // resolveHostIP 把主机名解析为 IP。
-//
-//   - 已经是 IP：返回自身
-//   - 是主机名：解析为第一个 IP
-//   - 解析失败：返回空字符串
 func resolveHostIP(host string) string {
 	if host == "" {
 		return ""
