@@ -285,6 +285,9 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <code>app_name</code> 与 <code>version</code> 为用户自定义变量，可在任务中通过
             <code>{{app_name}}</code> 语法引用。
         </p>
+        <p style="color: red; font-weight: bold;">
+            注意: 2.1.0 及之前的版本变量语法为 <code>${app_name}</code> 格式。从 2.1.0 升级版本后，需要同步替换引用变量格式。
+        </p>
 
         <h2 id="inventory-servers">servers</h2>
 
@@ -385,6 +388,30 @@ taskssh command 'web*' -e "uptime" -y</code></pre>
 
         <p>
             主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
+        </p>
+        
+        <h3>排除主机</h3>
+
+        <p>
+            位置参数以 <code>!</code> 开头时表示排除。无 include 时，默认 include 为
+            <code>g:*</code>（所有组）。
+        </p>
+
+        <p style="color: red; font-weight: bold;">
+            注意：在 Bash / Zsh 中，<code>!</code> 是历史展开符，参数需用<strong>单引号</strong>包裹（双引号无效）, PowerShell 无此限制。
+        </p>
+
+        <pre class="language-bash"><code># 所有主机，排除 web* 组
+taskssh command 'g:*' '!g:web*' -e "uptime" -y
+
+# 只指定排除，默认从所有主机中排除
+taskssh command '!g:web*' -e "uptime" -y
+
+# 排除单台主机
+taskssh command 'g:*' '!h:web1' -e "uptime" -y</code></pre>
+
+        <p>
+            exclude 匹配不到任何主机时不报错。include 匹配不到时报错。
         </p>
 
         <h3>变量合并优先级</h3>
