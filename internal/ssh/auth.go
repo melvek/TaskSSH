@@ -21,25 +21,33 @@ var (
 // buildAuthMethods 构造认证方法列表。
 //
 // 优先级：
-//  1. 公钥（identity_file）
-//  2. keyboard-interactive（用密码应答）
-//  3. password（后备）
-//  4. 终端交互（未配置任何认证时）
-//
-// host 中的 Password 和 Passphrase 均为明文，由 task 层在合并时解密。
+//  1. SSH Agent（通过 SSH_AUTH_SOCK）
+//  2. 公钥（identity_file）
+//  3. keyboard-interactive（用密码应答）
+//  4. password（后备）
+//  5. 终端交互（未配置任何认证时）
 func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
-	// 1. 公钥
+	// 1. SSH Agent
+	if ag := getAgent(); ag != nil {
+		methods = append(methods, ssh.PublicKeysCallback(ag.Signers))
+	}
+
+	// 2. 公钥
 	if host.IdentityFile != "" {
 		signer, err := loadPrivateKey(host.IdentityFile, host.Passphrase)
 		if err != nil {
-			return nil, fmt.Errorf("load identity %s: %w", host.IdentityFile, err)
+			// agent 可用时，公钥加载失败不中断
+			if len(methods) == 0 {
+				return nil, fmt.Errorf("load identity %s: %w", host.IdentityFile, err)
+			}
+		} else {
+			methods = append(methods, ssh.PublicKeys(signer))
 		}
-		methods = append(methods, ssh.PublicKeys(signer))
 	}
 
-	// 2/3/4. 密码相关
+	// 3/4/5. 密码相关
 	if host.Password != "" {
 		pwd := host.Password
 
@@ -57,7 +65,7 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 		}))
 
 		methods = append(methods, ssh.Password(pwd))
-	} else if host.IdentityFile == "" {
+	} else if host.IdentityFile == "" && len(methods) == 0 {
 		methods = append(methods, ssh.PasswordCallback(func() (string, error) {
 			return PromptPassword(), nil
 		}))
@@ -71,8 +79,6 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 }
 
 // loadPrivateKey 加载私钥。
-//
-// passphrase 为明文。
 func loadPrivateKey(path, passphrase string) (ssh.Signer, error) {
 	expanded := expandHome(path)
 
