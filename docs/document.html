@@ -1502,23 +1502,75 @@ taskssh encrypt "your-password"</code></pre>
         <pre class="language-bash"><code>taskssh release prod -y
 taskssh release uat -y</code></pre>
 
-        <h2 id="auth">认证方式</h2>
+          <h2 id="auth">认证方式</h2>
 
         <p>TaskSSH 按以下顺序尝试认证方式：</p>
 
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>顺序</th><th>方式</th><th>配置字段</th></tr>
+                    <tr><th>顺序</th><th>方式</th><th>配置</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>1</td><td>公钥认证</td><td><code>identity_file</code></td></tr>
-                    <tr><td>2</td><td>私钥口令</td><td><code>passphrase</code></td></tr>
-                    <tr><td>3</td><td>keyboard-interactive（以密码应答）</td><td><code>password</code></td></tr>
-                    <tr><td>4</td><td>password（后备）</td><td><code>password</code></td></tr>
-                    <tr><td>5</td><td>终端交互输入</td><td>未配置任何认证时</td></tr>
+                    <tr><td>1</td><td>SSH Agent</td><td>通过 <code>SSH_AUTH_SOCK</code> 环境变量自动检测</td></tr>
+                    <tr><td>2</td><td>公钥认证</td><td><code>identity_file</code></td></tr>
+                    <tr><td>3</td><td>私钥口令</td><td><code>passphrase</code></td></tr>
+                    <tr><td>4</td><td>keyboard-interactive</td><td><code>password</code></td></tr>
+                    <tr><td>5</td><td>password</td><td><code>password</code></td></tr>
+                    <tr><td>6</td><td>终端交互输入</td><td>未配置任何认证时</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <h3>SSH Agent</h3>
+
+        <p>
+            TaskSSH 自动检测 <code>SSH_AUTH_SOCK</code> 环境变量。如果存在，会优先使用 SSH Agent 认证。
+            这适用于以下场景：
+        </p>
+
+        <ul>
+            <li>本地已加载私钥到 agent（<code>ssh-add</code>）</li>
+            <li>通过跳板机执行，本地 <code>ssh -A</code> 转发 agent</li>
+            <li>私钥不落盘，签名在本地完成</li>
+        </ul>
+
+        <pre class="language-bash"><code># 本地启动 agent 并加载私钥
+eval $(ssh-agent)
+ssh-add ~/.ssh/id_rsa
+
+# 直接执行
+taskssh release prod -y
+
+# 或通过跳板机
+ssh -A jump-host
+taskssh release prod -y</code></pre>
+
+        <p>
+            Agent 可用时，清单中的 <code>identity_file</code> 和 <code>password</code> 都可以不配置。
+        </p>
+
+        <h3>公钥认证</h3>
+
+        <pre class="language-yaml"><code>hosts:
+  prod_1:
+    host: 1.2.3.4
+    username: deploy
+    identity_file: ~/.ssh/id_rsa
+    passphrase: "密文"
+    # 公钥认证失败时回退至密码认证
+    # password: "密文"</code></pre>
+
+        <p>
+            <code>~</code> 将自动展开为当前用户的 home 目录。<code>passphrase</code> 与
+            <code>password</code> 一样，必须使用 <code>taskssh encrypt</code> 加密后填写。
+        </p>
+
+        <div class="callout">
+            <span class="co-icon">ℹ️</span>
+            <p>
+                Windows 的 OpenSSH Agent 使用命名管道，当前版本暂不支持。
+            </p>
         </div>
 
         <pre class="language-yaml"><code>hosts:

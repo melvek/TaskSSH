@@ -106,6 +106,12 @@ if exist README.md (
 ) else (
     echo   [WARN] README.md not found, skipped
 )
+if exist LICENSE (
+    copy LICENSE "%DIST%\" >nul
+    echo   Copied: LICENSE
+) else (
+    echo   [WARN] LICENSE not found, skipped
+)
 
 REM ---- 打包 ----
 echo.
