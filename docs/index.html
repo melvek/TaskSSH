@@ -120,27 +120,30 @@
 <section id="start">
     <div class="container">
         <h2>快速开始</h2>
-        <p class="section-sub">创建密钥、定义清单、执行任务</p>
+        <p class="section-sub">从一条命令到完整流程，按需选用</p>
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
-                <h3>创建密钥文件</h3>
-                <p>用于加密清单中的密码。只需创建一次：<code>openssl rand -base64 32 &gt; ~/.taskssh/vault-key</code></p>
+                <h3>直接执行</h3>
+                <p>无需配置文件，位置参数指定主机，<code>-u</code> / <code>-p</code> 传入认证信息。</p>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
-                <h3>定义清单</h3>
-                <p>创建 <code>inventory.yaml</code>，声明服务器组、主机及任务步骤。</p>
+                <h3>按组执行</h3>
+                <p>创建 <code>inventory.yaml</code> 声明服务器组与变量，用组名批量执行。</p>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
                 <h3>执行任务</h3>
-                <p>运行 <code>taskssh release prod -y</code>，按清单定义完成整个流程。</p>
+                <p>在清单中定义 <code>tasks</code>，把多个步骤编排成流程，一条命令完成。</p>
             </div>
         </div>
 
         <div style="max-width: 760px; margin: 0 auto;">
-            <h3 style="text-align: center; margin-bottom: 20px;">示例：发布流程</h3>
+            <h3 style="text-align: center; margin-bottom: 20px;">示例：直接执行</h3>
+            <pre class="language-bash"><code>taskssh command 10.0.0.1 -u deploy -e "uptime" -y</code></pre>
+
+            <h3 style="text-align: center; margin: 32px 0 20px;">示例：定义任务</h3>
             <pre class="language-yaml"><code>tasks:
   release:
     steps:
@@ -309,7 +312,6 @@
     });
 
     /* ============ 获取最新 Release 版本号 ============ */
-   /* ============ 获取最新 Release 版本号 ============ */
     fetch('https://img.shields.io/github/v/release/melvek/TaskSSH.json')
         .then(res => res.json())
         .then(data => {

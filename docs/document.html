@@ -49,7 +49,7 @@
             <div class="nav-group">
                 <div class="nav-group-title">清单配置</div>
                 <ul class="docs-nav-list">
-                    <li><a href="#concept">inventory.yaml</a></li>
+                    <li><a href="#concept">inventory</a></li>
                     <li><a href="#inventory-global">global_vars</a></li>
                     <li><a href="#inventory-servers">servers</a></li>
                     <li><a href="#inventory-tasks">tasks</a></li>
@@ -112,12 +112,40 @@
 
     <main class="docs-content">
 
-        <h2 id="intro">TaskSSH 文档</h2>
+                <h2 id="intro">TaskSSH 文档</h2>
         <p class="lead">
-            TaskSSH 是一个单文件、无外部依赖的 SSH 批量运维工具。其配置模型由两部分构成：
-            一份 <code>inventory.yaml</code> 清单文件，用于声明服务器组、主机及变量；
-            以及清单中的 <code>tasks</code> 段，用于将一个或多个 action 编排为有序的执行流程。
-            用户通过指定任务名与目标主机组，即可对多台服务器批量执行命令、上传与下载文件。
+            TaskSSH 是一个单文件、无外部依赖的 SSH 批量运维工具。
+            使用方式从简单到高级，可以只用最基础的一条命令，也可以定义完整的任务流程。
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>用法</th><th>说明</th><th>适用场景</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>直接执行命令</td>
+                        <td>位置参数指定主机，无需任何配置文件</td>
+                        <td>临时排查、一次性操作</td>
+                    </tr>
+                    <tr>
+                        <td>使用清单文件</td>
+                        <td>用 <code>inventory.yaml</code> 声明服务器组，按组批量操作</td>
+                        <td>管理多台服务器，复用变量与认证信息</td>
+                    </tr>
+                    <tr>
+                        <td>定义任务</td>
+                        <td>把多个步骤编排成流程，一条命令完成整套操作</td>
+                        <td>发布、回退、日志收集等固定流程</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            三种用法逐级叠加。可以只用第一种，完全不引入配置文件；
+            也可以引入清单文件定义服务器组，再逐步把常用操作固化为任务。
         </p>
 
         <h2 id="install">安装</h2>
@@ -163,37 +191,40 @@ echo 'source <(taskssh completion bash)' >> ~/.bashrc
 # Zsh
 echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
 
-        <h2 id="quickstart">快速开始</h2>
+                <h2 id="quickstart">快速开始</h2>
 
-        <p>标准使用流程包含四个阶段：创建密钥、加密密码、编写清单、执行任务。</p>
-
-        <h3>1. 创建密钥文件</h3>
+        <h3>直接执行命令</h3>
 
         <p>
-            密钥用于加密清单中的密码。只需创建一次：
+            不需要任何配置文件，直接对主机执行命令。
         </p>
 
-        <pre class="language-bash"><code>mkdir -p ~/.taskssh
-openssl rand -base64 32 > ~/.taskssh/vault-key
-chmod 600 ~/.taskssh/vault-key</code></pre>
+        <pre class="language-bash"><code># 单台主机
+taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y
+
+# 多台主机
+taskssh command 10.0.0.1 10.0.0.2 10.0.0.3 -u deploy -e "df -h" -y
+
+# 上传文件
+taskssh push 192.168.1.10 -u deploy -f app.jar -d /opt/app/ -y
+
+# 下载文件
+taskssh fetch 192.168.1.10 -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
 
         <p>
-            后续 <code>taskssh encrypt</code> / <code>decrypt</code> / 执行任务时，
-            将自动读取该文件，无需每次输入密钥。
+            <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
+            四个内置 action 都支持直接指定主机。
         </p>
 
-        <h3>2. 加密密码</h3>
+        <h3>使用清单文件</h3>
 
-        <pre class="language-bash"><code>taskssh encrypt "your-password"
-# 输出：xxxxx</code></pre>
-
-        <p>将输出密文填入清单的 <code>password</code> 字段。</p>
-
-        <h3>3. 编写清单</h3>
+        <p>
+            当主机较多、需要分组、或需要复用配置时，引入 <code>inventory.yaml</code>。
+        </p>
 
         <pre class="language-yaml"><code>global_vars:
   username: deploy
-  password: "xxxxx"
+  password: "encrypted-password"
 
 servers:
   prod:
@@ -201,9 +232,32 @@ servers:
       service_path: /opt/myapp/
     hosts:
       web1: 192.168.1.10
+      web2: 192.168.1.11
 
-tasks:
+  uat:
+    vars:
+      service_path: /opt/myapp-uat/
+    hosts:
+      uat1: 10.1.0.1</code></pre>
+
+        <p>按组执行命令：</p>
+
+        <pre class="language-bash"><code>taskssh command prod -e "uptime" -y
+taskssh command uat -e "uptime" -y</code></pre>
+
+        <p>
+            认证信息、变量在清单里定义，不需要每次命令行传入。
+        </p>
+
+        <h3>定义任务</h3>
+
+        <p>
+            当操作需要多步骤时，在清单里定义 <code>tasks</code>，把多个 action 编排成流程。
+        </p>
+
+        <pre class="language-yaml"><code>tasks:
   release:
+    description: "发布新版本"
     steps:
       - name: "上传新版本"
         action: push
@@ -211,19 +265,24 @@ tasks:
           file: "./dist/app.jar"
           dest: "{{service_path}}"
           force: true
+
       - name: "重启服务"
         action: command
         with:
-          command: "systemctl restart myapp"</code></pre>
+          command: "systemctl restart myapp"
+        delay: 5
 
-        <h3>4. 执行任务</h3>
+      - name: "健康检查"
+        action: command
+        with:
+          command: "curl -sf http://localhost:8080/health"</code></pre>
+
+        <p>执行任务：</p>
 
         <pre class="language-bash"><code>taskssh release prod -y</code></pre>
 
         <p>
-            TaskSSH 读取 <code>inventory.yaml</code>，对 <code>prod</code> 组下所有主机
-            依次执行 <code>release</code> 任务。执行过程中输出每台主机的执行状态，结束后
-            输出成功/失败摘要。
+            一条命令完成「上传 → 重启 → 健康检查」整个流程。
         </p>
 
         <div class="callout tip">
@@ -234,21 +293,57 @@ tasks:
             </p>
         </div>
 
-        <h2 id="concept">inventory.yaml</h2>
+                <h2 id="concept">inventory</h2>
 
-        <p>TaskSSH 的配置模型由两个对象构成：</p>
+        <p>TaskSSH 的配置模型由两个可选对象构成：</p>
 
         <ul>
-            <li><strong>inventory</strong>：即 <code>inventory.yaml</code> 清单文件，用于声明服务器组、主机及变量。</li>
-            <li><strong>task</strong>：清单中 <code>tasks</code> 段定义的执行流程，由一个或多个有序 step 组成。</li>
+            <li>
+                <strong>inventory</strong>：<code>inventory.yaml</code> 清单文件，声明服务器组、主机及变量。
+                可选，不写清单时用位置参数直接指定主机。
+            </li>
+            <li>
+                <strong>task</strong>：清单中 <code>tasks</code> 段定义的执行流程，由一个或多个有序 step 组成。
+                可选，不写任务时用内置 action 执行单步操作。
+            </li>
         </ul>
 
-        <p>执行任务时，用户指定任务名与目标主机组，TaskSSH 按以下流程处理：</p>
+        <p>三种用法与两个对象的关系：</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>用法</th><th>需要 inventory</th><th>需要 tasks</th><th>命令形式</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>直接执行</td>
+                        <td>否</td>
+                        <td>否</td>
+                        <td><code>taskssh command host -e "..."</code></td>
+                    </tr>
+                    <tr>
+                        <td>按组执行</td>
+                        <td>是</td>
+                        <td>否</td>
+                        <td><code>taskssh command prod -e "..."</code></td>
+                    </tr>
+                    <tr>
+                        <td>执行任务</td>
+                        <td>是</td>
+                        <td>是</td>
+                        <td><code>taskssh release prod</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>执行任务时，TaskSSH 按以下流程处理：</p>
 
         <ol>
-            <li>从 inventory 中解析目标主机列表；</li>
+            <li>从 inventory 中解析目标主机列表（或从位置参数取）；</li>
             <li>按优先级合并 global / 组 / 主机三级变量，生成每台主机的变量池；</li>
-            <li>按声明顺序执行 task 中各 step；</li>
+            <li>按声明顺序执行 task 中各 step（或执行单个内置 action）；</li>
             <li>每台主机独立执行，任务结束后汇总成功与失败结果。</li>
         </ol>
 
