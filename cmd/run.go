@@ -69,14 +69,11 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 		return fmt.Errorf("no target hosts")
 	}
 
-	console.Section("Target hosts")
+	lines := make([]string, 0, len(entries))
 	for _, e := range entries {
-		if e.Name == e.Host.Host {
-			console.Info("%s", e.Host.Host)
-		} else {
-			console.ListItem(e.Name, e.Host.Host)
-		}
+		lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
 	}
+	console.Targets(lines)
 
 	if listOnly {
 		return nil

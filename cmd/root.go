@@ -24,6 +24,8 @@ var (
 	minAvailableFlag  int
 	stopOnFailureFlag bool
 	// execId         string
+	verboseFlag bool
+	quietFlag   bool
 )
 
 var rootCmd = &cobra.Command{
@@ -70,9 +72,20 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&serialFlag, "serial", "S", -1, "Run in batches of N hosts per group (0 = all at once; default: use task config)")
 	rootCmd.PersistentFlags().IntVarP(&minAvailableFlag, "min-available", "", -1, "Keep at least N hosts per group running (0 = no limit; default: use task config)")
 	rootCmd.PersistentFlags().BoolVarP(&stopOnFailureFlag, "stop-on-failure", "", true, "Stop remaining batches if a batch fails")
+	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&quietFlag, "quiet", "q", false, "Only show errors")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		secret.SecretKeyFile = secretKeyFile
+
+		switch {
+		case dryRun || verboseFlag:
+			console.SetLevel(console.LevelVerbose)
+		case quietFlag:
+			console.SetLevel(console.LevelQuiet)
+		default:
+			console.SetLevel(console.LevelBrief)
+		}
 
 		if passwordFlag != "" {
 			console.Warn("Passing password via command line is insecure; use 'taskssh encrypt' and inventory file instead")

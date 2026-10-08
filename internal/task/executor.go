@@ -147,20 +147,6 @@ func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error)
 
 // Run 对一批主机执行任务。
 func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
-	if !e.dryRun {
-		console.Section("Start")
-	}
-
-	if task.Description != "" {
-		console.Info("Task: %s (%d steps)", task.Description, len(task.Steps))
-	} else {
-		console.Info("Steps: %d", len(task.Steps))
-	}
-
-	console.Info("Targets: %d", len(hosts))
-	if !e.dryRun {
-		console.Info("Concurrency: %d", e.concurrency)
-	}
 
 	e.execID = generateExecID()
 
@@ -187,7 +173,6 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
-		console.EmptyLine()
 		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
 		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
@@ -198,7 +183,7 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 		})
 
 		if err != nil {
-			console.Error("%s: %v", entry.Name, err)
+			console.Error("%s FAILED", entry.Name)
 		} else if !e.dryRun {
 			console.Success("%s OK", entry.Name)
 		}
@@ -221,10 +206,9 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			console.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
-
 			var buf bytes.Buffer
 			console.SetOutput(&buf)
+			console.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
 
 			defer func() {
 				console.ResetOutput()
@@ -251,7 +235,7 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 			}
 
 			if err != nil {
-				console.Error("%s: %v", entry.Name, err)
+				console.Error("%s FAILED", entry.Name)
 			} else if !e.dryRun {
 				console.Success("%s OK", entry.Name)
 			}
@@ -271,11 +255,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
 	vars := mergeVars(globalVars, hostVars)
-
-	// CLI 变量优先级最高
 	maps.Copy(vars, e.cliVars)
-
-	// execId 由运行时注入，覆盖一切
 	vars["execId"] = e.execID
 
 	var client *ssh.Client
@@ -283,6 +263,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	if !e.dryRun {
 		c, err := ssh.Connect(host, e.connectTimeout)
 		if err != nil {
+			console.Error("connect %s: %v", host.Host, err)
 			return fmt.Errorf("connect %s: %w", host.Host, err)
 		}
 		client = c
@@ -293,27 +274,25 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 	showStep := total > 1
 
 	for i, step := range task.Steps {
-		if i > 0 {
-			console.EmptyLine()
-		}
 		if showStep {
 			console.Step(i+1, total, step.Name)
 		}
 
-		// 条件判断
 		if step.When != "" {
 			ok, expanded, err := evalWhen(step.When, vars)
 			if err != nil {
+				console.Error("eval when: %v", err)
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
-				console.Info("Skipped, condition not met: %s", expanded)
+				console.Skipped("跳过: %s", expanded)
 				continue
 			}
 		}
 
 		act := e.actions.Get(step.Action)
 		if act == nil {
+			console.Error("unknown action: %s", step.Action)
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
@@ -327,10 +306,13 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 
 		if err := act.Execute(ctx); err != nil {
 			if step.IgnoreErrors {
-				console.Warn("step %s failed but ignored: %v", step.Name, err)
+				console.Ignored("Ignored with error: %v", err)
 			} else {
+				console.Error("Failure: %v", err)
 				return fmt.Errorf("step %s: %w", step.Name, err)
 			}
+		} else {
+			console.Success("Success")
 		}
 
 		if step.Delay > 0 {

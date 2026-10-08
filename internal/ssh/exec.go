@@ -35,7 +35,7 @@ func (c *Client) Exec(command string) (*ExecResult, error) {
 	}
 	defer session.Close()
 
-	out := console.GetOutput()
+	out := console.VerboseWriter()
 
 	var stdout, stderr bytes.Buffer
 

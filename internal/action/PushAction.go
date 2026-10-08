@@ -82,7 +82,7 @@ func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.Ov
 	if err != nil {
 		return err
 	}
-	console.Success("Uploaded: %s -> %s", localAbs, finalPath)
+	console.Info("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 
@@ -127,7 +127,7 @@ func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, polic
 		return err
 	}
 
-	console.Success("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
+	console.Info("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
 	return nil
 }
 
@@ -166,7 +166,7 @@ func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.
 		return fmt.Errorf("unzip failed with exit code %d", result.ExitCode)
 	}
 
-	console.Success("Directory uploaded: %s -> %s", localAbs, dest)
+	console.Info("Directory uploaded: %s -> %s", localAbs, dest)
 	return nil
 }
 
