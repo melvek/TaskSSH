@@ -15,6 +15,7 @@ var (
 	portFlag          int
 	userFlag          string
 	passwordFlag      string
+	identityFileFlag  string
 	concurrency       int
 	connectTimeout    int
 	secretKeyFile     string
@@ -62,9 +63,10 @@ func init() {
 	// rootCmd.PersistentFlags().StringVarP(&execId, "execute-id", "E", "", "Execute ID")
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation")
-	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "Override port")
-	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "Override username")
-	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "Override password (plaintext, not recommended)")
+	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "port")
+	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "username")
+	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "password (plaintext, not recommended)")
+	rootCmd.PersistentFlags().StringVarP(&identityFileFlag, "identity-file", "k", "", "SSH private key file")
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 1, "Number of concurrent connections")
 	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "", 10, "Connection timeout in seconds")
 	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V", "", "File or executable that holds the secret key")

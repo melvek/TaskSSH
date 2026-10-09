@@ -14,9 +14,10 @@ import (
 
 // Overrides 是 CLI 覆盖参数。
 type Overrides struct {
-	Port     int
-	Username string
-	Password string
+	Port         int
+	Username     string
+	Password     string
+	IdentityFile string
 }
 
 // HostEntry 是目标主机的一项。

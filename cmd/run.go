@@ -56,9 +56,10 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	}
 
 	ov := task.Overrides{
-		Port:     portFlag,
-		Username: userFlag,
-		Password: passwordFlag,
+		Port:         portFlag,
+		Username:     userFlag,
+		Password:     passwordFlag,
+		IdentityFile: identityFileFlag,
 	}
 
 	entries, err := task.ResolveHosts(hostNames, inv, ov)
@@ -129,13 +130,14 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	if len(failedHosts) > 0 {
 		console.Hint("Failed hosts: %v", failedHosts)
 	}
-	if failed > 0 {
-		return fmt.Errorf("%d host(s) failed", failed)
-	}
 
 	console.Info("----------------------")
 	console.Info("Execution ID: %s", executor.ExecID())
 	console.EmptyLine()
+
+	if failed > 0 {
+		return fmt.Errorf("%d host(s) failed", failed)
+	}
 
 	return nil
 }
