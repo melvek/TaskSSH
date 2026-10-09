@@ -19,7 +19,7 @@ var commandCmd = &cobra.Command{
 			Command: executeFlag,
 			Local:   executeLocal,
 		}
-		return runBuiltinTask("command", args, with)
+		return runBuiltinTask(cmd.Context(), "command", args, with)
 	},
 }
 

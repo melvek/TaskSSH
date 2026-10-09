@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 
 	"mestrap.com/taskssh/internal/console"
@@ -42,21 +44,24 @@ var rootCmd = &cobra.Command{
 			cmd.Help()
 			return nil
 		}
-		return runDynamicTask(args)
+		return runDynamicTask(cmd.Context(), args)
 	},
 }
 
 // Execute 是 CLI 入口。
-func Execute() error {
+func Execute(ctx context.Context) error {
 	cobra.EnableCommandSorting = false
-	return rootCmd.Execute()
+	return rootCmd.ExecuteContext(ctx)
 }
 
 func init() {
+
 	// 覆盖默认的版本号样式
 	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\n")
+
 	// 隐藏自动补全命令
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
 	// 注册全局参数
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", utils.DefaultInventory, "Inventory file")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")

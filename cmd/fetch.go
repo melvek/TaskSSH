@@ -24,7 +24,7 @@ var fetchCmd = &cobra.Command{
 			Zip:    fetchZip,
 			TmpDir: fetchTmpDir,
 		}
-		return runBuiltinTask("fetch", args, with)
+		return runBuiltinTask(cmd.Context(), "fetch", args, with)
 	},
 }
 

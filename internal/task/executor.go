@@ -2,6 +2,7 @@ package task
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"maps"
 	"strings"
@@ -146,7 +147,7 @@ func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error)
 }
 
 // Run 对一批主机执行任务。
-func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
+func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
 
 	e.execID = generateExecID()
 
@@ -159,23 +160,23 @@ func (e *Executor) Run(task *config.Task, hosts []HostEntry, globalVars resolve.
 		if e.dryRun {
 			printPlan(plan)
 		}
-		return e.runBatches(task, plan, globalVars), nil
+		return e.runBatches(ctx, task, plan, globalVars), nil
 	}
 
 	if e.concurrency == 1 || e.dryRun {
-		return e.runSerial(task, hosts, globalVars), nil
+		return e.runSerial(ctx, task, hosts, globalVars), nil
 	}
-	return e.runParallel(task, hosts, globalVars), nil
+	return e.runParallel(ctx, task, hosts, globalVars), nil
 }
 
 // runSerial 串行执行，实时输出。
-func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
 		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
-		err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
+		err := e.runOnHost(ctx, task, &entry.Host, globalVars, entry.Vars)
 		results = append(results, Result{
 			Host:    entry.Name,
 			Success: err == nil,
@@ -187,18 +188,28 @@ func (e *Executor) runSerial(task *config.Task, hosts []HostEntry, globalVars re
 		} else if !e.dryRun {
 			console.Success("%s OK", entry.Name)
 		}
+
+		// ctx 取消时停止后续主机
+		if ctx.Err() != nil {
+			break
+		}
 	}
 
 	return results
 }
 
 // runParallel 并发执行，按主机缓冲输出。
-func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
 	var wg sync.WaitGroup
 
 	for i, entry := range hosts {
+		// ctx 取消时不再派发新主机
+		if ctx.Err() != nil {
+			break
+		}
+
 		wg.Add(1)
 		sem <- struct{}{}
 
@@ -226,7 +237,7 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 
 			console.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
 
-			err := e.runOnHost(task, &entry.Host, globalVars, entry.Vars)
+			err := e.runOnHost(ctx, task, &entry.Host, globalVars, entry.Vars)
 
 			results[idx] = Result{
 				Host:    entry.Name,
@@ -251,7 +262,7 @@ func (e *Executor) runParallel(task *config.Task, hosts []HostEntry, globalVars 
 // 变量合并顺序：
 //
 //	global_vars -> 组 vars -> 主机 Extra -> CLI -D -> execId（运行时）
-func (e *Executor) runOnHost(task *config.Task, host *config.Host,
+func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *config.Host,
 	globalVars, hostVars resolve.Vars) error {
 
 	vars := mergeVars(globalVars, hostVars)
@@ -296,7 +307,7 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
-		ctx := &action.Context{
+		actx := &action.Context{
 			Host:   host,
 			Vars:   vars,
 			With:   step.With,
@@ -304,7 +315,11 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 			DryRun: e.dryRun,
 		}
 
-		if err := act.Execute(ctx); err != nil {
+		err := withRetry(ctx, func() error {
+			return act.Execute(actx)
+		}, step.Interval, step.Timeout)
+
+		if err != nil {
 			if step.IgnoreErrors {
 				console.Ignored("Ignored with error: %v", err)
 			} else {
@@ -318,7 +333,11 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 		if step.Delay > 0 {
 			console.Info("Waiting %ds...", step.Delay)
 			if !e.dryRun {
-				time.Sleep(time.Duration(step.Delay) * time.Second)
+				select {
+				case <-time.After(time.Duration(step.Delay) * time.Second):
+				case <-ctx.Done():
+					return ctx.Err()
+				}
 			}
 		}
 	}
@@ -327,18 +346,22 @@ func (e *Executor) runOnHost(task *config.Task, host *config.Host,
 }
 
 // runBatches 按批队列依次执行。
-func (e *Executor) runBatches(task *config.Task, plan []Batch, globalVars resolve.Vars) []Result {
+func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Batch, globalVars resolve.Vars) []Result {
 	var all []Result
 
 	for i, batch := range plan {
+		if ctx.Err() != nil {
+			break
+		}
+
 		console.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
 			batch.Group, i+1, len(plan), len(batch.Hosts)))
 
 		var results []Result
 		if e.concurrency == 1 || e.dryRun {
-			results = e.runSerial(task, batch.Hosts, globalVars)
+			results = e.runSerial(ctx, task, batch.Hosts, globalVars)
 		} else {
-			results = e.runParallel(task, batch.Hosts, globalVars)
+			results = e.runParallel(ctx, task, batch.Hosts, globalVars)
 		}
 
 		all = append(all, results...)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"maps"
 	"os"
@@ -22,7 +23,7 @@ var reservedVars = map[string]bool{
 }
 
 // runBuiltinTask 执行内置任务
-func runBuiltinTask(taskName string, hosts []string, with any) error {
+func runBuiltinTask(ctx context.Context, taskName string, hosts []string, with any) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -37,11 +38,11 @@ func runBuiltinTask(taskName string, hosts []string, with any) error {
 		Steps: []config.Step{step},
 	}
 
-	return executeTask(&t, hosts, inv)
+	return executeTask(ctx, &t, hosts, inv)
 }
 
 // executeTask 是公共执行入口。
-func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) error {
+func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *config.Inventory) error {
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
@@ -105,7 +106,7 @@ func executeTask(t *config.Task, hostNames []string, inv *config.Inventory) erro
 	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun, cliVarMap,
 		serial, minAvailable, stopOnFailureFlag)
 
-	results, err := executor.Run(t, entries, globalVars)
+	results, err := executor.Run(ctx, t, entries, globalVars)
 	if err != nil {
 		return err
 	}

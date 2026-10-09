@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,182 +8,212 @@
     <meta name="description" content="TaskSSH 官方文档：inventory.yaml 清单定义、task 任务编排、内置 action、变量替换与执行控制。">
     <meta name="keywords" content="TaskSSH,文档,SSH,批量运维,inventory.yaml,task">
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 
     <link rel="stylesheet" href="assets/prism.css">
     <link rel="stylesheet" href="assets/style.css">
 </head>
+
 <body class="docs-page">
 
-<header>
-    <div class="container">
-        <nav>
-            <button class="docs-menu-toggle" id="docsMenuToggle"
-                    onclick="toggleSidebar()" aria-label="打开目录">☰</button>
-            <a href="index.html" class="logo">
-                <img src="assets/logo.svg" alt="TaskSSH">
-            </a>
-            <div class="nav-links">
-                <a href="index.html#features">特性</a>
-                <a href="index.html#start">快速开始</a>
-                <a href="index.html#tasks">内置任务</a>
-                <a href="document.html">文档</a>
-                <a href="https://github.com/melvek/TaskSSH" class="gh" target="_blank" rel="noopener">GitHub</a>
-            </div>
-        </nav>
-    </div>
-</header>
-
-<div class="docs-layout">
-
-    <aside class="docs-sidebar" id="docsSidebar">
-        <nav>
-            <div class="nav-group">
-                <div class="nav-group-title">开始</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#intro">简介</a></li>
-                    <li><a href="#install">安装</a></li>
-                    <li><a href="#quickstart">快速开始</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">清单配置</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#concept">inventory</a></li>
-                    <li><a href="#inventory-global">global_vars</a></li>
-                    <li><a href="#inventory-servers">servers</a></li>
-                    <li><a href="#inventory-tasks">tasks</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">任务定义</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#task-step">step 字段</a></li>
-                    <li><a href="#task-when">条件执行 when</a></li>
-                    <li><a href="#task-compose">组合内置 action</a></li>
-                    <li><a href="#task-example">完整示例</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">Action</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#action-command">command</a></li>
-                    <li><a href="#action-push">push</a></li>
-                    <li><a href="#action-fetch">fetch</a></li>
-                    <li><a href="#action-script">script</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">执行控制</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#serial">串行执行</a></li>
-                    <li><a href="#parallel">并行执行</a></li>
-                    <li><a href="#concurrency">并发数控制</a></li>
-                    <li><a href="#batching">按组分批</a></li>
-                    <li><a href="#dryrun">Dry-run</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">进阶</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#variables">变量替换</a></li>
-                    <li><a href="#builtin-vars">内置变量</a></li>
-                    <li><a href="#cli-vars">CLI 变量注入</a></li>
-                    <li><a href="#vault">Vault 密钥</a></li>
-                    <li><a href="#multi-env">多环境</a></li>
-                    <li><a href="#auth">认证方式</a></li>
-                    <li><a href="#cli">命令行选项</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-title">其他</div>
-                <ul class="docs-nav-list">
-                    <li><a href="#faq">常见问题</a></li>
-                    <li><a href="#changelog">更新日志</a></li>
-                </ul>
-            </div>
-        </nav>
-    </aside>
-
-    <main class="docs-content">
-
-                <h2 id="intro">TaskSSH 文档</h2>
-        <p class="lead">
-            TaskSSH 是一个单文件、无外部依赖的 SSH 批量运维工具。
-            使用方式从简单到高级，可以只用最基础的一条命令，也可以定义完整的任务流程。
-        </p>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>用法</th><th>说明</th><th>适用场景</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>直接执行命令</td>
-                        <td>位置参数指定主机，无需任何配置文件</td>
-                        <td>临时排查、一次性操作</td>
-                    </tr>
-                    <tr>
-                        <td>使用清单文件</td>
-                        <td>用 <code>inventory.yaml</code> 声明服务器组，按组批量操作</td>
-                        <td>管理多台服务器，复用变量与认证信息</td>
-                    </tr>
-                    <tr>
-                        <td>定义任务</td>
-                        <td>把多个步骤编排成流程，一条命令完成整套操作</td>
-                        <td>发布、回退、日志收集等固定流程</td>
-                    </tr>
-                </tbody>
-            </table>
+    <header>
+        <div class="container">
+            <nav>
+                <button class="docs-menu-toggle" id="docsMenuToggle" onclick="toggleSidebar()"
+                    aria-label="打开目录">☰</button>
+                <a href="index.html" class="logo">
+                    <img src="assets/logo.svg" alt="TaskSSH">
+                </a>
+                <div class="nav-links">
+                    <a href="index.html#features">特性</a>
+                    <a href="index.html#start">快速开始</a>
+                    <a href="index.html#tasks">内置任务</a>
+                    <a href="document.html">文档</a>
+                    <a href="https://github.com/melvek/TaskSSH" class="gh" target="_blank" rel="noopener">GitHub</a>
+                </div>
+            </nav>
         </div>
+    </header>
 
-        <p>
-            三种用法逐级叠加。可以只用第一种，完全不引入配置文件；
-            也可以引入清单文件定义服务器组，再逐步把常用操作固化为任务。
-        </p>
+    <div class="docs-layout">
 
-        <h2 id="install">安装</h2>
+        <aside class="docs-sidebar" id="docsSidebar">
+            <nav>
+                <div class="nav-group">
+                    <div class="nav-group-title">开始</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#intro">简介</a></li>
+                        <li><a href="#install">安装</a></li>
+                        <li><a href="#quickstart">快速开始</a></li>
+                    </ul>
+                </div>
 
-        <h3>下载预编译二进制</h3>
-        <p>前往 <a href="https://github.com/melvek/TaskSSH/releases" target="_blank" rel="noopener">Releases</a> 页面，根据目标平台下载对应的压缩包：</p>
+                <div class="nav-group">
+                    <div class="nav-group-title">清单配置</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#concept">inventory</a></li>
+                        <li><a href="#inventory-global">global_vars</a></li>
+                        <li><a href="#inventory-servers">servers</a></li>
+                        <li><a href="#inventory-tasks">tasks</a></li>
+                    </ul>
+                </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>平台</th><th>架构</th><th>文件名</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Windows</td><td>amd64</td><td><code>taskssh-windows-amd64.zip</code></td></tr>
-                    <tr><td>Linux</td><td>amd64</td><td><code>taskssh-linux-amd64.zip</code></td></tr>
-                    <tr><td>Linux</td><td>arm64</td><td><code>taskssh-linux-arm64.zip</code></td></tr>
-                    <tr><td>macOS</td><td>Intel</td><td><code>taskssh-darwin-amd64.zip</code></td></tr>
-                    <tr><td>macOS</td><td>Apple Silicon</td><td><code>taskssh-darwin-arm64.zip</code></td></tr>
-                </tbody>
-            </table>
-        </div>
+                <div class="nav-group">
+                    <div class="nav-group-title">任务定义</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#task-step">step 字段</a></li>
+                        <li><a href="#task-when">条件执行 when</a></li>
+                        <li><a href="#task-compose">组合内置 action</a></li>
+                        <li><a href="#task-example">完整示例</a></li>
+                    </ul>
+                </div>
 
-        <p>解压后获取可执行文件。在 Linux / macOS 环境下，需赋予执行权限：</p>
+                <div class="nav-group">
+                    <div class="nav-group-title">Action</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#action-command">command</a></li>
+                        <li><a href="#action-push">push</a></li>
+                        <li><a href="#action-fetch">fetch</a></li>
+                        <li><a href="#action-script">script</a></li>
+                    </ul>
+                </div>
 
-        <pre class="language-bash"><code>chmod +x taskssh
+                <div class="nav-group">
+                    <div class="nav-group-title">执行控制</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#serial">串行执行</a></li>
+                        <li><a href="#parallel">并行执行</a></li>
+                        <li><a href="#concurrency">并发数控制</a></li>
+                        <li><a href="#batching">按组分批</a></li>
+                        <li><a href="#dryrun">Dry-run</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">进阶</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#variables">变量替换</a></li>
+                        <li><a href="#builtin-vars">内置变量</a></li>
+                        <li><a href="#cli-vars">CLI 变量注入</a></li>
+                        <li><a href="#vault">Vault 密钥</a></li>
+                        <li><a href="#auth">认证方式</a></li>
+                        <li><a href="#cli">命令行选项</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">其他</div>
+                    <ul class="docs-nav-list">
+                        <li><a href="#faq">常见问题</a></li>
+                        <li><a href="#changelog">更新日志</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+
+            <h2 id="intro">TaskSSH 文档</h2>
+            <p class="lead">
+                TaskSSH 是一个单文件、无外部依赖的 SSH 批量运维工具。
+                使用方式从简单到高级，可以只用最基础的一条命令，也可以定义完整的任务流程。
+            </p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用法</th>
+                            <th>说明</th>
+                            <th>适用场景</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>直接执行命令</td>
+                            <td>位置参数指定主机，无需任何配置文件</td>
+                            <td>临时排查、一次性操作</td>
+                        </tr>
+                        <tr>
+                            <td>使用清单文件</td>
+                            <td>用 <code>inventory.yaml</code> 声明服务器组，按组批量操作</td>
+                            <td>管理多台服务器，复用变量与认证信息</td>
+                        </tr>
+                        <tr>
+                            <td>定义任务</td>
+                            <td>把多个步骤编排成流程，一条命令完成整套操作</td>
+                            <td>发布、回退、日志收集等固定流程</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>
+                三种用法逐级叠加。可以只用第一种，完全不引入配置文件；
+                也可以引入清单文件定义服务器组，再逐步把常用操作固化为任务。
+            </p>
+
+            <h2 id="install">安装</h2>
+
+            <h3>下载预编译二进制</h3>
+            <p>前往 <a href="https://github.com/melvek/TaskSSH/releases" target="_blank" rel="noopener">Releases</a>
+                页面，根据目标平台下载对应的压缩包：</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>平台</th>
+                            <th>架构</th>
+                            <th>文件名</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Windows</td>
+                            <td>amd64</td>
+                            <td><code>taskssh-windows-amd64.zip</code></td>
+                        </tr>
+                        <tr>
+                            <td>Linux</td>
+                            <td>amd64</td>
+                            <td><code>taskssh-linux-amd64.zip</code></td>
+                        </tr>
+                        <tr>
+                            <td>Linux</td>
+                            <td>arm64</td>
+                            <td><code>taskssh-linux-arm64.zip</code></td>
+                        </tr>
+                        <tr>
+                            <td>macOS</td>
+                            <td>Intel</td>
+                            <td><code>taskssh-darwin-amd64.zip</code></td>
+                        </tr>
+                        <tr>
+                            <td>macOS</td>
+                            <td>Apple Silicon</td>
+                            <td><code>taskssh-darwin-arm64.zip</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>解压后获取可执行文件。在 Linux / macOS 环境下，需赋予执行权限：</p>
+
+            <pre class="language-bash"><code>chmod +x taskssh
 ./taskssh --help</code></pre>
 
-        <h3>从源码构建</h3>
-        <p>需 Go 1.22 及以上版本：</p>
+            <h3>从源码构建</h3>
+            <p>需 Go 1.22 及以上版本：</p>
 
-        <pre class="language-bash"><code>git clone https://github.com/melvek/TaskSSH.git
+            <pre class="language-bash"><code>git clone https://github.com/melvek/TaskSSH.git
 cd TaskSSH
 go build -o taskssh main.go</code></pre>
 
-        <h3>Shell 补全（可选）</h3>
+            <h3>Shell 补全（可选）</h3>
 
-        <pre class="language-bash"><code># PowerShell
+            <pre class="language-bash"><code># PowerShell
 taskssh completion powershell >> $PROFILE
 
 # Bash
@@ -191,15 +222,24 @@ echo 'source <(taskssh completion bash)' >> ~/.bashrc
 # Zsh
 echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
 
-                <h2 id="quickstart">快速开始</h2>
+            <h2 id="quickstart">快速开始</h2>
 
-        <h3>直接执行命令</h3>
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    首次使用建议先配置 <strong>SSH 公钥认证</strong>，配置一次后后续所有命令都无需再输入密码。
+                    配置流程见 <a href="#auth">认证方式</a>。临时试用可在命令中直接传入
+                    <code>-u</code> / <code>-p</code>。
+                </p>
+            </div>
 
-        <p>
-            不需要任何配置文件，直接对主机执行命令。
-        </p>
+            <h3>直接执行命令</h3>
 
-        <pre class="language-bash"><code># 单台主机
+            <p>
+                不需要任何配置文件，直接对主机执行命令。
+            </p>
+
+            <pre class="language-bash"><code># 单台主机
 taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y
 
 # 多台主机
@@ -211,18 +251,18 @@ taskssh push 192.168.1.10 -u deploy -f app.jar -d /opt/app/ -y
 # 下载文件
 taskssh fetch 192.168.1.10 -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
 
-        <p>
-            <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
-            四个内置 action 都支持直接指定主机。
-        </p>
+            <p>
+                <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
+                四个内置 action 都支持直接指定主机。
+            </p>
 
-        <h3>使用清单文件</h3>
+            <h3>使用清单文件</h3>
 
-        <p>
-            当主机较多、需要分组、或需要复用配置时，引入 <code>inventory.yaml</code>。
-        </p>
+            <p>
+                当主机较多、需要分组、或需要复用配置时，引入 <code>inventory.yaml</code>。
+            </p>
 
-        <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>global_vars:
   username: deploy
   password: "encrypted-password"
 
@@ -240,22 +280,22 @@ servers:
     hosts:
       uat1: 10.1.0.1</code></pre>
 
-        <p>按组执行命令：</p>
+            <p>按组执行命令：</p>
 
-        <pre class="language-bash"><code>taskssh command prod -e "uptime" -y
+            <pre class="language-bash"><code>taskssh command prod -e "uptime" -y
 taskssh command uat -e "uptime" -y</code></pre>
 
-        <p>
-            认证信息、变量在清单里定义，不需要每次命令行传入。
-        </p>
+            <p>
+                认证信息、变量在清单里定义，不需要每次命令行传入。
+            </p>
 
-        <h3>定义任务</h3>
+            <h3>定义任务</h3>
 
-        <p>
-            当操作需要多步骤时，在清单里定义 <code>tasks</code>，把多个 action 编排成流程。
-        </p>
+            <p>
+                当操作需要多步骤时，在清单里定义 <code>tasks</code>，把多个 action 编排成流程。
+            </p>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   release:
     description: "发布新版本"
     steps:
@@ -277,121 +317,126 @@ taskssh command uat -e "uptime" -y</code></pre>
         with:
           command: "curl -sf http://localhost:8080/health"</code></pre>
 
-        <p>执行任务：</p>
+            <p>执行任务：</p>
 
-        <pre class="language-bash"><code>taskssh release prod -y</code></pre>
+            <pre class="language-bash"><code>taskssh release prod -y</code></pre>
 
-        <p>
-            一条命令完成「上传 → 重启 → 健康检查」整个流程。
-        </p>
-
-        <div class="callout tip">
-            <span class="co-icon">💡</span>
             <p>
-                执行前可用 <code>--dry-run</code> 查看每台主机每个步骤将执行的内容，
-                确认无误后再实际执行。
+                一条命令完成「上传 → 重启 → 健康检查」整个流程。
             </p>
-        </div>
 
-                <h2 id="concept">inventory</h2>
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    执行前可用 <code>--dry-run</code> 查看每台主机每个步骤将执行的内容，
+                    确认无误后再实际执行。
+                </p>
+            </div>
 
-        <p>TaskSSH 的配置模型由两个可选对象构成：</p>
+            <h2 id="concept">inventory</h2>
 
-        <ul>
-            <li>
-                <strong>inventory</strong>：<code>inventory.yaml</code> 清单文件，声明服务器组、主机及变量。
-                可选，不写清单时用位置参数直接指定主机。
-            </li>
-            <li>
-                <strong>task</strong>：清单中 <code>tasks</code> 段定义的执行流程，由一个或多个有序 step 组成。
-                可选，不写任务时用内置 action 执行单步操作。
-            </li>
-        </ul>
+            <p>TaskSSH 的配置模型由两个可选对象构成：</p>
 
-        <p>三种用法与两个对象的关系：</p>
+            <ul>
+                <li>
+                    <strong>inventory</strong>：<code>inventory.yaml</code> 清单文件，声明服务器组、主机及变量。
+                    可选，不写清单时用位置参数直接指定主机。
+                </li>
+                <li>
+                    <strong>task</strong>：清单中 <code>tasks</code> 段定义的执行流程，由一个或多个有序 step 组成。
+                    可选，不写任务时用内置 action 执行单步操作。
+                </li>
+            </ul>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>用法</th><th>需要 inventory</th><th>需要 tasks</th><th>命令形式</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>直接执行</td>
-                        <td>否</td>
-                        <td>否</td>
-                        <td><code>taskssh command host -e "..."</code></td>
-                    </tr>
-                    <tr>
-                        <td>按组执行</td>
-                        <td>是</td>
-                        <td>否</td>
-                        <td><code>taskssh command prod -e "..."</code></td>
-                    </tr>
-                    <tr>
-                        <td>执行任务</td>
-                        <td>是</td>
-                        <td>是</td>
-                        <td><code>taskssh release prod</code></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <p>三种用法与两个对象的关系：</p>
 
-        <p>执行任务时，TaskSSH 按以下流程处理：</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用法</th>
+                            <th>需要 inventory</th>
+                            <th>需要 tasks</th>
+                            <th>命令形式</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>直接执行</td>
+                            <td>否</td>
+                            <td>否</td>
+                            <td><code>taskssh command host -e "..."</code></td>
+                        </tr>
+                        <tr>
+                            <td>按组执行</td>
+                            <td>是</td>
+                            <td>否</td>
+                            <td><code>taskssh command prod -e "..."</code></td>
+                        </tr>
+                        <tr>
+                            <td>执行任务</td>
+                            <td>是</td>
+                            <td>是</td>
+                            <td><code>taskssh release prod</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <ol>
-            <li>从 inventory 中解析目标主机列表（或从位置参数取）；</li>
-            <li>按优先级合并 global / 组 / 主机三级变量，生成每台主机的变量池；</li>
-            <li>按声明顺序执行 task 中各 step（或执行单个内置 action）；</li>
-            <li>每台主机独立执行，任务结束后汇总成功与失败结果。</li>
-        </ol>
+            <p>执行任务时，TaskSSH 按以下流程处理：</p>
 
-        <p>
-            内置的 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
-            既可作为独立子命令调用，亦可作为 task 中 step 的 <code>action</code> 使用。
-        </p>
+            <ol>
+                <li>从 inventory 中解析目标主机列表（或从位置参数取）；</li>
+                <li>按优先级合并 global / 组 / 主机三级变量，生成每台主机的变量池；</li>
+                <li>按声明顺序执行 task 中各 step（或执行单个内置 action）；</li>
+                <li>每台主机独立执行，任务结束后汇总成功与失败结果。</li>
+            </ol>
 
-        <p>清单文件由三个顶层段组成：</p>
+            <p>
+                内置的 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
+                既可作为独立子命令调用，亦可作为 task 中 step 的 <code>action</code> 使用。
+            </p>
 
-        <pre class="language-yaml"><code>global_vars:   # 全局变量，由所有主机与任务继承
+            <p>清单文件由三个顶层段组成：</p>
+
+            <pre class="language-yaml"><code>global_vars:   # 全局变量，由所有主机与任务继承
 servers:       # 服务器组与主机定义
 tasks:         # 任务定义，包含有序步骤</code></pre>
 
-        <p>以下各节对三个段分别进行说明。</p>
+            <p>以下各节对三个段分别进行说明。</p>
 
-        <h2 id="inventory-global">global_vars</h2>
+            <h2 id="inventory-global">global_vars</h2>
 
-        <p>
-            <code>global_vars</code> 定义全局默认值。其字段结构与主机定义一致，包含
-            <code>host</code>、<code>port</code>、<code>username</code>、<code>password</code>、
-            <code>identity_file</code>、<code>passphrase</code> 等连接相关字段；除这些专有字段外，
-            其余字段将作为变量进入变量池。
-        </p>
+            <p>
+                <code>global_vars</code> 定义全局默认值。其字段结构与主机定义一致，包含
+                <code>host</code>、<code>port</code>、<code>username</code>、<code>password</code>、
+                <code>identity_file</code>、<code>passphrase</code> 等连接相关字段；除这些专有字段外，
+                其余字段将作为变量进入变量池。
+            </p>
 
-        <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>global_vars:
   username: deploy
   password: "encrypted-password"
   app_name: myapp
   version: 1.0.0</code></pre>
 
-        <p>
-            上例中，<code>username</code> 与 <code>password</code> 为连接凭据，用于 SSH 认证；
-            <code>app_name</code> 与 <code>version</code> 为用户自定义变量，可在任务中通过
-            <code>{{app_name}}</code> 语法引用。
-        </p>
-        <p style="color: red; font-weight: bold;">
-            注意: 2.1.0 及之前的版本变量语法为 <code>${app_name}</code> 格式。从 2.1.0 升级版本后，需要同步替换引用变量格式。
-        </p>
+            <p>
+                上例中，<code>username</code> 与 <code>password</code> 为连接凭据，用于 SSH 认证；
+                <code>app_name</code> 与 <code>version</code> 为用户自定义变量，可在任务中通过
+                <code>{{app_name}}</code> 语法引用。
+            </p>
+            <p style="color: red; font-weight: bold;">
+                注意: 2.1.0 及之前的版本变量语法为 <code>${app_name}</code> 格式。从 2.1.0 升级版本后，需要同步替换引用变量格式。
+            </p>
 
-        <h2 id="inventory-servers">servers</h2>
+            <h2 id="inventory-servers">servers</h2>
 
-        <p>
-            <code>servers</code> 段定义服务器组。每个组可声明自己的 <code>vars</code>，
-            组内所有主机会继承这些变量。主机可选用简写或完整写法声明。
-        </p>
+            <p>
+                <code>servers</code> 段定义服务器组。每个组可声明自己的 <code>vars</code>，
+                组内所有主机会继承这些变量。主机可选用简写或完整写法声明。
+            </p>
 
-        <pre class="language-yaml"><code>servers:
+            <pre class="language-yaml"><code>servers:
   prod:
     vars:
       service_path: /opt/myapp/
@@ -409,70 +454,126 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
     hosts:
       uat1: 10.1.0.1</code></pre>
 
-        <h3>主机声明方式</h3>
+            <h3>主机声明方式</h3>
 
-        <ul>
-            <li>
-                <strong>简写形式</strong>：<code>主机名: IP</code>。
-                端口、用户名、密码等字段自上层继承。
-            </li>
-            <li>
-                <strong>完整形式</strong>：包含 <code>host</code>、<code>port</code>、
-                <code>username</code>、<code>password</code>、<code>identity_file</code>、
-                <code>passphrase</code> 等字段。
-            </li>
-        </ul>
+            <ul>
+                <li>
+                    <strong>简写形式</strong>：<code>主机名: IP</code>。
+                    端口、用户名、密码等字段自上层继承。
+                </li>
+                <li>
+                    <strong>完整形式</strong>：包含 <code>host</code>、<code>port</code>、
+                    <code>username</code>、<code>password</code>、<code>identity_file</code>、
+                    <code>passphrase</code> 等字段。
+                </li>
+            </ul>
 
-        <p>
-            除上述专有字段外，其余字段将进入主机的 <code>Extra</code> 映射，
-            参与变量替换。例如为主机声明 <code>role: db</code>，任务中即可通过
-            <code>{{role}}</code> 引用。
-        </p>
+            <p>
+                除上述专有字段外，其余字段将进入主机的 <code>Extra</code> 映射，
+                参与变量替换。例如为主机声明 <code>role: db</code>，任务中即可通过
+                <code>{{role}}</code> 引用。
+            </p>
 
-                 <h3>主机查找</h3>
+            <h3>主机查找</h3>
 
-        <p>执行任务时，位置参数可以是以下任意一种：</p>
+            <p>执行任务时，位置参数可以是以下任意一种：</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>形式</th><th>示例</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>组名</td><td><code>prod</code></td><td>展开该组下所有主机</td></tr>
-                    <tr><td>组名/主机名</td><td><code>prod/web1</code></td><td>精确到单台主机</td></tr>
-                    <tr><td>组内主机名</td><td><code>web1</code></td><td>唯一匹配时返回该主机；多组同名时报错</td></tr>
-                    <tr><td>独立主机名</td><td><code>localhost</code></td><td>不在任何组内时，按独立主机处理</td></tr>
-                    <tr><td>IP 地址</td><td><code>192.168.1.10</code></td><td>直接作为主机地址</td></tr>
-                    <tr><td>组匹配</td><td><code>g:web*</code></td><td>glob 匹配组名</td></tr>
-                    <tr><td>主机匹配</td><td><code>h:web*</code></td><td>glob 匹配所有组内主机名</td></tr>
-                    <tr><td>默认匹配</td><td><code>web*</code></td><td>同时匹配组名和主机名，去重合并</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>形式</th>
+                            <th>示例</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>组名</td>
+                            <td><code>prod</code></td>
+                            <td>展开该组下所有主机</td>
+                        </tr>
+                        <tr>
+                            <td>组名/主机名</td>
+                            <td><code>prod/web1</code></td>
+                            <td>精确到单台主机</td>
+                        </tr>
+                        <tr>
+                            <td>组内主机名</td>
+                            <td><code>web1</code></td>
+                            <td>唯一匹配时返回该主机；多组同名时报错</td>
+                        </tr>
+                        <tr>
+                            <td>独立主机名</td>
+                            <td><code>localhost</code></td>
+                            <td>不在任何组内时，按独立主机处理</td>
+                        </tr>
+                        <tr>
+                            <td>IP 地址</td>
+                            <td><code>192.168.1.10</code></td>
+                            <td>直接作为主机地址</td>
+                        </tr>
+                        <tr>
+                            <td>组匹配</td>
+                            <td><code>g:web*</code></td>
+                            <td>glob 匹配组名</td>
+                        </tr>
+                        <tr>
+                            <td>主机匹配</td>
+                            <td><code>h:web*</code></td>
+                            <td>glob 匹配所有组内主机名</td>
+                        </tr>
+                        <tr>
+                            <td>默认匹配</td>
+                            <td><code>web*</code></td>
+                            <td>同时匹配组名和主机名，去重合并</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h3>glob 匹配</h3>
+            <h3>glob 匹配</h3>
 
-        <p>
-            <code>g:</code> 前缀匹配组名，<code>h:</code> 前缀匹配主机名。
-            支持 glob 语法：
-        </p>
+            <p>
+                <code>g:</code> 前缀匹配组名，<code>h:</code> 前缀匹配主机名。
+                支持 glob 语法：
+            </p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>模式</th><th>含义</th><th>示例</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>*</code></td><td>任意多个字符</td><td><code>g:web*</code> 匹配 <code>web_server1</code></td></tr>
-                    <tr><td><code>?</code></td><td>任意单个字符</td><td><code>h:web?</code> 匹配 <code>web1</code></td></tr>
-                    <tr><td><code>[abc]</code></td><td>字符集合</td><td><code>h:web[12]</code> 匹配 <code>web1</code>、<code>web2</code></td></tr>
-                    <tr><td><code>[a-z]</code></td><td>范围</td><td><code>h:web[1-3]</code> 匹配 <code>web1</code>、<code>web2</code>、<code>web3</code></td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模式</th>
+                            <th>含义</th>
+                            <th>示例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>*</code></td>
+                            <td>任意多个字符</td>
+                            <td><code>g:web*</code> 匹配 <code>web_server1</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>?</code></td>
+                            <td>任意单个字符</td>
+                            <td><code>h:web?</code> 匹配 <code>web1</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>[abc]</code></td>
+                            <td>字符集合</td>
+                            <td><code>h:web[12]</code> 匹配 <code>web1</code>、<code>web2</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>[a-z]</code></td>
+                            <td>范围</td>
+                            <td><code>h:web[1-3]</code> 匹配 <code>web1</code>、<code>web2</code>、<code>web3</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code># 所有以 web 开头的组
+            <pre class="language-bash"><code># 所有以 web 开头的组
 taskssh command 'g:web*' -e "uptime" -y
 
 # 所有组内以 web 开头的主机
@@ -481,22 +582,22 @@ taskssh command 'h:web*' -e "uptime" -y
 # 默认匹配：组名和主机名都匹配
 taskssh command 'web*' -e "uptime" -y</code></pre>
 
-        <p>
-            主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
-        </p>
-        
-        <h3>排除主机</h3>
+            <p>
+                主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
+            </p>
 
-        <p>
-            位置参数以 <code>!</code> 开头时表示排除。无 include 时，默认 include 为
-            <code>g:*</code>（所有组）。
-        </p>
+            <h3>排除主机</h3>
 
-        <p style="color: red; font-weight: bold;">
-            注意：在 Bash / Zsh 中，<code>!</code> 是历史展开符，参数需用<strong>单引号</strong>包裹（双引号无效）, PowerShell 无此限制。
-        </p>
+            <p>
+                位置参数以 <code>!</code> 开头时表示排除。无 include 时，默认 include 为
+                <code>g:*</code>（所有组）。
+            </p>
 
-        <pre class="language-bash"><code># 所有主机，排除 web* 组
+            <p style="color: red; font-weight: bold;">
+                注意：在 Bash / Zsh 中，<code>!</code> 是历史展开符，参数需用<strong>单引号</strong>包裹（双引号无效）, PowerShell 无此限制。
+            </p>
+
+            <pre class="language-bash"><code># 所有主机，排除 web* 组
 taskssh command 'g:*' '!g:web*' -e "uptime" -y
 
 # 只指定排除，默认从所有主机中排除
@@ -505,35 +606,51 @@ taskssh command '!g:web*' -e "uptime" -y
 # 排除单台主机
 taskssh command 'g:*' '!h:web1' -e "uptime" -y</code></pre>
 
-        <p>
-            exclude 匹配不到任何主机时不报错。include 匹配不到时报错。
-        </p>
+            <p>
+                exclude 匹配不到任何主机时不报错。include 匹配不到时报错。
+            </p>
 
-        <h3>变量合并优先级</h3>
+            <h3>变量合并优先级</h3>
 
-        <p>主机最终获得的变量池按以下顺序合并，优先级由低到高：</p>
+            <p>主机最终获得的变量池按以下顺序合并，优先级由低到高：</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>层级</th><th>来源</th><th>作用范围</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td><code>global_vars</code></td><td>所有主机</td></tr>
-                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组内主机</td></tr>
-                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>单台主机</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>层级</th>
+                            <th>来源</th>
+                            <th>作用范围</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><code>global_vars</code></td>
+                            <td>所有主机</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><code>servers.&lt;组名&gt;.vars</code></td>
+                            <td>组内主机</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>主机专有字段与 <code>Extra</code></td>
+                            <td>单台主机</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h2 id="inventory-tasks">tasks</h2>
+            <h2 id="inventory-tasks">tasks</h2>
 
-        <p>
-            <code>tasks</code> 段用于定义任务。每个任务具有唯一名称，由若干 <code>steps</code>
-            组成，step 按声明顺序执行。
-        </p>
+            <p>
+                <code>tasks</code> 段用于定义任务。每个任务具有唯一名称，由若干 <code>steps</code>
+                组成，step 按声明顺序执行。
+            </p>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   release:
     description: "发布新版本"   # 可选
     steps:
@@ -549,88 +666,138 @@ taskssh command 'g:*' '!h:web1' -e "uptime" -y</code></pre>
           command: "systemctl restart {{app_name}}"
         delay: 5</code></pre>
 
-        <p>
-            上例中的 <code>release</code> 任务在执行时，将对 <code>prod</code> 组下
-            每台主机依次执行两个步骤：先上传文件，等待 5 秒，再执行服务重启命令。
-        </p>
-
-        <div class="callout">
-            <span class="co-icon">ℹ️</span>
             <p>
-                <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> /
-                <code>encrypt</code> / <code>decrypt</code> 为保留命令名。在 <code>tasks</code>
-                段中定义同名任务不会生效，因为 CLI 路由优先于任务查找。定义自定义任务时需使用其他任务名。
+                上例中的 <code>release</code> 任务在执行时，将对 <code>prod</code> 组下
+                每台主机依次执行两个步骤：先上传文件，等待 5 秒，再执行服务重启命令。
             </p>
-        </div>
 
-        <h3>任务级字段</h3>
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> /
+                    <code>encrypt</code> / <code>decrypt</code> 为保留命令名。在 <code>tasks</code>
+                    段中定义同名任务不会生效，因为 CLI 路由优先于任务查找。定义自定义任务时需使用其他任务名。
+                </p>
+            </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>字段</th><th>必填</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>description</code></td><td>否</td><td>任务描述，用于日志输出</td></tr>
-                    <tr><td><code>serial</code></td><td>否</td><td>每组内每批 N 台，默认 0（不分批）</td></tr>
-                    <tr><td><code>min_available</code></td><td>否</td><td>每组至少留 N 台在跑，默认 0（不留余量）</td></tr>
-                    <tr><td><code>steps</code></td><td>是</td><td>步骤列表</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <h3>任务级字段</h3>
 
-        <h2 id="task-step">step 字段</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>字段</th>
+                            <th>必填</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>description</code></td>
+                            <td>否</td>
+                            <td>任务描述，用于日志输出</td>
+                        </tr>
+                        <tr>
+                            <td><code>serial</code></td>
+                            <td>否</td>
+                            <td>每组内每批 N 台，默认 0（不分批）</td>
+                        </tr>
+                        <tr>
+                            <td><code>min_available</code></td>
+                            <td>否</td>
+                            <td>每组至少留 N 台在跑，默认 0（不留余量）</td>
+                        </tr>
+                        <tr>
+                            <td><code>steps</code></td>
+                            <td>是</td>
+                            <td>步骤列表</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <p>每个 step 表示一次 action 调用，其字段定义如下：</p>
+            <h2 id="task-step">step 字段</h2>
 
-                <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>字段</th><th>必填</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>name</code></td><td>否</td><td>步骤名称，仅用于日志输出</td></tr>
-                    <tr><td><code>action</code></td><td>是</td><td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code></td></tr>
-                    <tr><td><code>with</code></td><td>是</td><td>action 参数映射，值支持 <code>{{var}}</code> 变量替换</td></tr>
-                    <tr><td><code>delay</code></td><td>否</td><td>本步骤执行后等待的秒数，默认 0</td></tr>
-                    <tr><td><code>ignore_errors</code></td><td>否</td><td>该 step 失败时输出警告但不中断后续步骤，默认 false</td></tr>
-                    <tr><td><code>when</code></td><td>否</td><td>条件表达式，满足时才执行，默认无</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <p>每个 step 表示一次 action 调用，其字段定义如下：</p>
 
-        <p>
-            <code>with</code> 中的键名与对应 action 的 CLI 选项保持一致。例如
-            <code>push</code> 支持 <code>file</code> / <code>dest</code> / <code>force</code> /
-            <code>zip</code> 四个参数。
-        </p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>字段</th>
+                            <th>必填</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>name</code></td>
+                            <td>否</td>
+                            <td>步骤名称，仅用于日志输出</td>
+                        </tr>
+                        <tr>
+                            <td><code>action</code></td>
+                            <td>是</td>
+                            <td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> /
+                                <code>script</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>with</code></td>
+                            <td>是</td>
+                            <td>action 参数映射，值支持 <code>{{var}}</code> 变量替换</td>
+                        </tr>
+                        <tr>
+                            <td><code>delay</code></td>
+                            <td>否</td>
+                            <td>本步骤执行后等待的秒数，默认 0</td>
+                        </tr>
+                        <tr>
+                            <td><code>ignore_errors</code></td>
+                            <td>否</td>
+                            <td>该 step 失败时输出警告但不中断后续步骤，默认 false</td>
+                        </tr>
+                        <tr>
+                            <td><code>when</code></td>
+                            <td>否</td>
+                            <td>条件表达式，满足时才执行，默认无</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h3>ignore_errors</h3>
+            <p>
+                <code>with</code> 中的键名与对应 action 的 CLI 选项保持一致。例如
+                <code>push</code> 支持 <code>file</code> / <code>dest</code> / <code>force</code> /
+                <code>zip</code> 四个参数。
+            </p>
 
-        <p>
-            标记为 <code>ignore_errors: true</code> 的 step，执行失败时输出警告日志，
-            但不中断当前主机的后续步骤。
-        </p>
+            <h3>ignore_errors</h3>
 
-        <pre class="language-yaml"><code>- name: "清理临时文件"
+            <p>
+                标记为 <code>ignore_errors: true</code> 的 step，执行失败时输出警告日志，
+                但不中断当前主机的后续步骤。
+            </p>
+
+            <pre class="language-yaml"><code>- name: "清理临时文件"
 action: command
   with:
     command: "rm -f /tmp/deploy-*.tmp"
   ignore_errors: true</code></pre>
 
-        <p>
-            注意：该字段仅作用于 step 执行失败。连接失败属于主机级问题，
-            会跳过该主机的所有步骤，并在摘要中计为失败主机，不受此字段影响。
-        </p>
+            <p>
+                注意：该字段仅作用于 step 执行失败。连接失败属于主机级问题，
+                会跳过该主机的所有步骤，并在摘要中计为失败主机，不受此字段影响。
+            </p>
 
-                <h2 id="task-when">条件执行 when</h2>
+            <h2 id="task-when">条件执行 when</h2>
 
-        <p>
-            step 可通过 <code>when</code> 字段声明执行条件。条件求值为 <code>true</code> 时才执行，
-            否则输出 <code>Skip step</code> 并继续下一步。
-        </p>
+            <p>
+                step 可通过 <code>when</code> 字段声明执行条件。条件求值为 <code>true</code> 时才执行，
+                否则输出 <code>Skip step</code> 并继续下一步。
+            </p>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   release:
     steps:
       - name: "备份数据库"
@@ -639,67 +806,107 @@ action: command
         with:
           command: "pg_dump mydb > /backup/mydb.sql"</code></pre>
 
-        <h3>支持的运算符</h3>
+            <h3>支持的运算符</h3>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>运算符</th><th>示例</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>==</code></td><td><code>{{env}} == prod</code></td><td>相等</td></tr>
-                    <tr><td><code>!=</code></td><td><code>{{env}} != prod</code></td><td>不等</td></tr>
-                    <tr><td><code>&gt;</code></td><td><code>{{version}} &gt; 2</code></td><td>大于</td></tr>
-                    <tr><td><code>&gt;=</code></td><td><code>{{version}} &gt;= 2</code></td><td>大于等于</td></tr>
-                    <tr><td><code>&lt;</code></td><td><code>{{version}} &lt; 5</code></td><td>小于</td></tr>
-                    <tr><td><code>&lt;=</code></td><td><code>{{version}} &lt;= 5</code></td><td>小于等于</td></tr>
-                    <tr><td><code>in</code></td><td><code>{{role}} in (web,db)</code></td><td>在列表中</td></tr>
-                    <tr><td><code>&amp;&amp;</code></td><td><code>{{env}} == prod &amp;&amp; {{role}} == web</code></td><td>逻辑与</td></tr>
-                    <tr><td><code>||</code></td><td><code>{{env}} == prod || {{env}} == uat</code></td><td>逻辑或</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>运算符</th>
+                            <th>示例</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>==</code></td>
+                            <td><code>{{env}} == prod</code></td>
+                            <td>相等</td>
+                        </tr>
+                        <tr>
+                            <td><code>!=</code></td>
+                            <td><code>{{env}} != prod</code></td>
+                            <td>不等</td>
+                        </tr>
+                        <tr>
+                            <td><code>&gt;</code></td>
+                            <td><code>{{version}} &gt; 2</code></td>
+                            <td>大于</td>
+                        </tr>
+                        <tr>
+                            <td><code>&gt;=</code></td>
+                            <td><code>{{version}} &gt;= 2</code></td>
+                            <td>大于等于</td>
+                        </tr>
+                        <tr>
+                            <td><code>&lt;</code></td>
+                            <td><code>{{version}} &lt; 5</code></td>
+                            <td>小于</td>
+                        </tr>
+                        <tr>
+                            <td><code>&lt;=</code></td>
+                            <td><code>{{version}} &lt;= 5</code></td>
+                            <td>小于等于</td>
+                        </tr>
+                        <tr>
+                            <td><code>in</code></td>
+                            <td><code>{{role}} in (web,db)</code></td>
+                            <td>在列表中</td>
+                        </tr>
+                        <tr>
+                            <td><code>&amp;&amp;</code></td>
+                            <td><code>{{env}} == prod &amp;&amp; {{role}} == web</code></td>
+                            <td>逻辑与</td>
+                        </tr>
+                        <tr>
+                            <td><code>||</code></td>
+                            <td><code>{{env}} == prod || {{env}} == uat</code></td>
+                            <td>逻辑或</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h3>数值与字符串比较</h3>
+            <h3>数值与字符串比较</h3>
 
-        <p>
-            <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code>
-            的左右两侧若均能解析为数字，则按数字比较，否则按字符串比较。
-        </p>
+            <p>
+                <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code>
+                的左右两侧若均能解析为数字，则按数字比较，否则按字符串比较。
+            </p>
 
-        <pre class="language-yaml"><code># 数字比较
+            <pre class="language-yaml"><code># 数字比较
 when: "{{version}} >= 2"
 
 # 字符串比较
 when: "{{name}} > abc"</code></pre>
 
-        <div class="callout warn">
-            <span class="co-icon">⚠️</span>
+            <div class="callout warn">
+                <span class="co-icon">⚠️</span>
+                <p>
+                    数字比较使用 <code>float64</code>。版本号如 <code>1.10</code> 与
+                    <code>1.2</code> 的比较结果可能不符合直觉（<code>1.10</code> 被解析为
+                    <code>1.1</code>，小于 <code>1.2</code>）。如需精确比较，建议使用整数版本号。
+                </p>
+            </div>
+
+            <h3>列表匹配 in</h3>
+
             <p>
-                数字比较使用 <code>float64</code>。版本号如 <code>1.10</code> 与
-                <code>1.2</code> 的比较结果可能不符合直觉（<code>1.10</code> 被解析为
-                <code>1.1</code>，小于 <code>1.2</code>）。如需精确比较，建议使用整数版本号。
+                <code>in</code> 右侧为逗号分隔的列表，可加括号也可不加：
             </p>
-        </div>
 
-        <h3>列表匹配 in</h3>
-
-        <p>
-            <code>in</code> 右侧为逗号分隔的列表，可加括号也可不加：
-        </p>
-
-        <pre class="language-yaml"><code>when: "{{role}} in (web,db,cache)"
+            <pre class="language-yaml"><code>when: "{{role}} in (web,db,cache)"
 when: "{{role}} in web,db,cache"</code></pre>
 
-        <h3>逻辑组合</h3>
+            <h3>逻辑组合</h3>
 
-        <p>
-            <code>&amp;&amp;</code> 优先级高于 <code>||</code>。
-            例如 <code>a &amp;&amp; b || c &amp;&amp; d</code> 等价于
-            <code>(a &amp;&amp; b) || (c &amp;&amp; d)</code>。
-        </p>
+            <p>
+                <code>&amp;&amp;</code> 优先级高于 <code>||</code>。
+                例如 <code>a &amp;&amp; b || c &amp;&amp; d</code> 等价于
+                <code>(a &amp;&amp; b) || (c &amp;&amp; d)</code>。
+            </p>
 
-        <pre class="language-yaml"><code>- name: "生产环境备份数据库"
+            <pre class="language-yaml"><code>- name: "生产环境备份数据库"
   action: command
   when: "{{env}} == prod && {{role}} == db"
   with:
@@ -711,23 +918,23 @@ when: "{{role}} in web,db,cache"</code></pre>
   with:
     command: "systemctl restart {{app_name}} --debug"</code></pre>
 
-        <h3>限制</h3>
+            <h3>限制</h3>
 
-        <ul>
-            <li>不支持括号改变优先级。</li>
-            <li>不支持算术运算、函数调用。</li>
-            <li>条件求值前，表达式中的 <code>{{var}}</code> 会先做变量替换；未解析的变量会导致 step 失败。</li>
-        </ul>
+            <ul>
+                <li>不支持括号改变优先级。</li>
+                <li>不支持算术运算、函数调用。</li>
+                <li>条件求值前，表达式中的 <code>{{var}}</code> 会先做变量替换；未解析的变量会导致 step 失败。</li>
+            </ul>
 
-        <h2 id="task-compose">组合内置 action</h2>
+            <h2 id="task-compose">组合内置 action</h2>
 
-        <p>
-            任务可由四种 action 自由组合而成。以下列出若干典型编排模式。
-        </p>
+            <p>
+                任务可由四种 action 自由组合而成。以下列出若干典型编排模式。
+            </p>
 
-        <h3>模式一：版本发布</h3>
+            <h3>模式一：版本发布</h3>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   release:
     steps:
       - name: "备份当前版本"
@@ -753,9 +960,9 @@ when: "{{role}} in web,db,cache"</code></pre>
         with:
           command: "curl -sf http://localhost:8080/health"</code></pre>
 
-        <h3>模式二：批量拉取日志</h3>
+            <h3>模式二：批量拉取日志</h3>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   pull-logs:
     steps:
       - name: "打包日志"
@@ -774,9 +981,9 @@ when: "{{role}} in web,db,cache"</code></pre>
         with:
           command: "rm -f /tmp/app-logs.tar.gz"</code></pre>
 
-        <h3>模式三：执行部署脚本</h3>
+            <h3>模式三：执行部署脚本</h3>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   deploy-script:
     steps:
       - name: "上传并执行部署脚本"
@@ -787,9 +994,9 @@ when: "{{role}} in web,db,cache"</code></pre>
           remove: true
           force: true</code></pre>
 
-        <h3>模式四：版本目录与软链接切换</h3>
+            <h3>模式四：版本目录与软链接切换</h3>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   deploy:
     steps:
       - name: "创建版本目录"
@@ -814,22 +1021,22 @@ when: "{{role}} in web,db,cache"</code></pre>
         with:
           command: "ls -l {{service_path}}/current"</code></pre>
 
-        <h3>模式五：多环境复用同一任务</h3>
+            <h3>模式五：多环境复用同一任务</h3>
 
-        <p>
-            任务本身不与环境绑定，环境差异由组级变量承载。例如 <code>service_path</code>
-            在 <code>prod</code> 组为 <code>/opt/myapp/</code>，在 <code>uat</code> 组为
-            <code>/opt/myapp-uat/</code>，同一 <code>release</code> 任务即可分别对两个组执行。
-        </p>
+            <p>
+                任务本身不与环境绑定，环境差异由组级变量承载。例如 <code>service_path</code>
+                在 <code>prod</code> 组为 <code>/opt/myapp/</code>，在 <code>uat</code> 组为
+                <code>/opt/myapp-uat/</code>，同一 <code>release</code> 任务即可分别对两个组执行。
+            </p>
 
-        <pre class="language-bash"><code>taskssh release prod -y
+            <pre class="language-bash"><code>taskssh release prod -y
 taskssh release uat -y</code></pre>
 
-        <h2 id="task-example">完整示例</h2>
+            <h2 id="task-example">完整示例</h2>
 
-        <p>以下为清单文件与任务的完整示例。</p>
+            <p>以下为清单文件与任务的完整示例。</p>
 
-        <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>global_vars:
   username: deploy
   password: "encrypted-password"
   app_name: myapp
@@ -865,64 +1072,99 @@ tasks:
           command: "systemctl restart {{app_name}}"
         delay: 5</code></pre>
 
-        <p>执行方式：</p>
+            <p>执行方式：</p>
 
-        <pre class="language-bash"><code>taskssh release prod -y
+            <pre class="language-bash"><code>taskssh release prod -y
 taskssh release uat -y</code></pre>
 
-        <h2 id="action-command">Action：command</h2>
+            <h2 id="action-command">Action：command</h2>
 
-        <p>
-            在远程主机上执行指定命令。当远程命令返回的退出码非 0 时，该 step 判定为失败。
-        </p>
+            <p>
+                在远程主机上执行指定命令。当远程命令返回的退出码非 0 时，该 step 判定为失败。
+            </p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-e</code></td><td><code>--execute</code></td><td>string</td><td>待执行的命令；亦可从清单的 <code>command</code> 字段读取</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-e</code></td>
+                            <td><code>--execute</code></td>
+                            <td>string</td>
+                            <td>待执行的命令；亦可从清单的 <code>command</code> 字段读取</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code>taskssh command web-server-01 -e "ls -la /opt" -y</code></pre>
+            <pre class="language-bash"><code>taskssh command web-server-01 -e "ls -la /opt" -y</code></pre>
 
-        <p>作为 step 使用时，将命令写入 <code>with.command</code>：</p>
+            <p>作为 step 使用时，将命令写入 <code>with.command</code>：</p>
 
-        <pre class="language-yaml"><code>- name: "重启服务"
+            <pre class="language-yaml"><code>- name: "重启服务"
   action: command
   with:
     command: "systemctl restart {{app_name}}"</code></pre>
 
-        <div class="callout">
-            <span class="co-icon">ℹ️</span>
-            <p>
-                TaskSSH 变量使用 <code>{{var}}</code> 语法；命令中的 <code>$VAR</code> 和
-                <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
-            </p>
-        </div>
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    TaskSSH 变量使用 <code>{{var}}</code> 语法；命令中的 <code>$VAR</code> 和
+                    <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
+                </p>
+            </div>
 
-        <h2 id="action-push">Action：push</h2>
+            <h2 id="action-push">Action：push</h2>
 
-        <p>将本地文件或目录上传至远程主机。</p>
+            <p>将本地文件或目录上传至远程主机。</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-f</code></td><td><code>--file</code></td><td>file or dir</td><td>本地文件或目录路径</td></tr>
-                    <tr><td><code>-d</code></td><td><code>--dest</code></td><td>path</td><td>远程目标路径；亦可从变量 <code>service_path</code> 读取</td></tr>
-                    <tr><td><code>-F</code></td><td><code>--force</code></td><td>—</td><td>覆盖已存在的远程文件</td></tr>
-                    <tr><td><code>-z</code></td><td><code>--zip</code></td><td>—</td><td>目录上传时，本地 zip 打包后上传（依赖远程 <code>unzip</code>）</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-f</code></td>
+                            <td><code>--file</code></td>
+                            <td>file or dir</td>
+                            <td>本地文件或目录路径</td>
+                        </tr>
+                        <tr>
+                            <td><code>-d</code></td>
+                            <td><code>--dest</code></td>
+                            <td>path</td>
+                            <td>远程目标路径；亦可从变量 <code>service_path</code> 读取</td>
+                        </tr>
+                        <tr>
+                            <td><code>-F</code></td>
+                            <td><code>--force</code></td>
+                            <td>—</td>
+                            <td>覆盖已存在的远程文件</td>
+                        </tr>
+                        <tr>
+                            <td><code>-z</code></td>
+                            <td><code>--zip</code></td>
+                            <td>—</td>
+                            <td>目录上传时，本地 zip 打包后上传（依赖远程 <code>unzip</code>）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code># 单文件
+            <pre class="language-bash"><code># 单文件
 taskssh push app-server -f app.jar -d /opt/app/ -y
 
 # 目录，递归上传
@@ -931,46 +1173,71 @@ taskssh push prod -f ./dist/assets/ -d /opt/app/ -y
 # 目录，打包上传
 taskssh push prod -f ./dist/assets/ -d /opt/app/ -z -y</code></pre>
 
-        <h4>路径与覆盖规则</h4>
+            <h4>路径与覆盖规则</h4>
 
-        <ol>
-            <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，最终路径为 <code>目录 + 本地文件名</code>。</li>
-            <li>若目标已存在且为目录，文件上传至该目录内。</li>
-            <li>若目标已存在且为文件：
-                <ul>
-                    <li>默认行为为报错；</li>
-                    <li><code>-F</code> 直接覆盖。</li>
-                </ul>
-            </li>
-            <li>远程目录不存在时报错。程序不会自动创建远程目录，如有需要，可在任务中预先加入创建目录的 <code>command</code> 步骤。</li>
-        </ol>
+            <ol>
+                <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，最终路径为 <code>目录 + 本地文件名</code>。</li>
+                <li>若目标已存在且为目录，文件上传至该目录内。</li>
+                <li>若目标已存在且为文件：
+                    <ul>
+                        <li>默认行为为报错；</li>
+                        <li><code>-F</code> 直接覆盖。</li>
+                    </ul>
+                </li>
+                <li>远程目录不存在时报错。程序不会自动创建远程目录，如有需要，可在任务中预先加入创建目录的 <code>command</code> 步骤。</li>
+            </ol>
 
-        <h4>目录上传</h4>
+            <h4>目录上传</h4>
 
-        <ul>
-            <li>不传 <code>-z</code>：递归逐文件上传，不依赖远程工具。</li>
-            <li>传 <code>-z</code>：本地 zip 打包上传，远程 <code>unzip</code> 解包。依赖远程安装 <code>unzip</code>。</li>
-        </ul>
+            <ul>
+                <li>不传 <code>-z</code>：递归逐文件上传，不依赖远程工具。</li>
+                <li>传 <code>-z</code>：本地 zip 打包上传，远程 <code>unzip</code> 解包。依赖远程安装 <code>unzip</code>。</li>
+            </ul>
 
-        <h2 id="action-fetch">Action：fetch</h2>
+            <h2 id="action-fetch">Action：fetch</h2>
 
-        <p>从远程主机下载文件或目录至本地。</p>
+            <p>从远程主机下载文件或目录至本地。</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-f</code></td><td><code>--file</code></td><td>path</td><td>远程文件或目录路径</td></tr>
-                    <tr><td><code>-d</code></td><td><code>--dest</code></td><td>path</td><td>本地目标路径，默认 <code>./</code></td></tr>
-                    <tr><td><code>-z</code></td><td><code>--zip</code></td><td>—</td><td>目录下载时，远程打包后下载（依赖远程 <code>zip</code>）</td></tr>
-                    <tr><td><code>-T</code></td><td><code>--tmp-dir</code></td><td>path</td><td>远程临时目录，默认 <code>/tmp</code>，仅 <code>-z</code> 时生效</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-f</code></td>
+                            <td><code>--file</code></td>
+                            <td>path</td>
+                            <td>远程文件或目录路径</td>
+                        </tr>
+                        <tr>
+                            <td><code>-d</code></td>
+                            <td><code>--dest</code></td>
+                            <td>path</td>
+                            <td>本地目标路径，默认 <code>./</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-z</code></td>
+                            <td><code>--zip</code></td>
+                            <td>—</td>
+                            <td>目录下载时，远程打包后下载（依赖远程 <code>zip</code>）</td>
+                        </tr>
+                        <tr>
+                            <td><code>-T</code></td>
+                            <td><code>--tmp-dir</code></td>
+                            <td>path</td>
+                            <td>远程临时目录，默认 <code>/tmp</code>，仅 <code>-z</code> 时生效</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code># 下载至目录（按主机标识分组存放）
+            <pre class="language-bash"><code># 下载至目录（按主机标识分组存放）
 taskssh fetch prod -f /var/log/app.log -d ./logs/ -y
 
 # 下载至指定文件
@@ -982,40 +1249,65 @@ taskssh fetch prod -f /var/log/app/ -d ./logs/ -y
 # 下载目录，打包
 taskssh fetch prod -f /var/log/app/ -d ./logs/ -z -y</code></pre>
 
-        <h4>路径与覆盖规则</h4>
+            <h4>路径与覆盖规则</h4>
 
-        <ol>
-            <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，按主机标识分组存放：<code>dest/&lt;主机标识&gt;/&lt;文件名&gt;</code>。</li>
-            <li>若 <code>-d</code> 为文件路径，则直接下载至该文件。</li>
-            <li>本地文件已存在时，默认覆盖。</li>
-            <li>本地父目录不存在时自动创建。</li>
-            <li>远程路径为目录时：
-                <ul>
-                    <li>不传 <code>-z</code>：递归逐文件下载；</li>
-                    <li>传 <code>-z</code>：远程 <code>zip -r</code> 打包，下载后本地解压，删除远程 zip。</li>
-                </ul>
-            </li>
-        </ol>
+            <ol>
+                <li><code>-d</code> 以 <code>/</code> 结尾时视为目录，按主机标识分组存放：<code>dest/&lt;主机标识&gt;/&lt;文件名&gt;</code>。</li>
+                <li>若 <code>-d</code> 为文件路径，则直接下载至该文件。</li>
+                <li>本地文件已存在时，默认覆盖。</li>
+                <li>本地父目录不存在时自动创建。</li>
+                <li>远程路径为目录时：
+                    <ul>
+                        <li>不传 <code>-z</code>：递归逐文件下载；</li>
+                        <li>传 <code>-z</code>：远程 <code>zip -r</code> 打包，下载后本地解压，删除远程 zip。</li>
+                    </ul>
+                </li>
+            </ol>
 
-        <h2 id="action-script">Action：script</h2>
+            <h2 id="action-script">Action：script</h2>
 
-        <p>将本地 shell 脚本上传至远程主机并执行。</p>
+            <p>将本地 shell 脚本上传至远程主机并执行。</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-f</code></td><td><code>--file</code></td><td>file</td><td>本地脚本文件</td></tr>
-                    <tr><td><code>-d</code></td><td><code>--dest</code></td><td>path</td><td>远程目录，默认 <code>/tmp</code></td></tr>
-                    <tr><td><code>-r</code></td><td><code>--remove</code></td><td>—</td><td>执行后删除远程脚本</td></tr>
-                    <tr><td><code>-F</code></td><td><code>--force</code></td><td>—</td><td>覆盖已存在的远程脚本</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-f</code></td>
+                            <td><code>--file</code></td>
+                            <td>file</td>
+                            <td>本地脚本文件</td>
+                        </tr>
+                        <tr>
+                            <td><code>-d</code></td>
+                            <td><code>--dest</code></td>
+                            <td>path</td>
+                            <td>远程目录，默认 <code>/tmp</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-r</code></td>
+                            <td><code>--remove</code></td>
+                            <td>—</td>
+                            <td>执行后删除远程脚本</td>
+                        </tr>
+                        <tr>
+                            <td><code>-F</code></td>
+                            <td><code>--force</code></td>
+                            <td>—</td>
+                            <td>覆盖已存在的远程脚本</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code># 上传并执行
+            <pre class="language-bash"><code># 上传并执行
 taskssh script prod -f ./scripts/deploy.sh -y
 
 # 执行后删除远程脚本
@@ -1024,60 +1316,72 @@ taskssh script prod -f ./scripts/deploy.sh -r -y
 # 覆盖已存在的远程脚本
 taskssh script prod -f ./scripts/deploy.sh -r -F -y</code></pre>
 
-        <h4>执行规则</h4>
+            <h4>执行规则</h4>
 
-        <ol>
-            <li>脚本上传到 <code>-d</code> 指定的目录，默认 <code>/tmp</code>。</li>
-            <li>上传后自动 <code>chmod +x</code>，然后执行。</li>
-            <li><code>-r</code> 表示执行后删除远程脚本，不论成功失败。</li>
-            <li><code>-F</code> 表示覆盖已存在的远程脚本。</li>
-        </ol>
+            <ol>
+                <li>脚本上传到 <code>-d</code> 指定的目录，默认 <code>/tmp</code>。</li>
+                <li>上传后自动 <code>chmod +x</code>，然后执行。</li>
+                <li><code>-r</code> 表示执行后删除远程脚本，不论成功失败。</li>
+                <li><code>-F</code> 表示覆盖已存在的远程脚本。</li>
+            </ol>
 
-        <h2 id="serial">串行执行</h2>
+            <h2 id="serial">串行执行</h2>
 
-        <p>默认情况下，TaskSSH 以串行方式执行任务：</p>
+            <p>默认情况下，TaskSSH 以串行方式执行任务：</p>
 
-        <ul>
-            <li>主机之间：一台主机完成后再执行下一台；</li>
-            <li>主机内部：一个 step 完成后再执行下一个 step。</li>
-        </ul>
+            <ul>
+                <li>主机之间：一台主机完成后再执行下一台；</li>
+                <li>主机内部：一个 step 完成后再执行下一个 step。</li>
+            </ul>
 
-        <p>
-            串行模式的特性为日志实时输出、失败可即时定位，适用于对执行顺序敏感的场景。
-        </p>
-
-        <h2 id="parallel">并行执行</h2>
-
-        <p>通过 <code>-c</code> 或 <code>--concurrency</code> 指定并发数：</p>
-
-        <pre class="language-bash"><code>taskssh release prod -c 5 -y</code></pre>
-
-        <p>上述命令表示：最多同时操作 5 台主机，一台完成后自动补充下一台。</p>
-
-        <div class="callout">
-            <span class="co-icon">ℹ️</span>
             <p>
-                并行执行时，开始时实时输出 <code>[Processing x/y]</code> 提示；
-                每台主机执行过程中的日志先写入独立缓冲，执行完毕后统一输出，以避免多主机日志交错。
+                串行模式的特性为日志实时输出、失败可即时定位，适用于对执行顺序敏感的场景。
             </p>
-        </div>
 
-        <h2 id="concurrency">并发数控制</h2>
+            <h2 id="parallel">并行执行</h2>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>并发数</th><th>适用场景</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>1</code>（默认）</td><td>生产发布、对顺序敏感的操作</td></tr>
-                    <tr><td><code>2-5</code></td><td>小规模集群的滚动操作</td></tr>
-                    <tr><td><code>10+</code></td><td>只读命令、日志收集、批量诊断</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <p>通过 <code>-c</code> 或 <code>--concurrency</code> 指定并发数：</p>
 
-        <pre class="language-bash"><code># 生产发布，串行执行
+            <pre class="language-bash"><code>taskssh release prod -c 5 -y</code></pre>
+
+            <p>上述命令表示：最多同时操作 5 台主机，一台完成后自动补充下一台。</p>
+
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    并行执行时，开始时实时输出 <code>[Processing x/y]</code> 提示；
+                    每台主机执行过程中的日志先写入独立缓冲，执行完毕后统一输出，以避免多主机日志交错。
+                </p>
+            </div>
+
+            <h2 id="concurrency">并发数控制</h2>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>并发数</th>
+                            <th>适用场景</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>1</code>（默认）</td>
+                            <td>生产发布、对顺序敏感的操作</td>
+                        </tr>
+                        <tr>
+                            <td><code>2-5</code></td>
+                            <td>小规模集群的滚动操作</td>
+                        </tr>
+                        <tr>
+                            <td><code>10+</code></td>
+                            <td>只读命令、日志收集、批量诊断</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <pre class="language-bash"><code># 生产发布，串行执行
 taskssh release prod -y
 
 # 分批滚动，最多 3 台并发
@@ -1086,28 +1390,28 @@ taskssh release prod -c 3 -y
 # 批量诊断，高并发
 taskssh command prod -e "df -h" -c 10 -y</code></pre>
 
-        <div class="callout tip">
-            <span class="co-icon">💡</span>
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    并发数并非越大越好。建议从 3～5 开始，结合实际网络与目标主机负载逐步调整。
+                </p>
+            </div>
+
+            <h2 id="batching">按组分批</h2>
+
             <p>
-                并发数并非越大越好。建议从 3～5 开始，结合实际网络与目标主机负载逐步调整。
+                通过 <code>serial</code> 和 <code>min_available</code>，可将主机按组切分，
+                每组内按每批 N 台滚动执行。适用于服务部署、滚动重启等需要控制节奏的场景。
             </p>
-        </div>
 
-        <h2 id="batching">按组分批</h2>
+            <h3>调度模型</h3>
 
-        <p>
-            通过 <code>serial</code> 和 <code>min_available</code>，可将主机按组切分，
-            每组内按每批 N 台滚动执行。适用于服务部署、滚动重启等需要控制节奏的场景。
-        </p>
+            <p>
+                所有批排成一条队列，依次执行。每批只包含同一组的主机。
+                <strong>批内并发，批间串行，组间串行。</strong>
+            </p>
 
-        <h3>调度模型</h3>
-
-        <p>
-            所有批排成一条队列，依次执行。每批只包含同一组的主机。
-            <strong>批内并发，批间串行，组间串行。</strong>
-        </p>
-
-        <pre class="language-bash"><code>输入：order(4台), stock(2台)，serial: 2, min_available: 1
+            <pre class="language-bash"><code>输入：order(4台), stock(2台)，serial: 2, min_available: 1
 
         队列：
         order 批1：order1, order2
@@ -1117,81 +1421,142 @@ taskssh command prod -e "df -h" -c 10 -y</code></pre>
 
         执行：order批1 → order批2 → stock批1 → stock批2</code></pre>
 
-        <ul>
-            <li><strong>组间串行</strong>：<code>order</code> 的所有批跑完，才轮到 <code>stock</code>。</li>
-            <li><strong>批间串行</strong>：批1 跑完，才跑批2。</li>
-            <li><strong>批内并发</strong>：批1 里的主机同时执行，并发度由 <code>-c</code> 控制。</li>
-            <li><strong>组间顺序</strong>：按 CLI 传入顺序。用户写 <code>-H order,stock</code>，<code>order</code> 先。</li>
-            <li><strong>组内顺序</strong>：按主机名字典序。建议用零填充命名（<code>web_01</code>、<code>web_02</code>）控制顺序。</li>
-        </ul>
+            <ul>
+                <li><strong>组间串行</strong>：<code>order</code> 的所有批跑完，才轮到 <code>stock</code>。</li>
+                <li><strong>批间串行</strong>：批1 跑完，才跑批2。</li>
+                <li><strong>批内并发</strong>：批1 里的主机同时执行，并发度由 <code>-c</code> 控制。</li>
+                <li><strong>组间顺序</strong>：按 CLI 传入顺序。用户写 <code>-H order,stock</code>，<code>order</code> 先。</li>
+                <li><strong>组内顺序</strong>：按主机名字典序。建议用零填充命名（<code>web_01</code>、<code>web_02</code>）控制顺序。</li>
+            </ul>
 
-        <h3>serial 与 min_available</h3>
+            <h3>serial 与 min_available</h3>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>参数</th><th>位置</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>serial</code></td><td>任务级 <code>Task</code></td><td>每组内每批 N 台</td></tr>
-                    <tr><td><code>min_available</code></td><td>任务级 <code>Task</code></td><td>每组至少留 N 台在跑</td></tr>
-                    <tr><td><code>-S / --serial</code></td><td>CLI</td><td>覆盖任务级 serial</td></tr>
-                    <tr><td><code>--min-available</code></td><td>CLI</td><td>覆盖任务级 min_available</td></tr>
-                    <tr><td><code>--stop-on-failure</code></td><td>CLI</td><td>一批失败后停止后续批次，默认 true</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>参数</th>
+                            <th>位置</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>serial</code></td>
+                            <td>任务级 <code>Task</code></td>
+                            <td>每组内每批 N 台</td>
+                        </tr>
+                        <tr>
+                            <td><code>min_available</code></td>
+                            <td>任务级 <code>Task</code></td>
+                            <td>每组至少留 N 台在跑</td>
+                        </tr>
+                        <tr>
+                            <td><code>-S / --serial</code></td>
+                            <td>CLI</td>
+                            <td>覆盖任务级 serial</td>
+                        </tr>
+                        <tr>
+                            <td><code>--min-available</code></td>
+                            <td>CLI</td>
+                            <td>覆盖任务级 min_available</td>
+                        </tr>
+                        <tr>
+                            <td><code>--stop-on-failure</code></td>
+                            <td>CLI</td>
+                            <td>一批失败后停止后续批次，默认 true</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <p>每批大小由两者共同决定：</p>
+            <p>每批大小由两者共同决定：</p>
 
-        <pre class="language-bash"><code>batchSize = min(serial, len(group) - minAvailable)</code></pre>
+            <pre class="language-bash"><code>batchSize = min(serial, len(group) - minAvailable)</code></pre>
 
-        <p>示例：</p>
+            <p>示例：</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>组大小</th><th>serial</th><th>min_available</th><th>每批大小</th><th>分批结果</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>4</td><td>2</td><td>1</td><td>min(2, 3) = 2</td><td>批 2 + 2</td></tr>
-                    <tr><td>2</td><td>2</td><td>1</td><td>min(2, 1) = 1</td><td>批 1 + 1</td></tr>
-                    <tr><td>2</td><td>2</td><td>0</td><td>min(2, 2) = 2</td><td>批 2（全动）</td></tr>
-                    <tr><td>4</td><td>0</td><td>1</td><td>4 - 1 = 3</td><td>批 3 + 1</td></tr>
-                    <tr><td>4</td><td>0</td><td>0</td><td>4</td><td>批 4（全动）</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>组大小</th>
+                            <th>serial</th>
+                            <th>min_available</th>
+                            <th>每批大小</th>
+                            <th>分批结果</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>4</td>
+                            <td>2</td>
+                            <td>1</td>
+                            <td>min(2, 3) = 2</td>
+                            <td>批 2 + 2</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2</td>
+                            <td>1</td>
+                            <td>min(2, 1) = 1</td>
+                            <td>批 1 + 1</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2</td>
+                            <td>0</td>
+                            <td>min(2, 2) = 2</td>
+                            <td>批 2（全动）</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>0</td>
+                            <td>1</td>
+                            <td>4 - 1 = 3</td>
+                            <td>批 3 + 1</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>4</td>
+                            <td>批 4（全动）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h3>优先级</h3>
+            <h3>优先级</h3>
 
-        <p>CLI 显式传参时覆盖任务级配置：</p>
+            <p>CLI 显式传参时覆盖任务级配置：</p>
 
-        <pre class="language-bash"><code>CLI flag（显式传了）> 任务级（Task.Serial / Task.MinAvailable）> 默认值（0）</code></pre>
+            <pre class="language-bash"><code>CLI flag（显式传了）> 任务级（Task.Serial / Task.MinAvailable）> 默认值（0）</code></pre>
 
-        <p>
-            任务级 <code>serial: 0</code> 或不配，表示不启用分批。
-            CLI <code>-S 0</code> 表示覆盖任务级为"不分批"。
-        </p>
+            <p>
+                任务级 <code>serial: 0</code> 或不配，表示不启用分批。
+                CLI <code>-S 0</code> 表示覆盖任务级为"不分批"。
+            </p>
 
-        <h3>边界处理</h3>
+            <h3>边界处理</h3>
 
-        <ul>
-            <li>
-                <strong>单台组</strong>：<code>len(group) == 1</code> 时，单独一批，不参与
-                <code>min_available</code> 计算，不报错。
-            </li>
-            <li>
-                <strong>min_available 配大了</strong>：<code>len(group) - minAvailable &lt;= 0</code> 时，
-                规划阶段报错退出，提示用户改参数：
-                <pre class="language-bash"><code>group stock: min-available 2 &gt;= group size 2, cannot batch
+            <ul>
+                <li>
+                    <strong>单台组</strong>：<code>len(group) == 1</code> 时，单独一批，不参与
+                    <code>min_available</code> 计算，不报错。
+                </li>
+                <li>
+                    <strong>min_available 配大了</strong>：<code>len(group) - minAvailable &lt;= 0</code> 时，
+                    规划阶段报错退出，提示用户改参数：
+                    <pre class="language-bash"><code>group stock: min-available 2 &gt;= group size 2, cannot batch
         hint: reduce min-available in task config or override with --min-available</code></pre>
-            </li>
-        </ul>
+                </li>
+            </ul>
 
-        <h3>任务级配置示例</h3>
+            <h3>任务级配置示例</h3>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre
+                class="language-yaml"><code>tasks:
         deploy:
             description: "发布新版本"
             serial: 2
@@ -1212,9 +1577,9 @@ taskssh command prod -e "df -h" -c 10 -y</code></pre>
                 with:
                 command: "ln -sfn {{service_path}}/releases/{{date}}_{{execId}}/{{app_name}} {{service_path}}/{{link_name}}"</code></pre>
 
-        <p>执行：</p>
+            <p>执行：</p>
 
-        <pre class="language-bash"><code># 使用任务级配置
+            <pre class="language-bash"><code># 使用任务级配置
         taskssh deploy order,stock -y
 
         # CLI 覆盖：每批 3 台，留 1 台
@@ -1223,26 +1588,26 @@ taskssh command prod -e "df -h" -c 10 -y</code></pre>
         # CLI 覆盖：不分批，全量执行
         taskssh deploy order,stock -S 0 -y</code></pre>
 
-        <div class="callout tip">
-            <span class="co-icon">💡</span>
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    <code>serial</code> 和 <code>min_available</code> 是任务的安全约束，建议写入任务定义。
+                    CLI 参数适合临时覆盖或调试。
+                </p>
+            </div>
+
+            <h2 id="dryrun">Dry-run</h2>
+
             <p>
-                <code>serial</code> 和 <code>min_available</code> 是任务的安全约束，建议写入任务定义。
-                CLI 参数适合临时覆盖或调试。
+                <code>--dry-run</code> 不连接远程主机，输出每台主机每个 step 将执行的内容，
+                供执行前确认。
             </p>
-        </div>
 
-        <h2 id="dryrun">Dry-run</h2>
+            <pre class="language-bash"><code>taskssh release prod --dry-run</code></pre>
 
-        <p>
-            <code>--dry-run</code> 不连接远程主机，输出每台主机每个 step 将执行的内容，
-    供执行前确认。
-        </p>
+            <p>输出示例：</p>
 
-        <pre class="language-bash"><code>taskssh release prod --dry-run</code></pre>
-
-        <p>输出示例：</p>
-
-        <pre class="language-bash"><code>&gt;&gt;&gt; Target hosts
+            <pre class="language-bash"><code>&gt;&gt;&gt; Target hosts
 prod/web1 : 10.0.0.1
 
 &gt;&gt;&gt; Dry run (no changes will be made)
@@ -1257,19 +1622,19 @@ Upload /home/user/project/dist/app.jar to /opt/app/
 [STEP 2/2] 重启服务
 Execute command: systemctl restart myapp</code></pre>
 
-        <h4>行为说明</h4>
+            <h4>行为说明</h4>
 
-        <ul>
-            <li><strong>不建立 SSH 连接</strong>，不执行命令、不传输文件。</li>
-            <li><code>Stat</code> / <code>ListFiles</code> 等只读操作正常执行。</li>
-            <li>跳过执行前确认。</li>
-            <li>不输出执行摘要。</li>
-            <li><code>delay</code> 不实际等待。</li>
-        </ul>
+            <ul>
+                <li><strong>不建立 SSH 连接</strong>，不执行命令、不传输文件。</li>
+                <li><code>Stat</code> / <code>ListFiles</code> 等只读操作正常执行。</li>
+                <li>跳过执行前确认。</li>
+                <li>不输出执行摘要。</li>
+                <li><code>delay</code> 不实际等待。</li>
+            </ul>
 
-        <p>启用分批时的输出示例：</p>
+            <p>启用分批时的输出示例：</p>
 
-        <pre class="language-bash"><code>&gt;&gt;&gt; Execution Plan
+            <pre class="language-bash"><code>&gt;&gt;&gt; Execution Plan
 Batch 1: group web_server, 2 hosts
 - web_server/web_01 [172.21.1.74]
 - web_server/web_02 [172.21.1.74]
@@ -1278,47 +1643,71 @@ Batch 2: group web_server2, 2 hosts
 - web_server2/web_04 [172.21.1.74]</code>
         </pre>
 
-        <h2 id="variables">变量替换</h2>
+            <h2 id="variables">变量替换</h2>
 
-        <p>
-            TaskSSH 支持在 <code>inventory.yaml</code> 中使用 <code>{{变量名}}</code> 语法进行变量替换。
-            花括号内允许前后空格，<code>{{ var }}</code> 与 <code>{{var}}</code> 等价。
-        </p>
+            <p>
+                TaskSSH 支持在 <code>inventory.yaml</code> 中使用 <code>{{变量名}}</code> 语法进行变量替换。
+                花括号内允许前后空格，<code>{{ var }}</code> 与 <code>{{var}}</code> 等价。
+            </p>
 
-        <h3>变量来源与优先级</h3>
+            <h3>变量来源与优先级</h3>
 
-        <p>变量按以下优先级由低到高合并：</p>
+            <p>变量按以下优先级由低到高合并：</p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>层级</th><th>来源</th><th>作用范围</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td><code>global_vars</code></td><td>所有主机</td></tr>
-                    <tr><td>2</td><td><code>servers.&lt;组名&gt;.vars</code></td><td>组内主机</td></tr>
-                    <tr><td>3</td><td>主机专有字段与 <code>Extra</code></td><td>单台主机</td></tr>
-                    <tr><td>4</td><td>CLI <code>-D/--define</code></td><td>所有主机</td></tr>
-                    <tr><td>5</td><td><code>date</code> / <code>execId</code></td><td>所有主机（运行时注入）</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>层级</th>
+                            <th>来源</th>
+                            <th>作用范围</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><code>global_vars</code></td>
+                            <td>所有主机</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><code>servers.&lt;组名&gt;.vars</code></td>
+                            <td>组内主机</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>主机专有字段与 <code>Extra</code></td>
+                            <td>单台主机</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>CLI <code>-D/--define</code></td>
+                            <td>所有主机</td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td><code>date</code> / <code>execId</code></td>
+                            <td>所有主机（运行时注入）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <p>
-            前四层合并后形成每台主机的变量池，因此不同主机最终的同名变量值可能不同。
-            <code>date</code> 与 <code>execId</code> 为运行时全局注入，所有主机共享同一值。
-        </p>
+            <p>
+                前四层合并后形成每台主机的变量池，因此不同主机最终的同名变量值可能不同。
+                <code>date</code> 与 <code>execId</code> 为运行时全局注入，所有主机共享同一值。
+            </p>
 
-        <p>
-            注意：CLI 选项 <code>-P / -u / -p</code> 仅覆盖连接三要素，不会将
-            <code>-e / -f / -d</code> 注入变量池。命令参数通过 <code>with</code> 传递给对应 action。
-        </p>
+            <p>
+                注意：CLI 选项 <code>-P / -u / -p</code> 仅覆盖连接三要素，不会将
+                <code>-e / -f / -d</code> 注入变量池。命令参数通过 <code>with</code> 传递给对应 action。
+            </p>
 
-        <h3>递归展开</h3>
+            <h3>递归展开</h3>
 
-        <p>变量值本身可引用其他变量，最多递归展开 4 层。</p>
+            <p>变量值本身可引用其他变量，最多递归展开 4 层。</p>
 
-        <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>global_vars:
   app_name: myapp
   version: 1.0.0
   package: "{{app_name}}-{{version}}.jar"   # 递归展开后的结果
@@ -1338,94 +1727,98 @@ tasks:
         with:
           command: "systemctl restart {{app_name}}"</code></pre>
 
-        <h3>未解析变量的处理</h3>
+            <h3>未解析变量的处理</h3>
 
-        <p>
-            TaskSSH 对变量替换采用严格模式：若某 <code>{{变量名}}</code> 在所有来源中均未定义，
-            执行将立即中断并报错，而非以空字符串替换后继续运行。
-        </p>
-
-        <div class="callout warn">
-            <span class="co-icon">⚠️</span>
             <p>
-                例如 <code>rm -rf {{target_dir}}</code>，若 <code>target_dir</code> 未定义，
-                该命令不会被执行。
+                TaskSSH 对变量替换采用严格模式：若某 <code>{{变量名}}</code> 在所有来源中均未定义，
+                执行将立即中断并报错，而非以空字符串替换后继续运行。
             </p>
-        </div>
 
-        <h3>shell 变量与 TaskSSH 变量</h3>
+            <div class="callout warn">
+                <span class="co-icon">⚠️</span>
+                <p>
+                    例如 <code>rm -rf {{target_dir}}</code>，若 <code>target_dir</code> 未定义，
+                    该命令不会被执行。
+                </p>
+            </div>
 
-        <p>
-            TaskSSH 变量使用 <code>{{var}}</code> 语法。命令中的 <code>$VAR</code> 与
-            <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
-        </p>
+            <h3>shell 变量与 TaskSSH 变量</h3>
 
-        <pre class="language-bash"><code># shell 变量，原样传给远程
+            <p>
+                TaskSSH 变量使用 <code>{{var}}</code> 语法。命令中的 <code>$VAR</code> 与
+                <code>${VAR}</code> 均为 shell 变量，原样传递给远程 shell。
+            </p>
+
+            <pre class="language-bash"><code># shell 变量，原样传给远程
 taskssh command prod -e "echo $HOME" -y
 
 # TaskSSH 变量，执行前替换
 taskssh command prod -e "echo {{app_name}}" -y</code></pre>
 
-        <h2 id="builtin-vars">内置变量</h2>
+            <h2 id="builtin-vars">内置变量</h2>
 
-        <p>
-            除清单与 CLI 定义的变量外，TaskSSH 在运行时注入以下内置变量。
-            这些变量<strong>全局共享</strong>：一次任务执行只生成一次，所有目标主机使用同一个值。
-        </p>
+            <p>
+                除清单与 CLI 定义的变量外，TaskSSH 在运行时注入以下内置变量。
+                这些变量<strong>全局共享</strong>：一次任务执行只生成一次，所有目标主机使用同一个值。
+            </p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>变量</th><th>说明</th><th>示例值</th></tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>{{date}}</code></td>
-                        <td>当前日期，格式 <code>YYYYMMDD</code></td>
-                        <td><code>20260926</code></td>
-                    </tr>
-                    <tr>
-                        <td><code>{{execId}}</code></td>
-                        <td>本次执行的唯一标识，8 位 Base36（数字 + 大写字母）</td>
-                        <td><code>0K8X7A2B</code></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>变量</th>
+                            <th>说明</th>
+                            <th>示例值</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>{{date}}</code></td>
+                            <td>当前日期，格式 <code>YYYYMMDD</code></td>
+                            <td><code>20260926</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>{{execId}}</code></td>
+                            <td>本次执行的唯一标识，8 位 Base36（数字 + 大写字母）</td>
+                            <td><code>0K8X7A2B</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <p>
-            内置变量为保留变量，不可被清单或 CLI <code>-D</code> 覆盖。
-        </p>
+            <p>
+                内置变量为保留变量，不可被清单或 CLI <code>-D</code> 覆盖。
+            </p>
 
-        <h3>date</h3>
+            <h3>date</h3>
 
-        <p>
-            <code>date</code> 为清单加载时的日期，格式 <code>YYYYMMDD</code>。
-            一次任务执行只生成一次，所有主机共享同一值。
-        </p>
+            <p>
+                <code>date</code> 为清单加载时的日期，格式 <code>YYYYMMDD</code>。
+                一次任务执行只生成一次，所有主机共享同一值。
+            </p>
 
-        <p>
-            注意：<code>date</code> 是 TaskSSH 的内置变量，会覆盖清单中的同名变量。
-            如需在命令中使用 shell 的 <code>date</code> 命令，请使用 <code>$(date ...)</code>。
-        </p>
+            <p>
+                注意：<code>date</code> 是 TaskSSH 的内置变量，会覆盖清单中的同名变量。
+                如需在命令中使用 shell 的 <code>date</code> 命令，请使用 <code>$(date ...)</code>。
+            </p>
 
-        <h3>execId</h3>
+            <h3>execId</h3>
 
-        <p>
-            <code>execId</code> 为本次任务执行的唯一标识，用于生成唯一目录名、版本标识等。
-        </p>
+            <p>
+                <code>execId</code> 为本次任务执行的唯一标识，用于生成唯一目录名、版本标识等。
+            </p>
 
-        <ul>
-            <li>生成方式：纯随机，8 位 Base36</li>
-            <li>字符集：<code>0-9</code> 与 <code>A-Z</code></li>
-            <li>空间：<code>36^8 ≈ 2.82 × 10^12</code></li>
-            <li>不携带时间戳，不具备字典序，不可用于排序</li>
-            <li>一次任务执行生成一次，所有主机共享同一值</li>
-        </ul>
+            <ul>
+                <li>生成方式：纯随机，8 位 Base36</li>
+                <li>字符集：<code>0-9</code> 与 <code>A-Z</code></li>
+                <li>空间：<code>36^8 ≈ 2.82 × 10^12</code></li>
+                <li>不携带时间戳，不具备字典序，不可用于排序</li>
+                <li>一次任务执行生成一次，所有主机共享同一值</li>
+            </ul>
 
-        <p>典型用法：</p>
+            <p>典型用法：</p>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   deploy:
     steps:
       - name: "创建版本目录"
@@ -1450,11 +1843,11 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
         with:
           command: "ls -l {{service_path}}/current"</code></pre>
 
-        <p>
-            回退时，通过 <code>-D revert_id=&lt;date&gt;_&lt;execId&gt;</code> 指定目标版本目录：
-        </p>
+            <p>
+                回退时，通过 <code>-D revert_id=&lt;date&gt;_&lt;execId&gt;</code> 指定目标版本目录：
+            </p>
 
-        <pre class="language-yaml"><code>tasks:
+            <pre class="language-yaml"><code>tasks:
   revert:
     description: "回退到指定版本"
     steps:
@@ -1473,27 +1866,37 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
         with:
           command: "ls -l {{service_path}}/current"</code></pre>
 
-        <pre class="language-bash"><code>taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
+            <pre class="language-bash"><code>taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
 
-        <h2 id="cli-vars">CLI 变量注入</h2>
+            <h2 id="cli-vars">CLI 变量注入</h2>
 
-        <p>
-            通过 <code>-D/--define</code> 参数可在命令行注入变量，优先级最高，
-            覆盖清单中的所有同名变量，作用于所有目标主机。
-        </p>
+            <p>
+                通过 <code>-D/--define</code> 参数可在命令行注入变量，优先级最高，
+                覆盖清单中的所有同名变量，作用于所有目标主机。
+            </p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-D</code></td><td><code>--define</code></td><td>key=value</td><td>定义变量，可重复</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-D</code></td>
+                            <td><code>--define</code></td>
+                            <td>key=value</td>
+                            <td>定义变量，可重复</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code># 单变量
+            <pre class="language-bash"><code># 单变量
 taskssh deploy prod -D version=1.2.3 -y
 
 # 多变量
@@ -1502,135 +1905,157 @@ taskssh deploy prod -D version=1.2.3 -D env=uat -y
 # 回退到指定版本
 taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
 
-        <h3>规则</h3>
+            <h3>规则</h3>
 
-        <ul>
-            <li>格式为 <code>key=value</code>，key 与 value 均做 trim。</li>
-            <li>value 可包含 <code>=</code>，以第一个 <code>=</code> 分隔。</li>
-            <li>重复的 key 以后出现的为准。</li>
-            <li>不能覆盖保留变量（<code>date</code> / <code>execId</code>）。</li>
-        </ul>
+            <ul>
+                <li>格式为 <code>key=value</code>，key 与 value 均做 trim。</li>
+                <li>value 可包含 <code>=</code>，以第一个 <code>=</code> 分隔。</li>
+                <li>重复的 key 以后出现的为准。</li>
+                <li>不能覆盖保留变量（<code>date</code> / <code>execId</code>）。</li>
+            </ul>
 
-        <h3>优先级</h3>
+            <h3>优先级</h3>
 
-        <p>变量优先级从低到高：</p>
+            <p>变量优先级从低到高：</p>
 
-        <ol>
-            <li><code>global_vars</code></li>
-            <li><code>servers.&lt;组名&gt;.vars</code></li>
-            <li>主机专有字段与 <code>Extra</code></li>
-            <li>CLI <code>-D/--define</code></li>
-            <li><code>date</code> / <code>execId</code>（运行时注入，不可覆盖）</li>
-        </ol>
+            <ol>
+                <li><code>global_vars</code></li>
+                <li><code>servers.&lt;组名&gt;.vars</code></li>
+                <li>主机专有字段与 <code>Extra</code></li>
+                <li>CLI <code>-D/--define</code></li>
+                <li><code>date</code> / <code>execId</code>（运行时注入，不可覆盖）</li>
+            </ol>
 
-        <h2 id="vault">Vault 密钥</h2>
+            <h2 id="vault">Vault 密钥</h2>
 
-        <p>
-            清单中的 <code>password</code> 和 <code>passphrase</code> 必须是密文。
-            TaskSSH 使用 AES-256-GCM 加密，密钥由用户管理，不硬编码在二进制中。
-        </p>
+            <p>
+                清单中的 <code>password</code> 和 <code>passphrase</code> 必须是密文。
+                TaskSSH 使用 AES-256-GCM 加密，密钥由用户管理，不硬编码在二进制中。
+            </p>
 
-        <h3>密钥来源与优先级</h3>
+            <h3>密钥来源与优先级</h3>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>顺序</th><th>来源</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td><code>--secret-key-file / -V</code> 指定的文件</td></tr>
-                    <tr><td>2</td><td><code>TASKSSH_SECRET_KEY_FILE</code> 环境变量指定的文件</td></tr>
-                    <tr><td>3</td><td>默认路径 <code>~/.taskssh/vault-key</code></td></tr>
-                    <tr><td>4</td><td>交互输入</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>顺序</th>
+                            <th>来源</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td><code>--secret-key-file / -V</code> 指定的文件</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td><code>TASKSSH_SECRET_KEY_FILE</code> 环境变量指定的文件</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>默认路径 <code>~/.taskssh/vault-key</code></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>交互输入</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <h3>密钥文件形式</h3>
+            <h3>密钥文件形式</h3>
 
-        <ul>
-            <li><strong>普通文本文件</strong>：内容即密钥。</li>
-            <li><strong>可执行文件</strong>：执行输出作为密钥。适合从密码管理器或 KMS 动态获取。</li>
-        </ul>
+            <ul>
+                <li><strong>普通文本文件</strong>：内容即密钥。</li>
+                <li><strong>可执行文件</strong>：执行输出作为密钥。适合从密码管理器或 KMS 动态获取。</li>
+            </ul>
 
-        <h3>创建密钥文件</h3>
+            <h3>创建密钥文件</h3>
 
-        <pre class="language-bash"><code>mkdir -p ~/.taskssh
+            <pre class="language-bash"><code>mkdir -p ~/.taskssh
 openssl rand -base64 32 > ~/.taskssh/vault-key
 chmod 600 ~/.taskssh/vault-key</code></pre>
 
-        <h3>加密 / 解密</h3>
+            <h3>加密 / 解密</h3>
 
-        <pre class="language-bash"><code># 加密（首次使用时会提示输入密钥）
+            <pre class="language-bash"><code># 加密（首次使用时会提示输入密钥）
 taskssh encrypt "your-password"
 
 # 解密
 taskssh decrypt "xxxxx"</code></pre>
 
-        <h3>自定义密钥文件</h3>
+            <h3>自定义密钥文件</h3>
 
-        <pre class="language-bash"><code># 命令行指定
+            <pre class="language-bash"><code># 命令行指定
 taskssh encrypt "your-password" -V /path/to/key
 
 # 环境变量指定
 export TASKSSH_SECRET_KEY_FILE=/path/to/key
 taskssh encrypt "your-password"</code></pre>
 
-        <h2 id="multi-env">多环境</h2>
+            <h2 id="auth">认证方式</h2>
 
-        <pre class="language-yaml"><code>servers:
-  prod:
-    vars:
-      service_path: /opt/myapp/
-      env: prod
-    hosts:
-      prod1: 10.0.0.1
-      prod2: 10.0.0.2
+            <p>TaskSSH 按以下顺序尝试认证方式：</p>
 
-  uat:
-    vars:
-      service_path: /opt/myapp-uat/
-      env: uat
-    hosts:
-      uat1: 10.1.0.1</code></pre>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>顺序</th>
+                            <th>方式</th>
+                            <th>配置</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>SSH Agent</td>
+                            <td>通过 <code>SSH_AUTH_SOCK</code> 环境变量自动检测</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>公钥认证</td>
+                            <td><code>identity_file</code></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>私钥口令</td>
+                            <td><code>passphrase</code></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>keyboard-interactive</td>
+                            <td><code>password</code></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>password</td>
+                            <td><code>password</code></td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>终端交互输入</td>
+                            <td>未配置任何认证时</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-        <pre class="language-bash"><code>taskssh release prod -y
-taskssh release uat -y</code></pre>
+            <h3>SSH Agent</h3>
 
-          <h2 id="auth">认证方式</h2>
+            <p>
+                TaskSSH 自动检测 <code>SSH_AUTH_SOCK</code> 环境变量。如果存在，会优先使用 SSH Agent 认证。
+                这适用于以下场景：
+            </p>
 
-        <p>TaskSSH 按以下顺序尝试认证方式：</p>
+            <ul>
+                <li>本地已加载私钥到 agent（<code>ssh-add</code>）</li>
+                <li>通过跳板机执行，本地 <code>ssh -A</code> 转发 agent</li>
+                <li>私钥不落盘，签名在本地完成</li>
+            </ul>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>顺序</th><th>方式</th><th>配置</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>1</td><td>SSH Agent</td><td>通过 <code>SSH_AUTH_SOCK</code> 环境变量自动检测</td></tr>
-                    <tr><td>2</td><td>公钥认证</td><td><code>identity_file</code></td></tr>
-                    <tr><td>3</td><td>私钥口令</td><td><code>passphrase</code></td></tr>
-                    <tr><td>4</td><td>keyboard-interactive</td><td><code>password</code></td></tr>
-                    <tr><td>5</td><td>password</td><td><code>password</code></td></tr>
-                    <tr><td>6</td><td>终端交互输入</td><td>未配置任何认证时</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <h3>SSH Agent</h3>
-
-        <p>
-            TaskSSH 自动检测 <code>SSH_AUTH_SOCK</code> 环境变量。如果存在，会优先使用 SSH Agent 认证。
-            这适用于以下场景：
-        </p>
-
-        <ul>
-            <li>本地已加载私钥到 agent（<code>ssh-add</code>）</li>
-            <li>通过跳板机执行，本地 <code>ssh -A</code> 转发 agent</li>
-            <li>私钥不落盘，签名在本地完成</li>
-        </ul>
-
-        <pre class="language-bash"><code># 本地启动 agent 并加载私钥
+            <pre class="language-bash"><code># 本地启动 agent 并加载私钥
 eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa
 
@@ -1641,98 +2066,406 @@ taskssh release prod -y
 ssh -A jump-host
 taskssh release prod -y</code></pre>
 
-        <p>
-            Agent 可用时，清单中的 <code>identity_file</code> 和 <code>password</code> 都可以不配置。
-        </p>
-
-        <h3>公钥认证</h3>
-
-        <pre class="language-yaml"><code>hosts:
-  prod_1:
-    host: 1.2.3.4
-    username: deploy
-    identity_file: ~/.ssh/id_rsa
-    passphrase: "密文"
-    # 公钥认证失败时回退至密码认证
-    # password: "密文"</code></pre>
-
-        <p>
-            <code>~</code> 将自动展开为当前用户的 home 目录。<code>passphrase</code> 与
-            <code>password</code> 一样，必须使用 <code>taskssh encrypt</code> 加密后填写。
-        </p>
-
-        <div class="callout">
-            <span class="co-icon">ℹ️</span>
             <p>
-                Windows 的 OpenSSH Agent 使用命名管道，当前版本暂不支持。
+                Agent 可用时，清单中的 <code>identity_file</code> 和 <code>password</code> 都可以不配置。
             </p>
-        </div>
 
-        <pre class="language-yaml"><code>hosts:
-  prod_1:
-    host: 1.2.3.4
-    username: deploy
-    identity_file: ~/.ssh/id_rsa
-    passphrase: "密文"
-    # 公钥认证失败时回退至密码认证
-    # password: "密文"</code></pre>
+            <h3>公钥认证</h3>
 
-        <p>
-            <code>~</code> 将自动展开为当前用户的 home 目录。<code>passphrase</code> 与
-            <code>password</code> 一样，必须使用 <code>taskssh encrypt</code> 加密后填写。
-        </p>
+            <p>
+                公钥认证通过一对密钥完成：本地持有私钥，远程主机保存公钥。
+                配置一次后即可免密登录，无需在清单中存储密码。
+            </p>
 
-        <h2 id="cli">命令行选项</h2>
+            <h4>第一步：本地生成密钥对</h4>
 
-        <h3>全局选项</h3>
+            <p>
+                如果已有密钥（<code>~/.ssh/id_rsa</code> 或 <code>~/.ssh/id_ed25519</code>），可跳过本步。
+                否则执行：
+            </p>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>选项</th><th>长选项</th><th>参数</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>-i</code></td><td><code>--inventory</code></td><td>file</td><td>指定清单文件，默认 <code>inventory.yaml</code></td></tr>
-                    <tr><td><code>-l</code></td><td><code>--list</code></td><td>—</td><td>仅列出目标主机，不执行任务</td></tr>
-                    <tr><td><code>-P</code></td><td><code>--port</code></td><td>int</td><td>覆盖端口</td></tr>
-                    <tr><td><code>-u</code></td><td><code>--user</code></td><td>string</td><td>覆盖用户名</td></tr>
-                    <tr><td><code>-p</code></td><td><code>--password</code></td><td>string</td><td>覆盖密码（明文，不推荐）</td></tr>
-                    <tr><td><code>-c</code></td><td><code>--concurrency</code></td><td>int</td><td>并发数，默认 1（串行）</td></tr>
-                    <tr><td><code>-y</code></td><td><code>--yes</code></td><td>—</td><td>跳过执行前确认</td></tr>
-                    <tr><td><code>-D</code></td><td><code>--define</code></td><td>key=value</td><td>定义变量，可重复</td></tr>
-                    <tr><td>—</td><td><code>--connect-timeout</code></td><td>int</td><td>连接超时秒数，默认 10</td></tr>
-                    <tr><td><code>-V</code></td><td><code>--secret-key-file</code></td><td>file</td><td>指定密钥文件或脚本</td></tr>
-                    <tr><td>—</td><td><code>--dry-run</code></td><td>—</td><td>显示执行计划，不实际执行</td></tr>
-                    <tr><td><code>-S</code></td><td><code>--serial</code></td><td>int</td><td>每组每批 N 台，覆盖任务级 serial，默认 -1（用任务配置）</td></tr>
-                    <tr><td>—</td><td><code>--min-available</code></td><td>int</td><td>每组至少留 N 台，覆盖任务级 min_available，默认 -1（用任务配置）</td></tr>
-                    <tr><td>—</td><td><code>--stop-on-failure</code></td><td>—</td><td>一批失败后停止后续批次，默认 true</td></tr>
-                    <tr><td><code>-v</code></td><td><code>--version</code></td><td>—</td><td>显示版本信息</td></tr>
-                    <tr><td><code>-h</code></td><td><code>--help</code></td><td>—</td><td>显示帮助信息</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <pre class="language-bash"><code># 推荐使用 ed25519，更短、更安全
+ssh-keygen -t ed25519 -C "deploy@taskssh"
 
-        <h3>子命令</h3>
+# 或使用 RSA（兼容旧服务器）
+ssh-keygen -t rsa -b 4096 -C "deploy@taskssh"</code></pre>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>命令</th><th>说明</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>command</code></td><td>执行远程命令</td></tr>
-                    <tr><td><code>push</code></td><td>上传本地文件或目录至远程主机</td></tr>
-                    <tr><td><code>fetch</code></td><td>从远程主机下载文件或目录至本地</td></tr>
-                    <tr><td><code>script</code></td><td>上传本地脚本至远程主机并执行</td></tr>
-                    <tr><td><code>encrypt</code></td><td>加密字符串</td></tr>
-                    <tr><td><code>decrypt</code></td><td>解密字符串</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <p>
+                执行过程会提示保存路径和 passphrase。路径直接回车用默认值，
+                passphrase 可留空（免密）或填写（更安全，但每次使用需输入）。
+            </p>
 
-        <h3>常用示例</h3>
+            <p>生成后会在 <code>~/.ssh/</code> 下得到两个文件：</p>
 
-                <pre class="language-bash"><code># 执行自定义任务
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>文件</th>
+                            <th>说明</th>
+                            <th>是否可泄露</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id_ed25519</code></td>
+                            <td>私钥，本地保存</td>
+                            <td>否，绝不能外传</td>
+                        </tr>
+                        <tr>
+                            <td><code>id_ed25519.pub</code></td>
+                            <td>公钥，上传到服务器</td>
+                            <td>可以，无安全风险</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>第二步：上传公钥到服务器</h4>
+
+            <p><strong>方式一：ssh-copy-id（推荐，Linux / macOS）</strong></p>
+
+            <pre class="language-bash"><code>ssh-copy-id -i ~/.ssh/id_ed25519.pub deploy@192.168.1.10</code></pre>
+
+            <p>
+                该命令会自动把公钥追加到远程主机的 <code>~/.ssh/authorized_keys</code>，
+                并设置正确的权限。执行时会提示输入远程主机的登录密码，仅此一次。
+            </p>
+
+            <p><strong>方式二：手动复制（无 ssh-copy-id 时）</strong></p>
+
+            <pre class="language-bash"><code># 1. 查看本地公钥内容
+cat ~/.ssh/id_ed25519.pub
+
+# 2. 登录远程主机，把上面输出的内容追加到 authorized_keys
+ssh deploy@192.168.1.10
+
+# 3. 在远程主机上执行
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+echo "粘贴刚才复制的那一整行公钥内容" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+exit</code></pre>
+
+            <div class="callout warn">
+                <span class="co-icon">⚠️</span>
+                <p>
+                    <code>authorized_keys</code> 的权限必须是 <code>600</code>，
+                    <code>~/.ssh</code> 目录必须是 <code>700</code>。
+                    权限过宽会导致 SSH 拒绝公钥认证，且不给出明确报错。
+                </p>
+            </div>
+
+            <h4>第三步：验证免密登录</h4>
+
+            <pre class="language-bash"><code>ssh -i ~/.ssh/id_ed25519 deploy@192.168.1.10</code></pre>
+
+            <p>
+                若不再提示输入密码，说明配置成功。如果私钥设置了 passphrase，
+                会提示输入 passphrase，而不是远程主机的登录密码。
+            </p>
+
+            <h4>第四步：在 TaskSSH 清单中配置</h4>
+
+            <p>验证通过后，在清单中指定私钥路径即可：</p>
+
+            <pre class="language-yaml"><code>global_vars:
+  username: deploy
+  identity_file: ~/.ssh/id_ed25519
+
+servers:
+  prod:
+    hosts:
+      web1: 192.168.1.10
+      web2: 192.168.1.11</code></pre>
+
+            <p>
+                <code>~</code> 会自动展开为当前用户的 home 目录。
+                配置在 <code>global_vars</code> 中后，所有主机继承该私钥路径。
+            </p>
+
+            <p>也可按主机单独配置，适用于不同主机使用不同密钥的场景：</p>
+
+            <pre class="language-yaml"><code>servers:
+  prod:
+    hosts:
+      web1:
+        host: 192.168.1.10
+        identity_file: ~/.ssh/id_prod
+      web2:
+        host: 192.168.1.11
+        identity_file: ~/.ssh/id_prod_backup</code></pre>
+
+            <h4>第五步：如果私钥有 passphrase</h4>
+
+            <p>
+                清单中的 <code>passphrase</code> 必须是密文，与 <code>password</code> 规则一致。
+                先用 <code>taskssh encrypt</code> 加密：
+            </p>
+
+            <pre class="language-bash"><code>taskssh encrypt "your-passphrase"</code></pre>
+
+            <p>将输出填入清单：</p>
+
+            <pre class="language-yaml"><code>servers:
+  prod:
+    hosts:
+      web1:
+        host: 192.168.1.10
+        username: deploy
+        identity_file: ~/.ssh/id_ed25519
+        passphrase: "上一步生成的密文"</code></pre>
+
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    更推荐使用 <strong>ssh-agent</strong> 管理带 passphrase 的私钥，
+                    避免在清单中存储 passphrase：
+                </p>
+                <pre class="language-bash"><code>eval $(ssh-agent)
+ssh-add ~/.ssh/id_ed25519
+# 之后 TaskSSH 会自动通过 agent 完成认证，无需配置 passphrase</code></pre>
+            </div>
+
+            <h4>命令行临时覆盖私钥</h4>
+
+            <p>
+                不想改清单、或临时用另一把私钥时，通过 <code>-k</code> / <code>--identity-file</code> 覆盖：
+            </p>
+
+            <pre class="language-bash"><code># 用指定私钥执行任务
+taskssh release prod -k ~/.ssh/id_deploy -y
+
+# 用指定私钥对临时主机执行命令
+taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
+
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    <code>-i</code> 已被 <code>--inventory</code> 占用，私钥路径的短选项为
+                    <code>-k</code>（key）。私钥路径不是机密，通过命令行传入无安全风险。
+                </p>
+            </div>
+
+            <h4>常见问题</h4>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>现象</th>
+                            <th>原因</th>
+                            <th>处理</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>仍然提示输入密码</td>
+                            <td>公钥未追加到 <code>authorized_keys</code>，或权限不对</td>
+                            <td>检查远程 <code>~/.ssh</code> 为 700、<code>authorized_keys</code> 为 600</td>
+                        </tr>
+                        <tr>
+                            <td>提示 <code>Permission denied (publickey)</code></td>
+                            <td>服务器禁用了公钥认证，或用户名错误</td>
+                            <td>检查 <code>/etc/ssh/sshd_config</code> 中 <code>PubkeyAuthentication yes</code></td>
+                        </tr>
+                        <tr>
+                            <td>提示 <code>UNPROTECTED PRIVATE KEY FILE</code></td>
+                            <td>本地私钥权限过宽</td>
+                            <td><code>chmod 600 ~/.ssh/id_ed25519</code></td>
+                        </tr>
+                        <tr>
+                            <td>Windows 下 ssh-copy-id 不存在</td>
+                            <td>Git Bash 未内置该命令</td>
+                            <td>使用「方式二：手动复制」</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    Windows 的 OpenSSH Agent 使用命名管道，当前版本暂不支持。
+                    如需 agent 转发，请在 WSL 或 Git Bash 环境中使用。
+                </p>
+            </div>
+
+            <h2 id="cli">命令行选项</h2>
+
+            <h3>全局选项</h3>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>长选项</th>
+                            <th>参数</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-i</code></td>
+                            <td><code>--inventory</code></td>
+                            <td>file</td>
+                            <td>指定清单文件，默认 <code>inventory.yaml</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-l</code></td>
+                            <td><code>--list</code></td>
+                            <td>—</td>
+                            <td>仅列出目标主机，不执行任务</td>
+                        </tr>
+                        <tr>
+                            <td><code>-P</code></td>
+                            <td><code>--port</code></td>
+                            <td>int</td>
+                            <td>覆盖端口</td>
+                        </tr>
+                        <tr>
+                            <td><code>-u</code></td>
+                            <td><code>--user</code></td>
+                            <td>string</td>
+                            <td>覆盖用户名</td>
+                        </tr>
+                        <tr>
+                            <td><code>-p</code></td>
+                            <td><code>--password</code></td>
+                            <td>string</td>
+                            <td>覆盖密码（明文，不推荐）</td>
+                        </tr>
+                        <tr>
+                            <td><code>-k</code></td>
+                            <td><code>--identity-file</code></td>
+                            <td>file</td>
+                            <td>覆盖 SSH 私钥路径</td>
+                        </tr>
+                        <tr>
+                            <td><code>-c</code></td>
+                            <td><code>--concurrency</code></td>
+                            <td>int</td>
+                            <td>并发数，默认 1（串行）</td>
+                        </tr>
+                        <tr>
+                            <td><code>-y</code></td>
+                            <td><code>--yes</code></td>
+                            <td>—</td>
+                            <td>跳过执行前确认</td>
+                        </tr>
+                        <tr>
+                            <td><code>-D</code></td>
+                            <td><code>--define</code></td>
+                            <td>key=value</td>
+                            <td>定义变量，可重复</td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--connect-timeout</code></td>
+                            <td>int</td>
+                            <td>连接超时秒数，默认 10</td>
+                        </tr>
+                        <tr>
+                            <td><code>-V</code></td>
+                            <td><code>--secret-key-file</code></td>
+                            <td>file</td>
+                            <td>指定密钥文件或脚本</td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--dry-run</code></td>
+                            <td>—</td>
+                            <td>显示执行计划，不实际执行</td>
+                        </tr>
+                        <tr>
+                            <td><code>-S</code></td>
+                            <td><code>--serial</code></td>
+                            <td>int</td>
+                            <td>每组每批 N 台，覆盖任务级 serial，默认 -1（用任务配置）</td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--min-available</code></td>
+                            <td>int</td>
+                            <td>每组至少留 N 台，覆盖任务级 min_available，默认 -1（用任务配置）</td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--stop-on-failure</code></td>
+                            <td>—</td>
+                            <td>一批失败后停止后续批次，默认 true</td>
+                        </tr>
+                        <tr>
+                            <td><code>-v</code></td>
+                            <td><code>--verbose</code></td>
+                            <td>—</td>
+                            <td>输出全部信息（含调试与远程命令输出）</td>
+                        </tr>
+                        <tr>
+                            <td><code>-q</code></td>
+                            <td><code>--quiet</code></td>
+                            <td>—</td>
+                            <td>仅输出错误</td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--version</code></td>
+                            <td>—</td>
+                            <td>显示版本信息</td>
+                        </tr>
+                        <tr>
+                            <td><code>-h</code></td>
+                            <td><code>--help</code></td>
+                            <td>—</td>
+                            <td>显示帮助信息</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>子命令</h3>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>命令</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>command</code></td>
+                            <td>执行远程命令</td>
+                        </tr>
+                        <tr>
+                            <td><code>push</code></td>
+                            <td>上传本地文件或目录至远程主机</td>
+                        </tr>
+                        <tr>
+                            <td><code>fetch</code></td>
+                            <td>从远程主机下载文件或目录至本地</td>
+                        </tr>
+                        <tr>
+                            <td><code>script</code></td>
+                            <td>上传本地脚本至远程主机并执行</td>
+                        </tr>
+                        <tr>
+                            <td><code>encrypt</code></td>
+                            <td>加密字符串</td>
+                        </tr>
+                        <tr>
+                            <td><code>decrypt</code></td>
+                            <td>解密字符串</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>常用示例</h3>
+
+            <pre class="language-bash"><code># 执行自定义任务
 taskssh release prod -y
 
 # 指定清单文件
@@ -1765,230 +2498,231 @@ taskssh command 10.0.0.1 -u deploy -e "uptime" -y
 taskssh encrypt "your-password"
 taskssh decrypt "xxxxx"</code></pre>
 
-        <h2 id="faq">常见问题</h2>
+            <h2 id="faq">常见问题</h2>
 
-        <h3>不编写 inventory.yaml 是否可以使用？</h3>
-        <p>
-            可以。<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
-            支持通过位置参数直接指定主机，并通过 <code>-u</code> / <code>-p</code> 传入认证信息。
-            自定义任务则必须依赖清单文件。
-        </p>
-
-        <h3>执行时报变量未解析错误，如何处理？</h3>
-        <p>
-            请检查该变量是否在 <code>global_vars</code>、<code>servers.vars</code> 或主机
-            <code>Extra</code> 中定义，或通过 CLI <code>-D</code> 传入。未解析的变量会直接中断执行，
-            属内置的严格策略。
-        </p>
-
-        <h3>为何在 tasks 段中定义 command 未生效？</h3>
-        <p>
-            <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> /
-            <code>encrypt</code> / <code>decrypt</code> 为保留命令名。CLI 路由优先于任务查找，
-            因此同名任务不会被触发。请改用其他任务名。
-        </p>
-
-        <h3>执行时提示 <code>ambiguous host name</code> 是什么原因？</h3>
-        <p>
-            表示提供的主机名在多个组中都存在。请使用 <code>组名/主机名</code> 格式明确指定，
-            例如 <code>prod/web1</code>。
-        </p>
-
-        <h3>串行与并行应如何选择？</h3>
-        <p>
-            生产发布及对顺序敏感的操作建议采用串行（默认）；只读命令、批量诊断等场景可
-            通过 <code>-c</code> 提高并发。并发数建议从 3～5 开始。
-        </p>
-
-        <h3>ignore_errors 对连接失败有效吗？</h3>
-        <p>
-            无效。<code>ignore_errors</code> 只作用于 step 本身执行失败。
-            连接失败属于主机级问题，会跳过该主机的所有后续步骤，并在摘要中计为失败主机。
-        </p>
-
-        <h3>when 条件不满足时会怎样？</h3>
-        <p>
-            step 被跳过，输出 <code>Skip step &lt;name&gt; (when: ...)</code>，
-            继续执行下一个 step。跳过的 step 不计入失败。
-        </p>
-
-        <h3>when 中可以使用未定义的变量吗？</h3>
-        <p>
-            不可以。条件求值前会对 <code>{{var}}</code> 做变量替换，
-            未解析的变量会导致该 step 失败并中断当前主机。
-        </p>
-        
-        <h3>分批执行时，某组主机太少怎么办？</h3>
-        <p>
-            如果 <code>min_available</code> 大于等于组大小，规划阶段会报错退出。
-            可通过 <code>--min-available</code> 临时覆盖，或修改任务级配置。
-            单台组不参与 <code>min_available</code> 计算，单独一批执行。
-        </p>
-
-        <h3>同一台物理机上部署多个服务，会重复执行吗？</h3>
-        <p>
-            会。TaskSSH 不去重主机，同一 IP 上属于不同组的主机会分别执行。
-            执行前请用 <code>Target hosts</code> 列表和确认步骤校对目标主机，
-            确认无误后再继续。
-        </p>
-
-        <h3>密码是否可以使用明文？</h3>
-        <p>
-            清单中的 <code>password</code> 必须是 <code>taskssh encrypt</code> 生成的密文，
-            明文将导致报错。CLI <code>-p/--password</code> 允许传明文（会给出警告），
-            适用于临时排查场景。
-        </p>
-
-        <h3>忘记密钥怎么办？</h3>
-        <p>
-            密钥用于加密和解密清单中的密码。如果密钥丢失，已有密文无法解密，
-            需要用新密钥重新执行 <code>taskssh encrypt</code> 生成密文。
-        </p>
-
-        <h2 id="changelog">更新日志</h2>
-
-        <p>完整更新记录见 <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>。</p>
-
-        <div class="callout">
-            <span class="co-icon">📌</span>
+            <h3>不编写 inventory.yaml 是否可以使用？</h3>
             <p>
-                文档随版本更新。若发现与代码不一致之处，欢迎通过
-                <a href="https://github.com/melvek/TaskSSH/issues" target="_blank" rel="noopener">Issues</a>
-                反馈。
+                可以。<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
+                支持通过位置参数直接指定主机，并通过 <code>-u</code> / <code>-p</code> 传入认证信息。
+                自定义任务则必须依赖清单文件。
             </p>
-        </div>
 
-    </main>
-</div>
+            <h3>执行时报变量未解析错误，如何处理？</h3>
+            <p>
+                请检查该变量是否在 <code>global_vars</code>、<code>servers.vars</code> 或主机
+                <code>Extra</code> 中定义，或通过 CLI <code>-D</code> 传入。未解析的变量会直接中断执行，
+                属内置的严格策略。
+            </p>
 
-<div class="docs-overlay" id="docsOverlay" onclick="closeSidebar()"></div>
+            <h3>为何在 tasks 段中定义 command 未生效？</h3>
+            <p>
+                <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code> /
+                <code>encrypt</code> / <code>decrypt</code> 为保留命令名。CLI 路由优先于任务查找，
+                因此同名任务不会被触发。请改用其他任务名。
+            </p>
 
-<button class="back-top" id="backTop"
-        onclick="window.scrollTo({top:0,behavior:'smooth'})"
+            <h3>执行时提示 <code>ambiguous host name</code> 是什么原因？</h3>
+            <p>
+                表示提供的主机名在多个组中都存在。请使用 <code>组名/主机名</code> 格式明确指定，
+                例如 <code>prod/web1</code>。
+            </p>
+
+            <h3>串行与并行应如何选择？</h3>
+            <p>
+                生产发布及对顺序敏感的操作建议采用串行（默认）；只读命令、批量诊断等场景可
+                通过 <code>-c</code> 提高并发。并发数建议从 3～5 开始。
+            </p>
+
+            <h3>ignore_errors 对连接失败有效吗？</h3>
+            <p>
+                无效。<code>ignore_errors</code> 只作用于 step 本身执行失败。
+                连接失败属于主机级问题，会跳过该主机的所有后续步骤，并在摘要中计为失败主机。
+            </p>
+
+            <h3>when 条件不满足时会怎样？</h3>
+            <p>
+                step 被跳过，输出 <code>Skip step &lt;name&gt; (when: ...)</code>，
+                继续执行下一个 step。跳过的 step 不计入失败。
+            </p>
+
+            <h3>when 中可以使用未定义的变量吗？</h3>
+            <p>
+                不可以。条件求值前会对 <code>{{var}}</code> 做变量替换，
+                未解析的变量会导致该 step 失败并中断当前主机。
+            </p>
+
+            <h3>分批执行时，某组主机太少怎么办？</h3>
+            <p>
+                如果 <code>min_available</code> 大于等于组大小，规划阶段会报错退出。
+                可通过 <code>--min-available</code> 临时覆盖，或修改任务级配置。
+                单台组不参与 <code>min_available</code> 计算，单独一批执行。
+            </p>
+
+            <h3>同一台物理机上部署多个服务，会重复执行吗？</h3>
+            <p>
+                会。TaskSSH 不去重主机，同一 IP 上属于不同组的主机会分别执行。
+                执行前请用 <code>Target hosts</code> 列表和确认步骤校对目标主机，
+                确认无误后再继续。
+            </p>
+
+            <h3>密码是否可以使用明文？</h3>
+            <p>
+                清单中的 <code>password</code> 必须是 <code>taskssh encrypt</code> 生成的密文，
+                明文将导致报错。CLI <code>-p/--password</code> 允许传明文（会给出警告），
+                适用于临时排查场景。
+            </p>
+
+            <h3>忘记密钥怎么办？</h3>
+            <p>
+                密钥用于加密和解密清单中的密码。如果密钥丢失，已有密文无法解密，
+                需要用新密钥重新执行 <code>taskssh encrypt</code> 生成密文。
+            </p>
+
+            <h2 id="changelog">更新日志</h2>
+
+            <p>完整更新记录见 <a href="https://github.com/melvek/TaskSSH/blob/main/CHANGELOG.md" target="_blank"
+                    rel="noopener">CHANGELOG.md</a>。</p>
+
+            <div class="callout">
+                <span class="co-icon">📌</span>
+                <p>
+                    文档随版本更新。若发现与代码不一致之处，欢迎通过
+                    <a href="https://github.com/melvek/TaskSSH/issues" target="_blank" rel="noopener">Issues</a>
+                    反馈。
+                </p>
+            </div>
+
+        </main>
+    </div>
+
+    <div class="docs-overlay" id="docsOverlay" onclick="closeSidebar()"></div>
+
+    <button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
         aria-label="返回顶部">↑</button>
 
-<script>
-    /* ============ 侧边栏抽屉 ============ */
-    function toggleSidebar() {
-        document.getElementById('docsSidebar').classList.toggle('open');
-        document.getElementById('docsOverlay').classList.toggle('show');
-    }
-
-    function closeSidebar() {
-        document.getElementById('docsSidebar').classList.remove('open');
-        const ov = document.getElementById('docsOverlay');
-        if (ov) ov.classList.remove('show');
-    }
-
-    /* ============ 点击导航后关闭抽屉 ============ */
-    document.querySelectorAll('.docs-sidebar .docs-nav-list a').forEach(a => {
-        a.addEventListener('click', () => {
-            if (window.innerWidth <= 900) {
-                closeSidebar();
-            }
-        });
-    });
-
-    /* ============ 返回顶部按钮 ============ */
-    const backTop = document.getElementById('backTop');
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 400) {
-            backTop.classList.add('show');
-        } else {
-            backTop.classList.remove('show');
+    <script>
+        /* ============ 侧边栏抽屉 ============ */
+        function toggleSidebar() {
+            document.getElementById('docsSidebar').classList.toggle('open');
+            document.getElementById('docsOverlay').classList.toggle('show');
         }
-    });
 
-    /* ============ 当前小节高亮 ============ */
-    const navLinks = document.querySelectorAll('.docs-sidebar .docs-nav-list a');
+        function closeSidebar() {
+            document.getElementById('docsSidebar').classList.remove('open');
+            const ov = document.getElementById('docsOverlay');
+            if (ov) ov.classList.remove('show');
+        }
 
-    function highlightNav() {
-        const fromTop = window.scrollY + 100;
-        let currentId = '';
-
-        document.querySelectorAll('.docs-content h2[id]').forEach(h => {
-            if (h.offsetTop <= fromTop) {
-                currentId = h.id;
-            }
+        /* ============ 点击导航后关闭抽屉 ============ */
+        document.querySelectorAll('.docs-sidebar .docs-nav-list a').forEach(a => {
+            a.addEventListener('click', () => {
+                if (window.innerWidth <= 900) {
+                    closeSidebar();
+                }
+            });
         });
 
-        navLinks.forEach(a => {
-            a.classList.toggle('active', a.getAttribute('href') === '#' + currentId);
-        });
-    }
-
-    window.addEventListener('scroll', highlightNav);
-    highlightNav();
-
-    /* ============ 代码块复制按钮 ============ */
-    document.querySelectorAll('.docs-content pre').forEach(pre => {
-        if (pre.querySelector('.copy-btn')) return;
-
-        const btn = document.createElement('button');
-        btn.className = 'copy-btn';
-        btn.type = 'button';
-        btn.textContent = '复制';
-        btn.setAttribute('aria-label', '复制代码');
-
-        btn.addEventListener('click', () => {
-            const code = pre.querySelector('code');
-            if (!code) return;
-
-            const text = code.textContent;
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    flashCopied(btn);
-                }).catch(() => {
-                    fallbackCopy(text, btn);
-                });
+        /* ============ 返回顶部按钮 ============ */
+        const backTop = document.getElementById('backTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 400) {
+                backTop.classList.add('show');
             } else {
-                fallbackCopy(text, btn);
+                backTop.classList.remove('show');
             }
         });
 
-        pre.appendChild(btn);
-    });
+        /* ============ 当前小节高亮 ============ */
+        const navLinks = document.querySelectorAll('.docs-sidebar .docs-nav-list a');
 
-    function flashCopied(btn) {
-        const original = '复制';
-        btn.textContent = '已复制';
-        btn.classList.add('copied');
-        setTimeout(() => {
-            btn.textContent = original;
-            btn.classList.remove('copied');
-        }, 1500);
-    }
+        function highlightNav() {
+            const fromTop = window.scrollY + 100;
+            let currentId = '';
 
-    function fallbackCopy(text, btn) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-            document.execCommand('copy');
-            flashCopied(btn);
-        } catch (e) {
-            console.error('copy failed', e);
+            document.querySelectorAll('.docs-content h2[id]').forEach(h => {
+                if (h.offsetTop <= fromTop) {
+                    currentId = h.id;
+                }
+            });
+
+            navLinks.forEach(a => {
+                a.classList.toggle('active', a.getAttribute('href') === '#' + currentId);
+            });
         }
-        document.body.removeChild(ta);
-    }
-</script>
 
-<script src="assets/prism.js"></script>
-<script>
-  // 让 Prism 高亮自定义命令 taskssh
-  if (window.Prism && Prism.languages.bash) {
-    Prism.languages.insertBefore('bash', 'function', {
-      'taskssh': {
-        pattern: /\btaskssh(?:\s+(?:run|command|push|fetch|script|encrypt|decrypt))?/,
-        alias: 'function'
-      }
-    });
-  }
-</script>
+        window.addEventListener('scroll', highlightNav);
+        highlightNav();
+
+        /* ============ 代码块复制按钮 ============ */
+        document.querySelectorAll('.docs-content pre').forEach(pre => {
+            if (pre.querySelector('.copy-btn')) return;
+
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.type = 'button';
+            btn.textContent = '复制';
+            btn.setAttribute('aria-label', '复制代码');
+
+            btn.addEventListener('click', () => {
+                const code = pre.querySelector('code');
+                if (!code) return;
+
+                const text = code.textContent;
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        flashCopied(btn);
+                    }).catch(() => {
+                        fallbackCopy(text, btn);
+                    });
+                } else {
+                    fallbackCopy(text, btn);
+                }
+            });
+
+            pre.appendChild(btn);
+        });
+
+        function flashCopied(btn) {
+            const original = '复制';
+            btn.textContent = '已复制';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove('copied');
+            }, 1500);
+        }
+
+        function fallbackCopy(text, btn) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                flashCopied(btn);
+            } catch (e) {
+                console.error('copy failed', e);
+            }
+            document.body.removeChild(ta);
+        }
+    </script>
+
+    <script src="assets/prism.js"></script>
+    <script>
+        // 让 Prism 高亮自定义命令 taskssh
+        if (window.Prism && Prism.languages.bash) {
+            Prism.languages.insertBefore('bash', 'function', {
+                'taskssh': {
+                    pattern: /\btaskssh(?:\s+(?:command|push|fetch|script|encrypt|decrypt|deploy|release))?/,
+                    alias: 'function'
+                }
+            });
+        }
+    </script>
 
 </body>
+
 </html>

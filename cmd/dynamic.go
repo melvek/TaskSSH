@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"mestrap.com/taskssh/internal/config"
 )
 
 // runDynamicTask 从 inventory.yaml 动态查找 task。
-func runDynamicTask(args []string) error {
+func runDynamicTask(ctx context.Context, args []string) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -24,5 +25,5 @@ func runDynamicTask(args []string) error {
 		return fmt.Errorf("no target hosts")
 	}
 
-	return executeTask(&t, hostNames, inv)
+	return executeTask(ctx, &t, hostNames, inv)
 }

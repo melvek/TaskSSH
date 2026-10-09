@@ -24,7 +24,7 @@ var pushCmd = &cobra.Command{
 			Force: pushForce,
 			Zip:   pushZip,
 		}
-		return runBuiltinTask("push", args, with)
+		return runBuiltinTask(cmd.Context(), "push", args, with)
 	},
 }
 

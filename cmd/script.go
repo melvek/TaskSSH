@@ -24,7 +24,7 @@ var scriptCmd = &cobra.Command{
 			Remove: scriptRemove,
 			Force:  scriptForce,
 		}
-		return runBuiltinTask("script", args, with)
+		return runBuiltinTask(cmd.Context(), "script", args, with)
 	},
 }
 

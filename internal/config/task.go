@@ -16,4 +16,6 @@ type Step struct {
 	Delay        int    `yaml:"delay"`
 	IgnoreErrors bool   `yaml:"ignore_errors"`
 	When         string `yaml:"when"`
+	Interval     int    `yaml:"interval,omitempty"`
+	Timeout      int    `yaml:"timeout,omitempty"`
 }
