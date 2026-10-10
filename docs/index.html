@@ -16,8 +16,8 @@
     <meta name="twitter:title" content="TaskSSH - 轻量级批量运维工具">
     <meta name="twitter:description" content="单文件、无依赖、YAML 驱动。一份清单，一条命令，一批服务器">
 
-    <link rel="stylesheet" href="assets/prism.css">
-    <link rel="stylesheet" href="assets/style.css?version=2.1.0">
+    <link rel="stylesheet" href="assets/css/prism.css">
+    <link rel="stylesheet" href="assets/css/style.css?version=2.5.0">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
@@ -27,10 +27,11 @@
     <div class="container">
         <nav>
             <a href="index.html" class="logo">
-                <img src="assets/logo.svg" alt="TaskSSH">
+                <img src="assets/images/logo_white.svg" alt="TaskSSH">
             </a>
             <div class="nav-links">
                 <a href="#features">特性</a>
+                <a href="#download">下载</a>
                 <a href="#start">快速开始</a>
                 <a href="#tasks">内置任务</a>
                 <a href="document.html">文档</a>
@@ -42,45 +43,47 @@
 
 <div class="hero">
     <div class="container">
-        <img src="assets/logo.svg" alt="TaskSSH" width="256" style="margin-bottom: 20px;">
-        <p class="slogan">运筹帷幄之中，决胜千里之外</p>
-        <p class="sub-slogan">
-            单文件<span class="dot">·</span>无依赖<span class="dot">·</span>YAML 驱动<span class="dot">·</span>跨平台
-        </p>
-        <div class="buttons">
-            <div class="download-dropdown">
-            <button class="btn btn-primary" onclick="toggleDownloadMenu(event)">
-                Download
-                <span class="caret"></span>
-            </button>
-            <div class="download-menu" id="downloadMenu">
-                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-windows-amd64.zip">
-                    <span>🪟</span> Windows <em>amd64</em>
-                </a>
-                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-amd64.zip">
-                    <span>🐧</span> Linux <em>amd64</em>
-                </a>
-                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-arm64.zip">
-                    <span>🐧</span> Linux <em>arm64</em>
-                </a>
-                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-amd64.zip">
-                    <span>🍎</span> macOS <em>Intel</em>
-                </a>
-                <a href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-arm64.zip">
-                    <span>🍎</span> macOS <em>Apple Silicon</em>
+        <div class="hero-inner">
+            <div class="hero-text">
+                <h1>TaskSSH</h1>
+                <p class="slogan">运筹帷幄之中，决胜千里之外</p>
+                <p class="hero-desc">
+                    单文件、无依赖、YAML 驱动。将日常的服务器批量操作，
+                    从「手敲命令」变成「配置即文档」。一份清单，一条命令，一批服务器。
+                </p>
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-hero" id="releaseVersionTop">下载</a>
+                </div>
+            </div>
+            <div class="hero-card">
+                <p>查看快速开始与完整文档，了解清单、任务、变量与认证配置。</p>
+                <a href="document.html#quickstart" class="hero-card-link">
+                    <span class="arrow">开始使用</span>
                 </a>
             </div>
-            <div class="version-text" id="releaseVersion"></div>
-        </div>
-            <a href="#start" class="btn btn-secondary">快速开始</a>
-            <a href="https://github.com/melvek/TaskSSH" class="btn btn-secondary" target="_blank" rel="noopener">GitHub</a>
         </div>
     </div>
 </div>
 
+<section id="what" class="intro">
+    <div class="container">
+        <h2>What is TaskSSH?</h2>
+        <p>
+            TaskSSH 是一个基于 SSH 的轻量级批量运维工具。整个程序编译为单个可执行文件，
+            无外部依赖，无需安装 agent。通过 <code>inventory.yaml</code> 声明服务器组与变量，
+            即可对一批主机批量执行命令、上传文件、下载日志，或将多个步骤编排成完整任务。
+        </p>
+        <p>
+            内建 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
+            四种原子 action，可独立使用，亦可组合为有序流程。任务定义即配置，可提交、可审查、
+            可复用于多环境发布。
+        </p>
+    </div>
+</section>
+
 <section id="features" class="alt">
     <div class="container">
-        <h2>为什么用 TaskSSH</h2>
+        <h2>核心特性</h2>
         <p class="section-sub">单文件、无依赖，将批量操作编写为可复用的流程</p>
         <div class="features">
             <div class="feature">
@@ -117,7 +120,60 @@
     </div>
 </section>
 
-<section id="start">
+<section id="download">
+    <div class="container">
+        <h2>下载</h2>
+        <p class="section-sub">
+            解压即可运行，无需安装
+            <a class="version-badge" id="releaseVersion" href="https://github.com/melvek/TaskSSH/releases" target="_blank" rel="noopener"></a>
+        </p>
+
+        <div class="downloads">
+            <a class="download-card"
+               href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-windows-amd64.zip">
+                <span class="dl-icon">🪟</span>
+                <strong>Windows</strong>
+                <span class="dl-meta">amd64</span>
+            </a>
+
+            <a class="download-card"
+               href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-amd64.zip">
+                <span class="dl-icon">🐧</span>
+                <strong>Linux</strong>
+                <span class="dl-meta">amd64</span>
+            </a>
+
+            <a class="download-card"
+               href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-linux-arm64.zip">
+                <span class="dl-icon">🐧</span>
+                <strong>Linux</strong>
+                <span class="dl-meta">arm64</span>
+            </a>
+
+            <a class="download-card"
+               href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-amd64.zip">
+                <span class="dl-icon">🍎</span>
+                <strong>macOS</strong>
+                <span class="dl-meta">Intel</span>
+            </a>
+
+            <a class="download-card"
+               href="https://github.com/melvek/TaskSSH/releases/latest/download/taskssh-darwin-arm64.zip">
+                <span class="dl-icon">🍎</span>
+                <strong>macOS</strong>
+                <span class="dl-meta">Apple Silicon</span>
+            </a>
+        </div>
+
+        <p class="more-link">
+            <a href="https://github.com/melvek/TaskSSH/releases" target="_blank" rel="noopener">
+                查看历史版本 →
+            </a>
+        </p>
+    </div>
+</section>
+
+<section id="start" class="alt">
     <div class="container">
         <h2>快速开始</h2>
         <p class="section-sub">从一条命令到完整流程，按需选用</p>
@@ -139,11 +195,11 @@
             </div>
         </div>
 
-        <div style="max-width: 760px; margin: 0 auto;">
-            <h3 style="text-align: center; margin-bottom: 20px;">示例：直接执行</h3>
+        <div class="start-examples">
+            <h3>示例：直接执行</h3>
             <pre class="language-bash"><code>taskssh command 10.0.0.1 -u deploy -e "uptime" -y</code></pre>
 
-            <h3 style="text-align: center; margin: 32px 0 20px;">示例：定义任务</h3>
+            <h3>示例：定义任务</h3>
             <pre class="language-yaml"><code>tasks:
   release:
     steps:
@@ -162,16 +218,16 @@
         action: command
         with:
           command: "curl -sf http://localhost:8080/health"</code></pre>
-            <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
+            <p class="start-hint">
                 执行：<code>taskssh release prod -i inventory.yaml -y</code>
             </p>
         </div>
     </div>
 </section>
 
-<section id="tasks" class="alt">
+<section id="tasks">
     <div class="container">
-        <h2>内置任务</h2>
+        <h2>内置 Action</h2>
         <p class="section-sub">四种原子 Action，覆盖常规批量运维场景</p>
         <div class="commands">
             <div class="command-card">
@@ -200,7 +256,7 @@
 
 <section id="docs" class="alt">
     <div class="container">
-        <h2>文档</h2>
+        <h2>文档与资源</h2>
         <p class="section-sub">使用说明、更新记录与贡献指南</p>
         <div class="docs-grid">
             <a href="document.html" class="doc-link">
@@ -235,9 +291,10 @@
     <div class="container">
         <div class="footer-links">
             <a href="#features">特性</a>
+            <a href="#download">下载</a>
             <a href="#start">快速开始</a>
             <a href="#tasks">内置任务</a>
-            <a href="#docs">文档</a>
+            <a href="document.html">文档</a>
             <a href="https://github.com/melvek/TaskSSH" target="_blank" rel="noopener">GitHub</a>
         </div>
         <p>TaskSSH · MIT License</p>
@@ -245,7 +302,6 @@
 </footer>
 
 <script>
-    /* ============ 代码块复制按钮 ============ */
     document.querySelectorAll('pre').forEach(pre => {
         if (pre.querySelector('.copy-btn')) return;
 
@@ -300,36 +356,25 @@
         document.body.removeChild(ta);
     }
 
-    /* ============ 下载菜单 ============ */
-    function toggleDownloadMenu(e) {
-        e.stopPropagation();
-        document.getElementById('downloadMenu').classList.toggle('open');
-    }
-
-    document.addEventListener('click', () => {
-        const menu = document.getElementById('downloadMenu');
-        if (menu) menu.classList.remove('open');
-    });
-
-    /* ============ 获取最新 Release 版本号 ============ */
     fetch('https://img.shields.io/github/v/release/melvek/TaskSSH.json')
         .then(res => res.json())
         .then(data => {
-            const el = document.getElementById('releaseVersion');
-            if (el && data.value) {
-                el.textContent = '最新版本：' + data.value.replace(/^v/, '');
+            const el1 = document.getElementById('releaseVersion');
+            const el2 = document.getElementById('releaseVersion');
+            if (el1 && data.value) {
+                el1.textContent = data.value;
+                el2.textContent = "下载 " + data.value;
             }
         })
         .catch(err => console.error('获取版本失败:', err));
 </script>
 
-<script src="assets/prism.js"></script>
+<script src="assets/js/prism.js"></script>
 <script>
-  // 让 Prism 高亮自定义命令 taskssh
   if (window.Prism && Prism.languages.bash) {
     Prism.languages.insertBefore('bash', 'function', {
       'taskssh': {
-        pattern: /\btaskssh(?:\s+(?:run|command|push|fetch|script|encrypt|decrypt))?/,
+        pattern: /\btaskssh(?:\s+(?:command|push|fetch|script|encrypt|decrypt))?/,
         alias: 'function'
       }
     });

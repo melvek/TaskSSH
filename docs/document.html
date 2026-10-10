@@ -11,8 +11,8 @@
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 
-    <link rel="stylesheet" href="assets/prism.css">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/css/prism.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
 <body class="docs-page">
@@ -23,7 +23,7 @@
                 <button class="docs-menu-toggle" id="docsMenuToggle" onclick="toggleSidebar()"
                     aria-label="打开目录">☰</button>
                 <a href="index.html" class="logo">
-                    <img src="assets/logo.svg" alt="TaskSSH">
+                    <img src="assets/images/logo_white.svg" alt="TaskSSH">
                 </a>
                 <div class="nav-links">
                     <a href="index.html#features">特性</a>
@@ -57,7 +57,7 @@
                         <li><a href="#inventory-servers">servers</a></li>
                         <li><a href="#hostvars">host</a></li>
                         <li><a href="#inventory-tasks">tasks</a></li>
-                        <li><a href="#task-step">step 参数</a></li>
+                        <li><a href="#task-step">step</a></li>
                     </ul>
                 </div>
 
@@ -77,7 +77,7 @@
                         <li><a href="#variables">变量替换</a></li>
                         <li><a href="#builtin-vars">内置变量</a></li>
                         <li><a href="#cli-vars">CLI 注入</a></li>
-                        <li><a href="#hostvars-extra">Extra 扩展字段</a></li>
+                        <li><a href="#hostvars-extra">扩展字段</a></li>
                     </ul>
                 </div>
 
@@ -222,7 +222,7 @@
 ./taskssh --help</code></pre>
 
             <h3>从源码构建</h3>
-            <p>需 Go 1.22 及以上版本：</p>
+            <p>需 Go 1.26 及以上版本：</p>
 
             <pre class="language-bash"><code>git clone https://github.com/melvek/TaskSSH.git
 cd TaskSSH
@@ -257,16 +257,16 @@ echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
             </p>
 
             <pre class="language-bash"><code># 单台主机
-taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y
+taskssh command "192.168.1.10" -u deploy -p "your-password" -e "uptime" -y
 
 # 多台主机
-taskssh command 10.0.0.1 10.0.0.2 10.0.0.3 -u deploy -e "df -h" -y
+taskssh command "10.0.0.1" "10.0.0.2" "10.0.0.3" -u deploy -e "df -h" -y
 
 # 上传文件
-taskssh push 192.168.1.10 -u deploy -f app.jar -d /opt/app/ -y
+taskssh push "192.168.1.10" -u deploy -f app.jar -d /opt/app/ -y
 
 # 下载文件
-taskssh fetch 192.168.1.10 -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
+taskssh fetch "192.168.1.10" -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
 
             <p>
                 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
@@ -370,7 +370,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <ul>
                 <li>
                     不写清单时，用位置参数直接指定主机，执行内置 action 的单步操作，例如
-                    <code>taskssh command 192.168.1.10 -e "uptime" -y</code>。
+                    <code>taskssh command "192.168.1.10" -e "uptime" -y</code>。
                 </li>
                 <li>
                     写清单但不写 <code>tasks</code> 段时，仍可用内置 action 对清单里的主机或组执行单步操作，
@@ -577,7 +577,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <p>
                 字段的具体含义见 <a href="#hostvars">host</a>；
                 非专有字段进入 <code>Extra</code>，参与变量替换，见
-                <a href="#hostvars-extra">Extra 扩展字段</a>。
+                <a href="#hostvars-extra">扩展字段</a>。
             </p>
 
             <h3>主机查找</h3>
@@ -942,7 +942,7 @@ servers:
                 </table>
             </div>
 
-            <h2 id="task-step">step 参数</h2>
+            <h2 id="task-step">step</h2>
 
             <p>每个 step 表示一次 action 调用，其字段定义如下：</p>
 
@@ -1733,7 +1733,7 @@ taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
                 <li>不能覆盖保留变量（<code>date</code> / <code>execId</code>）。</li>
             </ul>
 
-            <h2 id="hostvars-extra">Extra 扩展字段</h2>
+            <h2 id="hostvars-extra">扩展字段</h2>
 
             <p>
                 <code>global_vars</code>、组 <code>vars</code>、主机定义中，
@@ -2993,7 +2993,7 @@ Execution ID: 0K8X7A2B</code></pre>
         }
     </script>
 
-    <script src="assets/prism.js"></script>
+    <script src="assets/js/prism.js"></script>
     <script>
         // 让 Prism 高亮自定义命令 taskssh
         if (window.Prism && Prism.languages.bash) {

@@ -1,33 +1,75 @@
 /* ============ 字体 ============ */
 @font-face {
-    font-family: "PT Mono";
-    src: url("pt-mono-regular-2.ttf") format("truetype");
-    font-weight: 400;
+    font-family: "Red Hat Display";
+    src: url("../fonts/RedHatDisplay-VF.woff2") format("woff2-variations");
+    font-weight: 300 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Red Hat Text";
+    src: url("../fonts/RedHatText-VF.woff2") format("woff2-variations");
+    font-weight: 300 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Red Hat Mono";
+    src: url("../fonts/pt-mono-regular-2.ttf") format("truetype");
+    font-weight: 300 700;
     font-style: normal;
     font-display: swap;
 }
 
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #dbeafe;
-    --bg: #ffffff;
-    --bg-alt: #f8fafc;
-    --text: #0f172a;
-    --text-light: #64748b;
-    --border: #e2e8f0;
-    --code-bg: #404246;
-    --code-text: #e2e8f0;
-    --radius: 10px;
-    --shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-    --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.08);
+    /* 品牌色 */
+    --brand-red: #ee0000;
 
-    /* 全站字体栈：PT Mono 优先，中文回退 */
-    --font-sans: "PT Mono", -apple-system, BlinkMacSystemFont,
-                "Segoe UI", "PingFang SC", "Hiragino Sans GB",
-                "Microsoft YaHei", "微软雅黑", sans-serif;
-    --font-mono: "PT Mono", "SFMono-Regular", Consolas,
-                "Liberation Mono", Menlo, monospace;
+    /* 导航深灰 */
+    --nav-bg: #1f1f1f;
+    --nav-text: rgba(255, 255, 255, 0.85);
+    --nav-text-hover: #ffffff;
+
+    /* Hero 青色 */
+    --hero-bg: #4d9ba3;
+    --hero-text: #ffffff;
+    --hero-text-muted: rgba(255, 255, 255, 0.9);
+
+    /* 浅色正文 */
+    --bg: #ffffff;
+    --bg-alt: #f5f5f5;
+    --text: #151515;
+    --text-light: #4d4d4d;
+    --text-muted: #6a6e73;
+    --border: #d2d2d2;
+    --border-light: #ebebeb;
+
+    /* 链接与强调 */
+    --link: #0066cc;
+    --link-hover: #004080;
+    --accent: #0066cc;
+    --accent-light: #e7f1fa;
+
+    /* 代码块 */
+    --code-bg: #1f1f1f;
+    --code-text: #e0e0e0;
+
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+    /* 字体 */
+    --font-display: "Red Hat Display", -apple-system, BlinkMacSystemFont,
+                    "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+                    "Microsoft YaHei", "微软雅黑", sans-serif;
+    --font-sans: "Red Hat Text", -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+                 "Microsoft YaHei", "微软雅黑", sans-serif;
+    --font-mono: "Red Hat Mono", "SFMono-Regular", Consolas,
+                 "Liberation Mono", Menlo, monospace;
 }
 
 * {
@@ -38,7 +80,7 @@
 
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 66px;
+    scroll-padding-top: 72px;
 }
 
 body {
@@ -51,7 +93,7 @@ body {
 }
 
 a {
-    color: var(--primary);
+    color: var(--link);
     text-decoration: none;
 }
 
@@ -59,12 +101,18 @@ a:hover {
     text-decoration: underline;
 }
 
+h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    color: var(--text);
+}
+
 code {
     font-family: var(--font-mono);
     font-size: 0.9em;
-    background: #f1f5f9;
+    background: #f0f0f0;
     padding: 2px 6px;
     border-radius: 4px;
+    color: #151515;
 }
 
 pre {
@@ -112,9 +160,9 @@ pre code {
 }
 
 .copy-btn.copied {
-    background: #16a34a;
+    background: var(--brand-red);
     color: #fff;
-    border-color: #16a34a;
+    border-color: var(--brand-red);
 }
 
 /* ============ Header ============ */
@@ -122,10 +170,8 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: saturate(180%) blur(12px);
-    -webkit-backdrop-filter: saturate(180%) blur(12px);
-    border-bottom: 1px solid var(--border);
+    background: var(--nav-bg);
+    border-top: 3px solid var(--brand-red);
     padding: 14px 0;
 }
 
@@ -165,92 +211,145 @@ nav {
     text-decoration: none;
 }
 
-.logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--primary), #7c3aed);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 800;
-}
-
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 28px;
 }
 
 .nav-links a {
-    color: var(--text-light);
+    color: var(--nav-text);
     font-size: 14px;
     font-weight: 500;
     transition: color 0.2s;
 }
 
 .nav-links a:hover {
-    color: var(--primary);
+    color: var(--nav-text-hover);
     text-decoration: none;
 }
 
+.nav-links a.active {
+    color: var(--nav-text-hover);
+    font-weight: 600;
+}
+
 .nav-links a.gh {
-    color: var(--text);
-    border: 1px solid var(--border);
-    padding: 6px 14px;
-    border-radius: 8px;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 13px;
 }
 
 .nav-links a.gh:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: #fff;
+    color: #fff;
 }
 
 /* ============ Hero ============ */
 .hero {
-    text-align: center;
-    height: 420px;
-    padding: 88px 0 72px;
-    background:
-        radial-gradient(600px 300px at 50% 0%, var(--primary-light), transparent 70%);
+    background: var(--hero-bg);
+    color: var(--hero-text);
+    padding: 72px 0 80px;
+}
+
+.hero-inner {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 64px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .hero-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
 }
 
 .hero h1 {
-    font-size: 52px;
-    font-weight: 800;
-    margin-bottom: 16px;
-    letter-spacing: -1.5px;
-    background: linear-gradient(135deg, var(--text), var(--primary));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 54px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+    color: var(--hero-text);
+    line-height: 1.1;
 }
 
 .hero .slogan {
-    font-size: 24px;
-    color: var(--text-light);
-    margin-bottom: 12px;
+    font-size: 22px;
+    color: var(--hero-text);
+    margin-bottom: 20px;
+    font-weight: 400;
+    line-height: 1.4;
 }
 
-.hero .sub-slogan {
-    font-size: 15px;
-    color: var(--text-light);
+.hero .hero-desc {
+    font-size: 16px;
+    color: var(--hero-text-muted);
     margin-bottom: 32px;
+    line-height: 1.7;
+    max-width: 560px;
 }
 
-.hero .sub-slogan .dot {
-    margin: 0 8px;
-    color: var(--border);
-}
-
-.buttons {
+.hero-buttons {
     display: flex;
-    gap: 16px;
-    justify-content: center;
+    gap: 12px;
     flex-wrap: wrap;
-    align-items: top;
+}
+
+.hero-card {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: 32px 32px 28px;
+    color: var(--text);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+}
+
+.hero-card h3 {
+    font-size: 21px;
+    font-weight: 500;
+    color: var(--link);
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+.hero-card p {
+    color: var(--text-light);
+    font-size: 15px;
+    margin-bottom: 32px;
+    line-height: 1.65;
+    flex-grow: 1;
+}
+
+.hero-card-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    color: var(--link);
+    font-weight: 500;
+    font-size: 15px;
+    align-self: flex-end;
+}
+
+.hero-card-link:hover {
+    text-decoration: none;
+    color: var(--link-hover);
+}
+
+.hero-card-link .arrow {
+    font-size: 20px;
+    transition: transform 0.2s;
+    line-height: 1;
+}
+
+.hero-card-link:hover .arrow {
+    transform: translateX(4px);
 }
 
 /* ============ 按钮 ============ */
@@ -260,9 +359,9 @@ nav {
     justify-content: center;
     gap: 6px;
     padding: 12px 32px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
     transition: all 0.2s;
     cursor: pointer;
     border: none;
@@ -272,37 +371,21 @@ nav {
     height: 48px;
 }
 
-/* 版本号文字 */
-.version-text {
-    margin-top: 6px;
-    font-size: 12px;
-    color: var(--text-light);
-    text-align: center;
-    line-height: 1.4;
-    white-space: nowrap;
-}
-
-.version-text:empty {
-    display: none;
-}
-
 .btn:focus,
 .btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
 }
 
 .btn-primary {
-    background: var(--primary);
+    background: var(--link);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
 
 .btn-primary:hover {
-    background: var(--primary-dark);
+    background: var(--link-hover);
     text-decoration: none;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 .btn-secondary {
@@ -313,108 +396,39 @@ nav {
 
 .btn-secondary:hover {
     background: var(--bg-alt);
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: var(--link);
+    color: var(--link);
     text-decoration: none;
     transform: translateY(-1px);
 }
 
-/* ============ 下载下拉菜单 ============ */
-.download-dropdown {
-    position: relative;
-    display: inline-block;
+.btn-hero {
+    background: transparent;
+    color: #fff;
+    border: 1px solid #ffffff;
+    padding: 12px 32px;
+    font-weight: 600;
 }
 
-.download-dropdown .caret {
-    display: inline-block;
-    width: 0;
-    height: 0;
-    margin-left: 6px;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid currentColor;
-    vertical-align: middle;
-}
-
-.download-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 240px;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-    padding: 6px;
-    z-index: 50;
-    text-align: left;
-}
-
-.download-menu.open {
-    display: block;
-}
-
-.download-menu a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 14px;
-    transition: background 0.15s;
-}
-
-.download-menu a:hover {
-    background: var(--bg-alt);
+.btn-hero:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
     text-decoration: none;
 }
 
-.download-menu a em {
-    margin-left: auto;
-    font-style: normal;
-    color: var(--text-light);
-    font-size: 12px;
-}
-
-/* ============ 安装命令条 ============ */
-.install-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 32px;
-    background: var(--code-bg);
-    color: var(--code-text);
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-family: var(--font-mono);
-    font-size: 14px;
-}
-
-.install-bar code {
-    background: none;
-    padding: 0;
-    color: inherit;
-    font-family: inherit;
-}
-
-.install-bar button {
-    background: rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-}
-
-.install-bar button:hover {
-    background: rgba(255, 255, 255, 0.2);
+.btn-hero-outline {
+    background: transparent;
     color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    padding: 12px 32px;
+    font-weight: 500;
+}
+
+.btn-hero-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    color: #fff;
+    text-decoration: none;
 }
 
 /* ============ Section ============ */
@@ -426,29 +440,86 @@ section.alt {
     background: var(--bg-alt);
 }
 
-/* 首页 section 里的 h2 才居中 */
-section > .container > h2 {
-    text-align: center;
+h2 {
+    font-size: 36px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
-h2 {
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
+section > .container > h2 {
+    text-align: left;
 }
 
 .section-sub {
-    text-align: center;
-    color: var(--text-light);
-    margin-bottom: 40px;
+    text-align: left;
+    color: var(--text-muted);
+    margin-bottom: 32px;
     font-size: 16px;
 }
 
 h3 {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 500;
     margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+/* ============ Intro ============ */
+.intro {
+    padding: 80px 0 72px;
+}
+
+.intro h2 {
+    font-size: 40px;
+    font-weight: 500;
+    margin-bottom: 32px;
+    letter-spacing: -0.8px;
+}
+
+.intro-lead {
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 24px;
+    line-height: 1.7;
+}
+
+.intro p {
+    font-size: 16px;
+    color: var(--text-light);
+    margin-bottom: 20px;
+    line-height: 1.8;
+    max-width: 900px;
+}
+
+.intro p code {
+    color: var(--text);
+    background: #f0f0f0;
+}
+
+/* ============ 版本徽章 ============ */
+.version-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 12px;
+    margin-left: 8px;
+    border-radius: 999px;
+    background: var(--accent-light);
+    color: var(--link);
+    border: 1px solid rgba(0, 102, 204, 0.2);
+    vertical-align: middle;
+    text-decoration: none;
+}
+
+.version-badge:hover {
+    background: rgba(0, 102, 204, 0.12);
+    text-decoration: none;
+}
+
+.version-badge:empty {
+    display: none;
 }
 
 /* ============ 下载区 ============ */
@@ -456,7 +527,7 @@ h3 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
-    margin-bottom: 48px;
+    margin: 32px 0 0;
 }
 
 .download-card {
@@ -464,17 +535,16 @@ h3 {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 18px 12px;
+    padding: 20px 12px;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     background: var(--bg);
-    box-shadow: var(--shadow);
     transition: all 0.2s;
     text-align: center;
 }
 
 .download-card:hover {
-    border-color: var(--primary);
+    border-color: var(--link);
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
     text-decoration: none;
@@ -489,11 +559,16 @@ h3 {
 .download-card strong {
     color: var(--text);
     font-size: 15px;
+    font-weight: 500;
 }
 
 .download-card .dl-meta {
-    color: var(--text-light);
+    color: var(--text-muted);
     font-size: 12px;
+}
+
+.more-link {
+    margin-top: 24px;
 }
 
 /* ============ Features ============ */
@@ -505,20 +580,18 @@ h3 {
 
 .feature {
     display: grid;
-    grid-template-columns: auto 1fr;   /* 左列图标自适应，右列标题占满 */
-    grid-template-rows: auto auto;     /* 第一行图标+标题，第二行说明 */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
     column-gap: 12px;
     row-gap: 8px;
-    align-items: center;               /* 图标和标题垂直居中对齐 */
+    align-items: center;
     padding: 24px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
     background: var(--bg);
-    box-shadow: var(--shadow);
     transition: all 0.25s;
 }
 
-/* 图标：固定在左列第一行 */
 .feature .icon {
     grid-column: 1;
     grid-row: 1;
@@ -528,26 +601,26 @@ h3 {
     width: 40px;
     height: 40px;
     border-radius: 8px;
-    background: var(--primary-light);
-    color: var(--primary);
+    background: var(--accent-light);
+    color: var(--link);
     font-size: 20px;
-    margin-bottom: 0;    /* 覆盖原来的 margin-bottom: 14px */
+    margin-bottom: 0;
 }
 
-/* 标题：右列第一行 */
 .feature h3 {
     grid-column: 2;
     grid-row: 1;
-    margin: 0;           /* 去掉默认 margin，否则会影响行高对齐 */
+    margin: 0;
+    font-size: 17px;
 }
 
-/* 说明：跨两列，第二行 */
 .feature p {
     grid-column: 1 / -1;
     grid-row: 2;
     margin: 0;
     color: var(--text-light);
     font-size: 15px;
+    line-height: 1.65;
 }
 
 /* ============ Steps ============ */
@@ -560,11 +633,10 @@ h3 {
 
 .step {
     text-align: center;
-    padding: 24px 16px;
-    border-radius: var(--radius);
+    padding: 28px 20px;
+    border-radius: var(--radius-lg);
     background: var(--bg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border-light);
 }
 
 .step-number {
@@ -574,15 +646,15 @@ h3 {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--hero-bg);
     color: white;
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .step h3 {
     margin-bottom: 8px;
+    font-size: 18px;
 }
 
 .step p {
@@ -590,39 +662,58 @@ h3 {
     font-size: 15px;
 }
 
+.start-examples {
+    max-width: 760px;
+}
+
+.start-examples h3 {
+    margin-bottom: 16px;
+    margin-top: 32px;
+    font-size: 18px;
+}
+
+.start-examples h3:first-child {
+    margin-top: 0;
+}
+
+.start-hint {
+    margin-top: 16px;
+    color: var(--text-muted);
+}
+
 /* ============ Commands ============ */
 .commands {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-    min-width: 0; 
+    min-width: 0;
 }
 
 .command-card {
-    min-width: 0; 
+    min-width: 0;
     padding: 24px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
     background: var(--bg);
-    box-shadow: var(--shadow);
     transition: all 0.25s;
 }
 
 .command-card:hover {
-    transform: translateY(-3px);
+    border-color: var(--border);
     box-shadow: var(--shadow-hover);
 }
 
 .command-card h3 {
     font-family: var(--font-mono);
-    color: var(--primary);
+    color: var(--link);
     margin-bottom: 8px;
+    font-size: 17px;
 }
 
 .command-card > p {
     color: var(--text-light);
     font-size: 15px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .command-card pre {
@@ -633,12 +724,12 @@ h3 {
 
 @media (max-width: 768px) {
     .commands {
-        grid-template-columns: 1fr;    /* 单列 */
+        grid-template-columns: 1fr;
         gap: 16px;
     }
 
     .command-card {
-        padding: 16px 14px;            /* 缩小内边距 */
+        padding: 16px 14px;
     }
 
     .command-card h3 {
@@ -684,15 +775,14 @@ h3 {
 .doc-link {
     display: block;
     padding: 20px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
     background: var(--bg);
     transition: all 0.25s;
-    box-shadow: var(--shadow);
 }
 
 .doc-link:hover {
-    border-color: var(--primary);
+    border-color: var(--link);
     text-decoration: none;
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
@@ -703,20 +793,22 @@ h3 {
     margin-bottom: 4px;
     color: var(--text);
     font-size: 16px;
+    font-weight: 500;
 }
 
 .doc-link span {
     font-size: 14px;
-    color: var(--text-light);
+    color: var(--text-muted);
 }
 
 /* ============ CTA ============ */
 .cta {
     text-align: center;
-    padding: 64px 0;
+    padding: 72px 0;
 }
 
 .cta h2 {
+    text-align: center;
     margin-bottom: 16px;
 }
 
@@ -728,19 +820,19 @@ h3 {
 
 /* ============ Footer ============ */
 footer {
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-light);
     padding: 40px 0;
     text-align: center;
-    color: var(--text-light);
+    color: var(--text-muted);
     font-size: 14px;
 }
 
 footer a {
-    color: var(--text-light);
+    color: var(--text-muted);
 }
 
 footer a:hover {
-    color: var(--primary);
+    color: var(--link);
 }
 
 footer .footer-links {
@@ -753,12 +845,20 @@ footer .footer-links {
 
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
+    .hero {
+        padding: 48px 0 56px;
+    }
+
     .hero h1 {
-        font-size: 38px;
+        font-size: 40px;
     }
 
     .hero .slogan {
-        font-size: 17px;
+        font-size: 18px;
+    }
+
+    .hero .hero-desc {
+        font-size: 15px;
     }
 
     .nav-links {
@@ -770,15 +870,19 @@ footer .footer-links {
     }
 
     h2 {
-        font-size: 26px;
+        font-size: 28px;
+    }
+
+    .intro h2 {
+        font-size: 30px;
+    }
+
+    .intro-lead {
+        font-size: 16px;
     }
 
     section {
         padding: 56px 0;
-    }
-
-    .hero {
-        padding: 64px 0 56px;
     }
 }
 
@@ -787,56 +891,8 @@ footer .footer-links {
         font-size: 32px;
     }
 
-    /* 按钮组顶部对齐 */
-    .buttons {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
-        flex-wrap: wrap;
-        align-items: top;   /* 关键：顶部对齐 */
-    }
-
-    /* 只给 hero 区按钮组里的按钮固定高度 */
-    .buttons .btn {
-        height: 48px;
-        padding-top: 0;
-        padding-bottom: 0;
-    }
-
-    .download-dropdown {
-        position: relative;
-        display: inline-block;
-    }
-
-    .download-dropdown .btn {
-        width: 100%;
-    }
-
-    .download-menu {
-        left: 0;
-        transform: none;
-        width: 100%;
-        min-width: 0;
-    }
-
-    /* 版本号文字 */
-    .version-text {
-        margin-top: 6px;
-        font-size: 12px;
-        color: var(--text-light);
-        text-align: center;
-        line-height: 1.4;
-        white-space: nowrap;
-    }
-
-    .version-text:empty {
-        display: none;
-    }
-
-    .install-bar {
-        font-size: 12px;
-        max-width: 100%;
-        overflow-x: auto;
+    .hero-card {
+        padding: 24px;
     }
 
     .downloads {
@@ -844,28 +900,12 @@ footer .footer-links {
     }
 }
 
-.version-badge {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 1px 8px;
-    border-radius: 999px;
-    /*background: rgba(255, 255, 255, 0.2);*/
-    color: #fff;
-    line-height: 1.6;
-    vertical-align: middle;
-}
-
-.version-badge:empty {
-    display: none;
-}
-
 /* ============================================================
    文档页
    ============================================================ */
 .docs-page {
     --sidebar-w: 240px;
-    --header-h: 61px;
+    --header-h: 64px;
     --content-max: 760px;
 }
 
@@ -883,18 +923,17 @@ footer .footer-links {
 .docs-page .docs-menu-toggle {
     display: none;
     background: none;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 18px;
     cursor: pointer;
-    color: var(--text);
+    color: #fff;
     font-family: inherit;
     line-height: 1;
     margin-right: 12px;
 }
 
-/* 整体布局：左右两栏 */
 .docs-layout {
     width: 100%;
     max-width: 1080px;
@@ -913,18 +952,17 @@ footer .footer-links {
     top: calc(var(--header-h) + 24px);
     max-height: calc(100vh - var(--header-h) - 48px);
     overflow-y: auto;
-    padding: 10px 0 16px 0;
+    padding: 32px 0 16px 0;
 }
 
 .docs-content {
     flex: 1;
     min-width: 0;
-    padding: 32px 0 120px;
-    font-size: 14.5px;
-    line-height: 1.7;
+    padding: 40px 0 120px;
+    font-size: 15px;
+    line-height: 1.75;
 }
 
-/* 中屏：侧边栏收窄 */
 @media (max-width: 1024px) {
     .docs-layout {
         gap: 28px;
@@ -936,7 +974,6 @@ footer .footer-links {
     }
 }
 
-/* 小屏：侧边栏变抽屉 */
 @media (max-width: 900px) {
     .docs-layout {
         padding: 0 20px;
@@ -951,12 +988,12 @@ footer .footer-links {
         width: 260px;
         min-width: 260px;
         background: var(--bg);
-        border-right: 1px solid var(--border);
+        border-right: 1px solid var(--border-light);
         padding: 24px 16px 48px;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
         z-index: 99;
-        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.1);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
         max-height: none;
     }
 
@@ -971,18 +1008,6 @@ footer .footer-links {
     }
 }
 
-/* 超小屏：进一步收紧 */
-@media (max-width: 480px) {
-    .container,
-    .docs-layout {
-        padding: 0 16px;
-    }
-
-    .docs-content h1 {
-        font-size: 21px;
-    }
-}
-
 .docs-sidebar::-webkit-scrollbar {
     width: 6px;
 }
@@ -992,23 +1017,22 @@ footer .footer-links {
     border-radius: 3px;
 }
 
-/* 每个分组：块级，纵向堆叠 */
 .docs-sidebar .nav-group {
     display: block;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .docs-sidebar .nav-group-title {
     display: block;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 600;
     letter-spacing: 0.02em;
-    color: var(--text-light);
+    color: var(--text);
     padding: 0 10px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    font-family: var(--font-display);
 }
 
-/* 列表：纵向 */
 .docs-sidebar .docs-nav-list {
     display: block;
     list-style: none;
@@ -1026,46 +1050,43 @@ footer .footer-links {
     padding: 5px 10px;
     border-radius: 6px;
     font-size: 14px;
-    color: var(--text);
+    color: var(--text-light);
     text-decoration: none;
     transition: all 0.15s;
     line-height: 1.5;
 }
 
 .docs-sidebar .docs-nav-list a:hover {
-    background: rgba(37, 99, 235, 0.08);
-    color: var(--primary);
+    background: var(--bg-alt);
+    color: var(--link);
     text-decoration: none;
 }
 
 .docs-sidebar .docs-nav-list a.active {
-    background: var(--primary-light);
-    color: var(--primary-dark);
+    background: var(--accent-light);
+    color: var(--link);
     font-weight: 600;
 }
 
-
 .docs-content h1 {
-    font-size: 30px;
-    font-weight: 800;
-    letter-spacing: -0.8px;
-    margin-bottom: 12px;
-    line-height: 1.25;
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -0.6px;
+    margin-bottom: 16px;
+    line-height: 1.2;
 }
 
 .docs-content .lead {
-    font-size: 15px;
+    font-size: 17px;
     color: var(--text-light);
-    margin-bottom: 32px;
+    margin-bottom: 36px;
     line-height: 1.7;
 }
 
 .docs-content h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 40px 0 14px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+    font-size: 26px;
+    font-weight: 500;
+    margin: 48px 0 16px;
     letter-spacing: -0.3px;
     scroll-margin-top: 20px;
 }
@@ -1075,46 +1096,44 @@ footer .footer-links {
 }
 
 .docs-content h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 24px 0 8px;
+    font-size: 18px;
+    font-weight: 500;
+    margin: 32px 0 10px;
     scroll-margin-top: calc(var(--header-h) + 20px);
 }
 
 .docs-content h4 {
-    font-size: 14.5px;
+    font-size: 15px;
     font-weight: 600;
-    margin: 18px 0 6px;
+    margin: 24px 0 8px;
 }
 
 .docs-content p {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .docs-content ul,
 .docs-content ol {
-    margin: 0 0 12px 20px;
+    margin: 0 0 14px 22px;
 }
 
 .docs-content li {
-    margin-bottom: 4px;
+    margin-bottom: 5px;
 }
 
-/* 提示框 */
 .callout {
     display: flex;
     gap: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-radius: var(--radius);
-    /* border-left: 3px solid var(--primary); */
-    background: var(--primary-light);
-    margin: 0 0 16px;
-    font-size: 13.5px;
+    background: var(--accent-light);
+    margin: 0 0 18px;
+    font-size: 14px;
 }
 
 .callout .co-icon {
     flex-shrink: 0;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.7;
 }
 
@@ -1123,37 +1142,33 @@ footer .footer-links {
 }
 
 .callout.warn {
-    border-left-color: #f59e0b;
-    background: #fef3c7;
+    background: #fff7e6;
 }
 
 .callout.danger {
-    border-left-color: #ef4444;
-    background: #fee2e2;
+    background: #fce8e8;
 }
 
 .callout.tip {
-    border-left-color: #16a34a;
-    background: #dcfce7;
+    background: #f0f7f0;
 }
 
-/* 表格 */
 .docs-content .table-wrap {
     overflow-x: auto;
-    margin: 0 0 16px;
+    margin: 0 0 18px;
 }
 
 .docs-content table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13.5px;
+    font-size: 14px;
 }
 
 .docs-content th,
 .docs-content td {
     text-align: left;
-    padding: 8px 12px;
-    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
     vertical-align: top;
 }
 
@@ -1161,33 +1176,25 @@ footer .footer-links {
     background: var(--bg-alt);
     font-weight: 600;
     white-space: nowrap;
+    color: var(--text);
 }
 
 .docs-content td code {
     white-space: nowrap;
 }
 
-/* 锚点偏移 */
-.docs-content .anchor {
-    display: block;
-    position: relative;
-    top: calc(-1 * (var(--header-h) + 20px));
-    visibility: hidden;
-}
-
-/* 返回顶部 */
 .back-top {
     position: fixed;
     right: 28px;
     bottom: 28px;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--hero-bg);
     color: #fff;
     border: none;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 6px 20px rgba(77, 155, 163, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1205,29 +1212,20 @@ footer .footer-links {
 }
 
 .back-top:hover {
-    background: var(--primary-dark);
+    background: #3e7d85;
     transform: translateY(-2px);
 }
 
-/* 移动端遮罩 */
 .docs-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 98;
 }
 
 .docs-overlay.show {
     display: block;
-}
-
-/* 响应式 */
-@media (max-width: 1024px) {
-    .docs-content {
-        margin-left: 24px;
-        padding: 32px 0 100px;
-    }
 }
 
 @media (max-width: 900px) {
@@ -1250,12 +1248,12 @@ footer .footer-links {
         min-width: 260px;
         max-width: 260px;
         background: var(--bg);
-        border-right: 1px solid var(--border);
+        border-right: 1px solid var(--border-light);
         padding: 24px 16px 48px;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
         z-index: 99;
-        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.1);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
         max-height: none;
     }
 
@@ -1270,23 +1268,23 @@ footer .footer-links {
     }
 
     .docs-content h1 {
-        font-size: 24px;
+        font-size: 28px;
     }
 
     .docs-content h2 {
-        font-size: 18px;
+        font-size: 22px;
     }
 }
 
 @media (max-width: 480px) {
     .docs-content h1 {
-        font-size: 21px;
+        font-size: 24px;
     }
 
     .docs-content th,
     .docs-content td {
-        padding: 6px 8px;
-        font-size: 12.5px;
+        padding: 8px 10px;
+        font-size: 13px;
     }
 
     .back-top {
@@ -1295,7 +1293,6 @@ footer .footer-links {
     }
 }
 
-/* 文档页侧边栏内的 nav 必须回到块级纵向 */
 .docs-sidebar nav {
     display: block !important;
     flex-direction: column !important;
@@ -1305,8 +1302,6 @@ footer .footer-links {
 }
 
 /* ============ Prism 集成 ============ */
-/* 让 Prism 高亮融入现有代码块样式 */
-
 pre[class*="language-"],
 code[class*="language-"] {
     background: none;
@@ -1320,7 +1315,7 @@ pre[class*="language-"] {
     background: var(--code-bg);
     color: var(--code-text);
     padding: 16px 18px;
-    padding-top: 40px;   /* 给复制按钮留位置 */
+    padding-top: 40px;
     border-radius: var(--radius);
     margin-bottom: 16px;
     overflow-x: auto;
@@ -1338,24 +1333,23 @@ code[class*="language-"] {
 .table-wrap {
     overflow-x: auto;
     margin: 0 0 20px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
     background: var(--bg);
-    box-shadow: var(--shadow);
 }
 
 .table-wrap table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13.5px;
+    font-size: 14px;
     min-width: 640px;
 }
 
 .table-wrap th,
 .table-wrap td {
     text-align: left;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
     vertical-align: top;
 }
 
@@ -1380,7 +1374,6 @@ code[class*="language-"] {
     white-space: nowrap;
 }
 
-/* 移动端收紧 */
 @media (max-width: 768px) {
     .table-wrap {
         border-radius: 8px;
@@ -1388,7 +1381,7 @@ code[class*="language-"] {
 
     .table-wrap th,
     .table-wrap td {
-        padding: 8px 10px;
-        font-size: 12.5px;
+        padding: 10px 12px;
+        font-size: 13px;
     }
 }
