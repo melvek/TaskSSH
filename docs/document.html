@@ -502,6 +502,143 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                 <code>date</code> 与 <code>execId</code> 为运行时全局注入，所有主机共享同一值。
             </p>
 
+                        <h3>include：拆分清单</h3>
+
+            <p>
+                清单变大后，可按服务器组、任务拆成多个文件，用 <code>include</code> 段引入。
+            </p>
+
+            <p>主文件只写 include 和全局配置：</p>
+
+            <pre class="language-yaml"><code>include:
+  - servers/*.yaml
+  - tasks/*.yaml
+
+global_vars:
+  username: deploy
+  password: "encrypted-password"
+  app_name: myapp</code></pre>
+
+            <p>每个被 include 的文件是清单片段，结构与主文件一致：</p>
+
+            <pre class="language-yaml"><code># servers/prod.yaml
+servers:
+  prod:
+    vars:
+      service_path: /opt/myapp/
+    hosts:
+      web1: 192.168.1.10
+      web2: 192.168.1.11</code></pre>
+
+            <pre class="language-yaml"><code># tasks/release.yaml
+tasks:
+  release:
+    steps:
+      - name: "上传"
+        action: push
+        with:
+          file: "./dist/{{app_name}}.jar"
+          dest: "{{service_path}}"</code></pre>
+
+            <h4>include 语法</h4>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>形式</th>
+                            <th>示例</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>精确路径</td>
+                            <td><code>servers/prod.yaml</code></td>
+                            <td>相对主文件所在目录</td>
+                        </tr>
+                        <tr>
+                            <td>目录</td>
+                            <td><code>servers/</code></td>
+                            <td>等价于 <code>servers/*.yaml</code></td>
+                        </tr>
+                        <tr>
+                            <td>glob</td>
+                            <td><code>servers/*.yaml</code></td>
+                            <td>按文件名排序</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>合并规则</h4>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>段</th>
+                            <th>合并方式</th>
+                            <th>冲突处理</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>global_vars</code></td>
+                            <td>深合并</td>
+                            <td>主文件优先，其次后 include，最后先 include</td>
+                        </tr>
+                        <tr>
+                            <td><code>servers</code></td>
+                            <td>按组名合并</td>
+                            <td>同名组报错，并指明冲突文件</td>
+                        </tr>
+                        <tr>
+                            <td><code>tasks</code></td>
+                            <td>按任务名合并</td>
+                            <td>同名任务报错，并指明冲突文件</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>推荐目录结构</h4>
+
+            <pre><code>project/
+├── inventory.yaml       # 主文件
+├── servers/
+│   ├── prod.yaml
+│   ├── uat.yaml
+│   └── dev.yaml
+└── tasks/
+    ├── release.yaml
+    ├── rollback.yaml
+    └── pull-logs.yaml</code></pre>
+
+            <h4>限制</h4>
+
+            <ul>
+                <li>
+                    <strong>不支持递归 include</strong>：子文件中不能再有 <code>include</code> 段。
+                    如需嵌套，把文件路径直接列到主文件的 <code>include</code> 中。
+                </li>
+                <li>
+                    路径基于主文件所在目录解析，与执行时的工作目录无关。
+                </li>
+                <li>
+                    glob 无匹配时报错，避免用户误以为已加载。
+                </li>
+            </ul>
+
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    <code>global_vars</code> 的合并规则使得主文件可以作为「最终调整」的位置。
+                    例如各环境文件定义了默认的 <code>username</code>，主文件里写一个
+                    <code>username</code> 就能统一覆盖所有环境。
+                </p>
+            </div>
+
             <h2 id="inventory-global">global_vars</h2>
 
             <p>
@@ -796,7 +933,7 @@ taskssh release uat -y</code></pre>
             <p>
                 各字段对应的认证方式见 <a href="#auth">认证方式</a>；
                 <code>password</code> 和 <code>passphrase</code> 的加密方式见
-                <a href="#encrypt-decrypt">加密与解密</a>。
+                <a href="#auth-encrypt">加密与解密</a>。
             </p>
 
             <h3>字段优先级</h3>
@@ -2734,7 +2871,7 @@ Execution ID: 0K8X7A2B</code></pre>
                             <td><code>-V</code></td>
                             <td><code>--secret-key-file</code></td>
                             <td>指定 Vault 密钥文件</td>
-                            <td><a href="#vault">Vault 密钥</a></td>
+                            <td><a href="#auth-vault">Vault 密钥</a></td>
                         </tr>
                         <tr>
                             <td><code>-c</code></td>
@@ -2832,7 +2969,7 @@ Execution ID: 0K8X7A2B</code></pre>
             </div>
 
             <p>
-                <code>encrypt</code> / <code>decrypt</code> 见 <a href="#encrypt-decrypt">加密与解密</a>。
+                <code>encrypt</code> / <code>decrypt</code> 见 <a href="#auth-encrypt">加密与解密</a>。
             </p>
 
             <h2 id="faq">常见问题</h2>
