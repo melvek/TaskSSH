@@ -24,9 +24,6 @@
 }
 
 :root {
-    /* 品牌色 */
-    --brand-red: #ee0000;
-
     /* 导航深灰 */
     --nav-bg: #1f1f1f;
     --nav-text: rgba(255, 255, 255, 0.85);
@@ -80,7 +77,7 @@
 
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 72px;
+    scroll-padding-top: 64px;
 }
 
 body {

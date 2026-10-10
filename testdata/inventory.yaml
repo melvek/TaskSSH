@@ -77,6 +77,8 @@ servers:
 #   action        command / push / fetch / script
 #   with          action 参数，值支持 {{var}}
 #   delay         执行后等待秒数（可选，默认 0）
+#   interval      失败重试间隔秒数（可选，默认 0 = 不重试）
+#   timeout       重试总超时秒数（可选，默认 30）
 #   ignore_errors 布尔值。该 step 失败时输出警告但不中断后续步骤，默认 false
 #                 仅作用于 step 执行失败；连接失败仍视为主机级失败
 #   when          条件表达式，满足时才执行，默认无
@@ -125,8 +127,10 @@ tasks:
       # with.command  要执行的命令（必填）
       - name: "重启服务"
         action: command
-        when: "{{env}} == prod && {{exeId}}==EX2D653B"
+        when: "{{env}} == prod && {{execId}}==EX2D653B"
         delay: 5
+        interval: 2
+        timeout: 30
         with:
           command: "systemctl restart {{app_name}}"
 
