@@ -359,11 +359,11 @@
     fetch('https://img.shields.io/github/v/release/melvek/TaskSSH.json')
         .then(res => res.json())
         .then(data => {
-            const el1 = document.getElementById('releaseVersion');
+            const el1 = document.getElementById('releaseVersionTop');
             const el2 = document.getElementById('releaseVersion');
             if (el1 && data.value) {
-                el1.textContent = data.value;
-                el2.textContent = "下载 " + data.value;
+                el1.textContent = "下载 " + data.value.replace(/^v/, '');
+                el2.textContent = data.value.replace(/^v/, '');
             }
         })
         .catch(err => console.error('获取版本失败:', err));
