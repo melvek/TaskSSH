@@ -3,7 +3,7 @@
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux,%20macOS-orange)
 [![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-![logo](docs/assets/logo.svg)
+![logo](docs/assets/images/logo.svg)
 
 TaskSSH 是一个单文件、无依赖的 SSH 批量运维工具。你只需要写一个 `inventory.yaml`，定义服务器组、认证信息和任务步骤，就能一次对多台服务器执行命令、上传文件、下载文件。
 
