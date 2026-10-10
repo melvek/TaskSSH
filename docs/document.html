@@ -81,18 +81,15 @@
                     </ul>
                 </div>
 
-                <div class="nav-group">
+                                <div class="nav-group">
                     <div class="nav-group-title">认证</div>
                     <ul class="docs-nav-list">
                         <li><a href="#auth">认证方式</a></li>
-                    </ul>
-                </div>
-
-                <div class="nav-group">
-                    <div class="nav-group-title">加解密</div>
-                    <ul class="docs-nav-list">
-                        <li><a href="#encrypt-decrypt">加密与解密</a></li>
-                        <li><a href="#vault">Vault 密钥</a></li>
+                        <li><a href="#auth-agent">SSH Agent</a></li>
+                        <li><a href="#auth-pubkey">公钥认证</a></li>
+                        <li><a href="#auth-password">密码认证</a></li>
+                        <li><a href="#auth-encrypt">加密与解密</a></li>
+                        <li><a href="#auth-vault">Vault 密钥</a></li>
                     </ul>
                 </div>
 
@@ -1778,9 +1775,9 @@ servers:
                 </p>
             </div>
 
-            <h2 id="auth">认证方式</h2>
+                        <h2 id="auth">认证方式</h2>
 
-            <p>TaskSSH 按以下顺序尝试认证方式：</p>
+            <p>TaskSSH 按以下顺序尝试认证方式，第一个成功即完成连接：</p>
 
             <div class="table-wrap">
                 <table>
@@ -1789,44 +1786,60 @@ servers:
                             <th>顺序</th>
                             <th>方式</th>
                             <th>配置</th>
+                            <th>需要加密</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td>SSH Agent</td>
-                            <td>通过 <code>SSH_AUTH_SOCK</code> 环境变量自动检测</td>
+                            <td><a href="#auth-agent">SSH Agent</a></td>
+                            <td><code>SSH_AUTH_SOCK</code> 环境变量</td>
+                            <td>否</td>
                         </tr>
                         <tr>
                             <td>2</td>
-                            <td>公钥认证</td>
-                            <td><code>identity_file</code>，可用 <code>-k</code> 覆盖</td>
+                            <td><a href="#auth-pubkey">公钥认证</a></td>
+                            <td><code>identity_file</code></td>
+                            <td>否</td>
                         </tr>
                         <tr>
                             <td>3</td>
                             <td>私钥口令</td>
                             <td><code>passphrase</code></td>
+                            <td>是</td>
                         </tr>
                         <tr>
                             <td>4</td>
-                            <td>keyboard-interactive</td>
+                            <td><a href="#auth-password">keyboard-interactive</a></td>
                             <td><code>password</code></td>
+                            <td>是</td>
                         </tr>
                         <tr>
                             <td>5</td>
-                            <td>password</td>
+                            <td><a href="#auth-password">password</a></td>
                             <td><code>password</code></td>
+                            <td>是</td>
                         </tr>
                         <tr>
                             <td>6</td>
                             <td>终端交互输入</td>
                             <td>未配置任何认证时</td>
+                            <td>否</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <h3>SSH Agent</h3>
+            <div class="callout tip">
+                <span class="co-icon">💡</span>
+                <p>
+                    只有<strong>密码</strong>和<strong>私钥口令</strong>需要在清单中存储密文。
+                    使用 SSH Agent 或公钥认证时，清单中不需要配置 <code>password</code> / <code>passphrase</code>，
+                    也就<strong>不需要使用加解密功能</strong>。
+                </p>
+            </div>
+            
+            <h2 id="auth-agent">SSH Agent</h2>
 
             <p>
                 TaskSSH 自动检测 <code>SSH_AUTH_SOCK</code> 环境变量。如果存在，会优先使用 SSH Agent 认证。
@@ -1852,16 +1865,25 @@ taskssh release prod -y</code></pre>
 
             <p>
                 Agent 可用时，清单中的 <code>identity_file</code> 和 <code>password</code> 都可以不配置。
+                这是最简单的使用方式，<strong>不需要任何加密操作</strong>。
             </p>
 
-            <h3>公钥认证</h3>
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    Windows 的 OpenSSH Agent 使用命名管道，当前版本暂不支持。
+                    如需 agent 转发，请在 WSL 或 Git Bash 环境中使用。
+                </p>
+            </div>
+
+            <h2 id="auth-pubkey">公钥认证</h2>
 
             <p>
                 公钥认证通过一对密钥完成：本地持有私钥，远程主机保存公钥。
                 配置一次后即可免密登录，无需在清单中存储密码。
             </p>
 
-            <h4>第一步：本地生成密钥对</h4>
+            <h3>第一步：本地生成密钥对</h3>
 
             <p>
                 如果已有密钥（<code>~/.ssh/id_rsa</code> 或 <code>~/.ssh/id_ed25519</code>），可跳过本步。
@@ -1905,9 +1927,9 @@ ssh-keygen -t rsa -b 4096 -C "deploy@taskssh"</code></pre>
                 </table>
             </div>
 
-            <h4>第二步：上传公钥到服务器</h4>
+            <h3>第二步：上传公钥到服务器</h3>
 
-            <p><strong>方式一：ssh-copy-id（Linux / macOS）</strong></p>
+            <h4>方式一：ssh-copy-id（Linux / macOS）</h4>
 
             <pre class="language-bash"><code>ssh-copy-id -i ~/.ssh/id_ed25519.pub deploy@192.168.1.10</code></pre>
 
@@ -1916,7 +1938,7 @@ ssh-keygen -t rsa -b 4096 -C "deploy@taskssh"</code></pre>
                 并设置正确的权限。执行时会提示输入远程主机的登录密码，仅此一次。
             </p>
 
-            <p><strong>方式二：手动复制（无 ssh-copy-id 时）</strong></p>
+            <h4>方式二：手动复制（无 ssh-copy-id 时）</h4>
 
             <pre class="language-bash"><code># 1. 查看本地公钥内容
 cat ~/.ssh/id_ed25519.pub
@@ -1940,7 +1962,7 @@ exit</code></pre>
                 </p>
             </div>
 
-            <h4>第三步：验证免密登录</h4>
+            <h3>第三步：验证免密登录</h3>
 
             <pre class="language-bash"><code>ssh -i ~/.ssh/id_ed25519 deploy@192.168.1.10</code></pre>
 
@@ -1949,7 +1971,7 @@ exit</code></pre>
                 会提示输入 passphrase，而不是远程主机的登录密码。
             </p>
 
-            <h4>第四步：在 TaskSSH 清单中配置</h4>
+            <h3>第四步：在 TaskSSH 清单中配置</h3>
 
             <p>验证通过后，在清单中指定私钥路径即可：</p>
 
@@ -1980,7 +2002,7 @@ servers:
         host: 192.168.1.11
         identity_file: ~/.ssh/id_prod_backup</code></pre>
 
-            <h4>第五步：如果私钥有 passphrase</h4>
+            <h3>第五步：如果私钥有 passphrase</h3>
 
             <p>
                 清单中的 <code>passphrase</code> 必须是密文，与 <code>password</code> 规则一致。
@@ -2011,7 +2033,7 @@ ssh-add ~/.ssh/id_ed25519
 # 之后 TaskSSH 会自动通过 agent 完成认证，无需配置 passphrase</code></pre>
             </div>
 
-            <h4>命令行临时覆盖私钥</h4>
+            <h3>命令行临时覆盖私钥</h3>
 
             <p>
                 不想改清单、或临时用另一把私钥时，通过 <code>-k</code> / <code>--identity-file</code> 覆盖：
@@ -2031,7 +2053,7 @@ taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
                 </p>
             </div>
 
-            <h4>常见问题</h4>
+            <h3>常见问题</h3>
 
             <div class="table-wrap">
                 <table>
@@ -2067,19 +2089,55 @@ taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
                 </table>
             </div>
 
-            <div class="callout">
-                <span class="co-icon">ℹ️</span>
-                <p>
-                    Windows 的 OpenSSH Agent 使用命名管道，当前版本暂不支持。
-                    如需 agent 转发，请在 WSL 或 Git Bash 环境中使用。
-                </p>
-            </div>
-
-            <h2 id="encrypt-decrypt">加密与解密</h2>
+            <h2 id="auth-password">密码认证</h2>
 
             <p>
-                清单中的 <code>password</code> 和 <code>passphrase</code> 必须是密文。
-                使用 <code>encrypt</code> 命令生成密文，使用 <code>decrypt</code> 命令还原明文。
+                密码是最简单的认证方式，但存在安全风险，适合临时排查或无法配置公钥的场景。
+            </p>
+
+            <h3>清单中存储密码</h3>
+
+            <p>
+                清单中的 <code>password</code> 必须为密文，由 <code>taskssh encrypt</code> 生成。
+                明文将导致执行报错。
+            </p>
+
+            <pre class="language-bash"><code>taskssh encrypt "your-password"
+# 输出：xxxxx</code></pre>
+
+            <p>将输出填入清单：</p>
+
+            <pre class="language-yaml"><code>global_vars:
+  username: deploy
+  password: "xxxxx"
+
+servers:
+  prod:
+    hosts:
+      web1: 192.168.1.10
+      web2: 192.168.1.11</code></pre>
+
+            <h3>命令行传入密码</h3>
+
+            <p>
+                CLI <code>-p / --password</code> 允许传明文（会给出安全警告），
+                适用于临时排查场景，不建议在正式流程中使用。
+            </p>
+
+            <pre class="language-bash"><code>taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y</code></pre>
+
+            <h3>终端交互输入</h3>
+
+            <p>
+                未在清单中配置密码、也未通过 <code>-p</code> 传入时，
+                TaskSSH 会提示在终端输入密码，输入过程无回显，结果会缓存到本次执行结束。
+            </p>
+
+            <h2 id="auth-encrypt">加密与解密</h2>
+
+            <p>
+                只有 <code>password</code> 和 <code>passphrase</code> 需要加密。
+                使用 SSH Agent 或公钥认证时，可以跳过本节。
             </p>
 
             <h3>加密</h3>
@@ -2106,7 +2164,7 @@ taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
                 <li>密钥丢失后，已有密文无法解密</li>
             </ul>
 
-            <h2 id="vault">Vault 密钥</h2>
+            <h2 id="auth-vault">Vault 密钥</h2>
 
             <p>
                 加密和解密使用的密钥由用户管理。密钥来源按以下优先级查找：
@@ -2162,6 +2220,14 @@ taskssh encrypt "your-password" -V /path/to/key
 # 环境变量指定
 export TASKSSH_SECRET_KEY_FILE=/path/to/key
 taskssh encrypt "your-password"</code></pre>
+
+            <div class="callout">
+                <span class="co-icon">ℹ️</span>
+                <p>
+                    仅在使用密码认证或私钥口令时，才需要配置 Vault 密钥。
+                    使用 SSH Agent 或公钥认证时，不需要密钥文件。
+                </p>
+            </div>
 
             <h2 id="concurrency">串行与并发</h2>
 
