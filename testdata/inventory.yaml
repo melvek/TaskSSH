@@ -21,6 +21,10 @@
 #
 # 其他字段进入变量池，可用 {{变量名}} 引用。
 
+# 引用其它清单文件
+include:
+ - tasks.yaml
+
 global_vars:
   port: 22
   username: deploy

@@ -7,7 +7,6 @@ import (
 
 	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/secret"
-	"mestrap.com/taskssh/internal/utils"
 )
 
 var (
@@ -32,10 +31,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           utils.CLIName + " <task> [hosts...] [options]",
-	Short:         utils.ProjectName + " - 轻量级批量运维工具",
+	Use:           "taskssh <task> [hosts...] [options]",
+	Short:         "TaskSSH - 轻量级批量运维工具",
 	Long:          buildLongDescription(),
-	Version:       utils.Version,
+	Version:       Version,
 	Args:          cobra.ArbitraryArgs,
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -57,13 +56,13 @@ func Execute(ctx context.Context) error {
 func init() {
 
 	// 覆盖默认的版本号样式
-	rootCmd.SetVersionTemplate(utils.ProjectName + " version {{.Version}}\n")
+	rootCmd.SetVersionTemplate("TaskSSH version {{.Version}}\n")
 
 	// 隐藏自动补全命令
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
 	// 注册全局参数
-	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", utils.DefaultInventory, "Inventory file")
+	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "inventory.yaml", "Inventory file")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
 	// rootCmd.PersistentFlags().StringVarP(&execId, "execute-id", "E", "", "Execute ID")
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
