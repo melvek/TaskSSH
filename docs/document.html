@@ -1741,7 +1741,7 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
                             <td><code>20260926</code></td>
                         </tr>
                         <tr>
-                            <td><code>{{execId}}</code></td>
+                            <td><code>{{exec_id}}</code></td>
                             <td>本次执行的唯一标识，8 位 Base36（数字 + 大写字母）</td>
                             <td><code>0K8X7A2B</code></td>
                         </tr>
@@ -1787,19 +1787,19 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
       - name: "创建版本目录"
         action: command
         with:
-          command: "mkdir -p {{service_path}}/releases/{{date}}_{{execId}}"
+          command: "mkdir -p {{service_path}}/releases/{{date}}_{{exec_id}}"
 
       - name: "上传新版本"
         action: push
         with:
           file: "./dist/app.jar"
-          dest: "{{service_path}}/releases/{{date}}_{{execId}}/"
+          dest: "{{service_path}}/releases/{{date}}_{{exec_id}}/"
           force: true
 
       - name: "切换软链接"
         action: command
         with:
-          command: "ln -sfn {{service_path}}/releases/{{date}}_{{execId}} {{service_path}}/current"</code></pre>
+          command: "ln -sfn {{service_path}}/releases/{{date}}_{{exec_id}} {{service_path}}/current"</code></pre>
 
             <p>
                 回退时，通过 <code>-D revert_id=&lt;date&gt;_&lt;execId&gt;</code> 指定目标版本目录：
@@ -2632,12 +2632,12 @@ taskssh encrypt "your-password"</code></pre>
       - name: "创建版本目录"
         action: command
         with:
-          command: "mkdir -p {{service_path}}/releases/{{date}}_{{execId}}"
+          command: "mkdir -p {{service_path}}/releases/{{date}}_{{exec_id}}"
       - name: "上传新版本"
         action: push
         with:
           file: "./{{app_name}}"
-          dest: "{{service_path}}/releases/{{date}}_{{execId}}/"
+          dest: "{{service_path}}/releases/{{date}}_{{exec_id}}/"
           force: true</code></pre>
 
             <pre class="language-bash"><code># 使用任务级配置

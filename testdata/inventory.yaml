@@ -127,7 +127,7 @@ tasks:
       # with.command  要执行的命令（必填）
       - name: "重启服务"
         action: command
-        when: "{{env}} == prod && {{execId}}==EX2D653B"
+        when: "{{env}} == prod && {{exec_id}}==EX2D653B"
         delay: 5
         interval: 2
         timeout: 30

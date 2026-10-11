@@ -16,12 +16,6 @@ import (
 	"mestrap.com/taskssh/internal/task"
 )
 
-// reservedVars 是运行时会注入的变量，CLI 不允许覆盖。
-var reservedVars = map[string]bool{
-	"date":   true,
-	"execId": true,
-}
-
 // runBuiltinTask 执行内置任务
 func runBuiltinTask(ctx context.Context, taskName string, hosts []string, with any) error {
 	inv, err := config.Load(inventoryFile)
@@ -111,34 +105,28 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 		return err
 	}
 
-	if dryRun {
-		return nil
-	}
-
-	// 整理执行结果，输出执行摘要信息
 	success, failed := 0, 0
-	var failedHosts []string
-	for _, r := range results {
-		if r.Success {
-			success++
-		} else {
-			failed++
-			failedHosts = append(failedHosts, r.Host)
+
+	if !dryRun {
+		// 整理执行结果，输出执行摘要信息
+		var failedHosts []string
+		for _, r := range results {
+			if r.Success {
+				success++
+			} else {
+				failed++
+				failedHosts = append(failedHosts, r.Host)
+			}
 		}
+
+		console.Summary(len(results), success, failed, failedHosts)
 	}
 
-	console.Summary(len(results), success, failed)
-	if len(failedHosts) > 0 {
-		console.Hint("Failed hosts: %v", failedHosts)
-	}
+	console.ExecutionID(executor.ExecID())
 
-	console.Info("----------------------")
-	console.Info("Execution ID: %s", executor.ExecID())
-	console.EmptyLine()
-
-	if failed > 0 {
-		return fmt.Errorf("%d host(s) failed", failed)
-	}
+	// if failed > 0 {
+	// 	return fmt.Errorf("%d host(s) failed", failed)
+	// }
 
 	return nil
 }
@@ -167,7 +155,7 @@ func parseCLIVars(vars []string) (resolve.Vars, error) {
 			return nil, fmt.Errorf("invalid -D %q, key is empty", kv)
 		}
 
-		if reservedVars[key] {
+		if config.IsReservedVar(key) {
 			return nil, fmt.Errorf(
 				"%s is a reserved variable and cannot be overridden by -D", key)
 		}

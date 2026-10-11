@@ -485,3 +485,28 @@ func resolveHostIP(host string) string {
 
 	return ips[0]
 }
+
+// StandardVars 返回该主机的标准变量。
+//
+// 每次调用时生成，反映当前主机的清单信息。
+// 这些变量在任务执行时注入，值因主机而异。
+func (e *HostEntry) StandardVars() resolve.Vars {
+	vars := make(resolve.Vars, 5)
+
+	// host_name / group_name
+	// Name 格式：组内主机为 "组名/主机名"，独立主机为 "主机名"
+	if idx := strings.Index(e.Name, "/"); idx > 0 {
+		vars["group_name"] = e.Name[:idx]
+		vars["host_name"] = e.Name[idx+1:]
+	} else {
+		vars["group_name"] = ""
+		vars["host_name"] = e.Name
+	}
+
+	// 连接信息
+	vars["host_addr"] = e.Host.Host
+	vars["host_port"] = e.Host.Port
+	vars["host_user"] = e.Host.Username
+
+	return vars
+}

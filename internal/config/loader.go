@@ -26,7 +26,7 @@ func Load(path string) (*Inventory, error) {
 
 	// 无 include：直接收尾
 	if len(inv.Include) == 0 {
-		return finalizeInventory(inv), nil
+		return finalizeInventory(inv)
 	}
 
 	// 展开 include 为文件列表
@@ -62,7 +62,7 @@ func Load(path string) (*Inventory, error) {
 		return nil, err
 	}
 
-	return finalizeInventory(result), nil
+	return finalizeInventory(result)
 }
 
 // readInventoryFile 读取单个清单文件，不含 include 处理。
@@ -85,7 +85,7 @@ func readInventoryFile(path string) (*Inventory, error) {
 }
 
 // finalizeInventory 收尾：初始化 map、注入内置变量、清理 Include 字段。
-func finalizeInventory(inv *Inventory) *Inventory {
+func finalizeInventory(inv *Inventory) (*Inventory, error) {
 	if inv.Servers == nil {
 		inv.Servers = make(map[string]Group)
 	}
@@ -96,10 +96,15 @@ func finalizeInventory(inv *Inventory) *Inventory {
 		inv.GlobalVars.Extra = make(map[string]interface{})
 	}
 
+	// 校验保留变量
+	if err := validateReservedVars(inv); err != nil {
+		return nil, err
+	}
+
 	inv.GlobalVars.Extra["date"] = time.Now().Format("20060102")
 	inv.Include = nil
 
-	return inv
+	return inv, nil
 }
 
 // expandIncludes 展开 include 模式列表。

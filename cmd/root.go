@@ -109,5 +109,5 @@ func init() {
 }
 
 func buildLongDescription() string {
-	return utils.ProjectName + " 是一个基于 SSH 的轻量级批量运维工具。\nhttps://taskssh.mestrap.com/"
+	return "TaskSSH is a lightweight, SSH-based batch operations tool.\nhttps://taskssh.mestrap.com/"
 }

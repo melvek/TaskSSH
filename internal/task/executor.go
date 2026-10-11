@@ -154,8 +154,11 @@ func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry
 		if err != nil {
 			return nil, err
 		}
+
+		printPlan(plan)
+
 		if e.dryRun {
-			printPlan(plan)
+			// printPlan(plan)
 		}
 		return e.runBatches(ctx, task, plan, globalVars), nil
 	}
@@ -173,7 +176,7 @@ func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []Hos
 	for i, entry := range hosts {
 		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
-		err := e.runOnHost(ctx, task, &entry.Host, globalVars, entry.Vars)
+		err := e.runOnHost(ctx, task, entry, globalVars)
 		results = append(results, Result{
 			Host:    entry.Name,
 			Success: err == nil,
@@ -234,7 +237,7 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []H
 
 			console.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
 
-			err := e.runOnHost(ctx, task, &entry.Host, globalVars, entry.Vars)
+			err := e.runOnHost(ctx, task, entry, globalVars)
 
 			results[idx] = Result{
 				Host:    entry.Name,
@@ -258,21 +261,29 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []H
 //
 // 变量合并顺序：
 //
-//	global_vars -> 组 vars -> 主机 Extra -> CLI -D -> execId（运行时）
-func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *config.Host,
-	globalVars, hostVars resolve.Vars) error {
+//	global_vars -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
+func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostEntry,
+	globalVars resolve.Vars) error {
 
-	vars := mergeVars(globalVars, hostVars)
+	// 1. 清单变量：global -> 组 -> 主机
+	vars := mergeVars(globalVars, entry.Vars)
+
+	// 2. 标准变量（host_name / group_name / host_addr / host_port / host_user）
+	maps.Copy(vars, entry.StandardVars())
+
+	// 3. CLI -D
 	maps.Copy(vars, e.cliVars)
-	vars["execId"] = e.execID
+
+	// 4. 运行时变量（不可覆盖）
+	vars["exec_id"] = e.execID
 
 	var client *ssh.Client
 
 	if !e.dryRun {
-		c, err := ssh.Connect(host, e.connectTimeout)
+		c, err := ssh.Connect(&entry.Host, e.connectTimeout)
 		if err != nil {
-			console.Error("connect %s: %v", host.Host, err)
-			return fmt.Errorf("connect %s: %w", host.Host, err)
+			console.Error("%v", err)
+			return err
 		}
 		client = c
 		defer client.Close()
@@ -305,7 +316,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *confi
 		}
 
 		actx := &action.ActionContext{
-			Host:   host,
+			Host:   &entry.Host,
 			Vars:   vars,
 			With:   step.With,
 			Client: client,
@@ -322,11 +333,6 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *confi
 			} else {
 				console.Error("Failure: %v", err)
 				return fmt.Errorf("step %s: %w", step.Name, err)
-			}
-		} else {
-			// 这里如果是DR模式，就不输出结果了，防止造成困扰
-			if !e.dryRun {
-				console.Success("Success")
 			}
 		}
 
@@ -374,6 +380,8 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 				}
 			}
 		}
+
+		console.Output(console.LevelBrief, console.StyleNone, "")
 	}
 
 	return all
@@ -391,9 +399,10 @@ func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
 func printPlan(plan []Batch) {
 	console.Section("Execution Plan")
 	for i, batch := range plan {
-		console.Info("Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
+		console.Output(console.LevelBrief, console.StyleNone, "Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
 		for _, h := range batch.Hosts {
-			console.Info("  - %s [%s]", h.Name, h.Host.Host)
+			console.Output(console.LevelBrief, console.StyleNone, "  - %s [%s]", h.Name, h.Host.Host)
 		}
 	}
+	console.Output(console.LevelBrief, console.StyleNone, "")
 }

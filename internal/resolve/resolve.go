@@ -24,7 +24,7 @@ func (v Vars) Replace(template string) (string, error) {
 		return template, nil
 	}
 	current := template
-	for i := 0; i < MaxDepth; i++ {
+	for range MaxDepth {
 		next := v.replaceOnce(current)
 		if next == current {
 			break

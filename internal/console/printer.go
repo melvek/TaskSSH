@@ -6,7 +6,7 @@
 // 颜色基于 fatih/color 自动检测，NO_COLOR=1 可强制禁用。
 //
 // 支持按 goroutine 缓冲输出：串行时直接写 os.Stdout，并发时每个 goroutine
-// 输出到独立缓冲，执行完统一刷出。Brief 级别下 Step 不换行，等待结果行补全。
+// 输出到独立缓冲，执行完统一刷出。所有输出均独立成行。
 package console
 
 import (
@@ -29,16 +29,15 @@ var (
 	blue   = color.New(color.FgBlue)
 	gray   = color.New(color.FgHiBlack)
 
-	// outputMu 保护所有输出与 pending 状态。
+	// outputMu 保护所有输出。
 	outputMu sync.Mutex
 
-	// states 保存每个 goroutine 的输出目标与换行状态。
+	// states 保存每个 goroutine 的输出目标。
 	states sync.Map // int -> *outputState
 )
 
 type outputState struct {
-	w       io.Writer
-	pending bool // Brief 下 Step 已输出但尚未换行
+	w io.Writer
 }
 
 type styleMeta struct {
@@ -55,7 +54,7 @@ var styleMetas = map[Style]styleMeta{
 	StyleDebug:      {gray, "[DEBUG] "},
 	StyleSection:    {blue, ">>> "},
 	StyleStep:       {cyan, ""},
-	StyleProgress:   {cyan, "\n"},
+	StyleProgress:   {cyan, ""},
 	StyleSkip:       {cyan, ""},
 	StyleIgnore:     {yellow, ""},
 	StyleFailedItem: {red, ""},
@@ -71,22 +70,10 @@ func SetOutput(w io.Writer) {
 }
 
 // ResetOutput 恢复当前 goroutine 的默认输出。
-//
-// 若 Brief 下仍有未换行的 Step，先补一个换行。
 func ResetOutput() {
 	outputMu.Lock()
 	defer outputMu.Unlock()
-
-	gid := getGID()
-	v, ok := states.Load(gid)
-	if !ok {
-		return
-	}
-	st := v.(*outputState)
-	if st.pending {
-		fmt.Fprintln(st.w)
-	}
-	states.Delete(gid)
+	states.Delete(getGID())
 }
 
 // GetOutput 返回当前 goroutine 的输出目标。
@@ -147,33 +134,6 @@ func write(style Style, msg string) {
 	meta := styleMetas[style]
 	body := meta.prefix + strings.TrimRight(msg, "\n")
 
-	// 自带换行前缀（如 Section）视为新段落，清掉 pending
-	if strings.HasPrefix(meta.prefix, "\n") {
-		st.pending = false
-	}
-
-	switch style {
-	case StyleStep:
-		if currentLevel == LevelBrief {
-			fprintStyled(out, meta, body, false)
-			st.pending = true
-			return
-		}
-		// Verbose：清 pending 兜底
-		st.pending = false
-	case StyleSuccess, StyleError, StyleSkip, StyleIgnore:
-		if st.pending {
-			fprintStyled(out, meta, " "+body, true)
-			st.pending = false
-			return
-		}
-	default:
-		if st.pending {
-			fmt.Fprintln(out)
-			st.pending = false
-		}
-	}
-
 	fprintStyled(out, meta, body, true)
 }
 
@@ -223,7 +183,7 @@ func Error(format string, args ...any) { Output(LevelQuiet, StyleError, format, 
 // Section 区块标题（Brief）。
 func Section(title string) { Output(LevelBrief, StyleSection, "%s", title) }
 
-// Step 步骤（Brief）。Brief 下不换行，等待结果行。
+// Step 步骤（Brief）。
 func Step(current, total int, name string) {
 	Output(LevelBrief, StyleStep, "[STEP %d/%d] %s", current, total, name)
 }
@@ -254,7 +214,6 @@ func ListItem(key, value string) {
 	Output(LevelVerbose, StyleNone, "%-20s: %s", key, value)
 }
 
-// TargetHosts 主机列表
 // Targets 输出目标主机清单（Brief）。
 //
 // 每行格式为 "name: host"，由调用方拼好。
@@ -263,19 +222,28 @@ func Targets(lines []string) {
 	for _, l := range lines {
 		Output(LevelBrief, StyleNone, "%s", l)
 	}
+	Output(LevelBrief, StyleNone, "")
 }
 
 // Summary 执行摘要（Brief）。
-func Summary(total, success, failed int) {
-	Output(LevelBrief, StyleNone, "")
+func Summary(total, success, failed int, failedHosts []string) {
 	Section("Execution Summary")
 	Output(LevelBrief, StyleNone, "Total tasks: %d", total)
 	Output(LevelBrief, StyleNone, "Succeeded: %d", success)
 	if failed > 0 {
 		Output(LevelBrief, StyleFailedItem, "Failed: %d", failed)
+		for _, h := range failedHosts {
+			Output(LevelBrief, StyleFailedItem, "  - %s", h)
+		}
 	} else {
 		Output(LevelBrief, StyleNone, "Failed: 0")
 	}
+	Output(LevelBrief, StyleNone, "")
+}
+
+func ExecutionID(execId string) {
+	Output(LevelBrief, StyleNone, "----------------------")
+	Output(LevelBrief, StyleNone, "Execution ID: %s", execId)
 }
 
 // EmptyLine 空行（Verbose）。
@@ -287,10 +255,6 @@ func RawOutput(s string) {
 	defer outputMu.Unlock()
 
 	st := getState()
-	if st.pending {
-		fmt.Fprintln(st.w)
-		st.pending = false
-	}
 	fmt.Fprint(st.w, s)
 }
 
