@@ -1,19 +1,12 @@
 package task
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"maps"
-	"strings"
-	"sync"
 	"time"
 
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
-	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/resolve"
-	"mestrap.com/taskssh/internal/ssh"
 )
 
 // Result 是单台主机的执行结果。
@@ -34,12 +27,6 @@ type Executor struct {
 	serial         int
 	minAvailable   int
 	stopOnFailure  bool
-}
-
-// Batch 是一批待执行的主机，属于同一组。
-type Batch struct {
-	Group string
-	Hosts []HostEntry
 }
 
 // NewExecutor 创建执行器。
@@ -76,73 +63,6 @@ func (e *Executor) ExecID() string {
 	return e.execID
 }
 
-// groupEntries 按 Name 的 "/" 前缀分组，返回组顺序和分组结果。
-func groupEntries(entries []HostEntry) ([]string, map[string][]HostEntry) {
-	order := []string{}
-	groups := map[string][]HostEntry{}
-
-	for _, e := range entries {
-		g := "standalone"
-		if i := strings.Index(e.Name, "/"); i > 0 {
-			g = e.Name[:i]
-		}
-		if _, ok := groups[g]; !ok {
-			order = append(order, g)
-		}
-		groups[g] = append(groups[g], e)
-	}
-	return order, groups
-}
-
-// planBatches 把主机列表规划成一条批队列。
-//
-// 规则：
-//   - 按组分块，组间顺序按 entries 里组第一次出现的顺序
-//   - 组内按 batchSize = min(serial, len(group)-minAvailable) 切片
-//   - 单台组单独一批，不参与 minAvailable 计算
-//   - len(group)-minAvailable <= 0 时报错
-func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error) {
-	if serial < 0 {
-		serial = 0
-	}
-	if minAvailable < 0 {
-		minAvailable = 0
-	}
-
-	order, groups := groupEntries(entries)
-	var plan []Batch
-
-	for _, gname := range order {
-		groupHosts := groups[gname]
-
-		// 单台组：直接一批
-		if len(groupHosts) == 1 {
-			plan = append(plan, Batch{Group: gname, Hosts: groupHosts})
-			continue
-		}
-
-		available := len(groupHosts) - minAvailable
-		if available <= 0 {
-			return nil, fmt.Errorf(
-				"group %s: min-available %d >= group size %d, cannot batch\n"+
-					"hint: reduce min-available in task config or override with --min-available",
-				gname, minAvailable, len(groupHosts))
-		}
-
-		batchSize := available
-		if serial > 0 {
-			batchSize = min(serial, available)
-		}
-
-		for start := 0; start < len(groupHosts); start += batchSize {
-			end := min(start+batchSize, len(groupHosts))
-			plan = append(plan, Batch{Group: gname, Hosts: groupHosts[start:end]})
-		}
-	}
-
-	return plan, nil
-}
-
 // Run 对一批主机执行任务。
 func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
 
@@ -157,9 +77,6 @@ func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry
 
 		printPlan(plan)
 
-		if e.dryRun {
-			// printPlan(plan)
-		}
 		return e.runBatches(ctx, task, plan, globalVars), nil
 	}
 
@@ -167,242 +84,4 @@ func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry
 		return e.runSerial(ctx, task, hosts, globalVars), nil
 	}
 	return e.runParallel(ctx, task, hosts, globalVars), nil
-}
-
-// runSerial 串行执行，实时输出。
-func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	results := make([]Result, 0, len(hosts))
-
-	for i, entry := range hosts {
-		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
-
-		err := e.runOnHost(ctx, task, entry, globalVars)
-		results = append(results, Result{
-			Host:    entry.Name,
-			Success: err == nil,
-			Error:   err,
-		})
-
-		if err != nil {
-			console.Error("%s FAILED", entry.Name)
-		} else if !e.dryRun {
-			console.Success("%s OK", entry.Name)
-		}
-
-		// ctx 取消时停止后续主机
-		if ctx.Err() != nil {
-			break
-		}
-	}
-
-	return results
-}
-
-// runParallel 并发执行，按主机缓冲输出。
-func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
-	results := make([]Result, len(hosts))
-	sem := make(chan struct{}, e.concurrency)
-	var wg sync.WaitGroup
-
-	for i, entry := range hosts {
-		// ctx 取消时不再派发新主机
-		if ctx.Err() != nil {
-			break
-		}
-
-		wg.Add(1)
-		sem <- struct{}{}
-
-		go func(idx int, entry HostEntry) {
-			defer wg.Done()
-			defer func() { <-sem }()
-
-			var buf bytes.Buffer
-			console.SetOutput(&buf)
-			console.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
-
-			defer func() {
-				console.ResetOutput()
-
-				if r := recover(); r != nil {
-					results[idx] = Result{
-						Host:    entry.Name,
-						Success: false,
-						Error:   fmt.Errorf("panic: %v", r),
-					}
-				}
-
-				console.RawOutput(buf.String())
-			}()
-
-			console.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
-
-			err := e.runOnHost(ctx, task, entry, globalVars)
-
-			results[idx] = Result{
-				Host:    entry.Name,
-				Success: err == nil,
-				Error:   err,
-			}
-
-			if err != nil {
-				console.Error("%s FAILED", entry.Name)
-			} else if !e.dryRun {
-				console.Success("%s OK", entry.Name)
-			}
-		}(i, entry)
-	}
-
-	wg.Wait()
-	return results
-}
-
-// runOnHost 对单台主机执行整条任务。
-//
-// 变量合并顺序：
-//
-//	global_vars -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
-func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostEntry,
-	globalVars resolve.Vars) error {
-
-	// 1. 清单变量：global -> 组 -> 主机
-	vars := mergeVars(globalVars, entry.Vars)
-
-	// 2. 标准变量（host_name / group_name / host_addr / host_port / host_user）
-	maps.Copy(vars, entry.StandardVars())
-
-	// 3. CLI -D
-	maps.Copy(vars, e.cliVars)
-
-	// 4. 运行时变量（不可覆盖）
-	vars["exec_id"] = e.execID
-
-	var client *ssh.Client
-
-	if !e.dryRun {
-		c, err := ssh.Connect(&entry.Host, e.connectTimeout)
-		if err != nil {
-			console.Error("%v", err)
-			return err
-		}
-		client = c
-		defer client.Close()
-	}
-
-	total := len(task.Steps)
-	showStep := total > 1
-
-	for i, step := range task.Steps {
-		if showStep {
-			console.Step(i+1, total, step.Name)
-		}
-
-		if step.When != "" {
-			ok, expanded, err := evalWhen(step.When, vars)
-			if err != nil {
-				console.Error("eval when: %v", err)
-				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
-			}
-			if !ok {
-				console.Skipped("跳过: %s", expanded)
-				continue
-			}
-		}
-
-		act := e.actions.Get(step.Action)
-		if act == nil {
-			console.Error("unknown action: %s", step.Action)
-			return fmt.Errorf("unknown action: %s", step.Action)
-		}
-
-		actx := &action.ActionContext{
-			Host:   &entry.Host,
-			Vars:   vars,
-			With:   step.With,
-			Client: client,
-			DryRun: e.dryRun,
-		}
-
-		err := withRetry(ctx, func() error {
-			return act.Execute(actx)
-		}, step.Interval, step.Timeout)
-
-		if err != nil {
-			if step.IgnoreErrors {
-				console.Ignored("Ignored with error: %v", err)
-			} else {
-				console.Error("Failure: %v", err)
-				return fmt.Errorf("step %s: %w", step.Name, err)
-			}
-		}
-
-		if step.Delay > 0 {
-			console.Info("Waiting %ds...", step.Delay)
-			if !e.dryRun {
-				select {
-				case <-time.After(time.Duration(step.Delay) * time.Second):
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// runBatches 按批队列依次执行。
-func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Batch, globalVars resolve.Vars) []Result {
-	var all []Result
-
-	for i, batch := range plan {
-		if ctx.Err() != nil {
-			break
-		}
-
-		console.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
-			batch.Group, i+1, len(plan), len(batch.Hosts)))
-
-		var results []Result
-		if e.concurrency == 1 || e.dryRun {
-			results = e.runSerial(ctx, task, batch.Hosts, globalVars)
-		} else {
-			results = e.runParallel(ctx, task, batch.Hosts, globalVars)
-		}
-
-		all = append(all, results...)
-
-		if e.stopOnFailure {
-			for _, r := range results {
-				if !r.Success {
-					console.Error("Batch failed, stopping remaining batches")
-					return all
-				}
-			}
-		}
-
-		console.Output(console.LevelBrief, console.StyleNone, "")
-	}
-
-	return all
-}
-
-// mergeVars 合并变量池：global -> host，host 优先。
-func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
-	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
-	maps.Copy(vars, globalVars)
-	maps.Copy(vars, hostVars)
-	return vars
-}
-
-// printPlan 在 dry-run 时打印完整执行队列。
-func printPlan(plan []Batch) {
-	console.Section("Execution Plan")
-	for i, batch := range plan {
-		console.Output(console.LevelBrief, console.StyleNone, "Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
-		for _, h := range batch.Hosts {
-			console.Output(console.LevelBrief, console.StyleNone, "  - %s [%s]", h.Name, h.Host.Host)
-		}
-	}
-	console.Output(console.LevelBrief, console.StyleNone, "")
 }
