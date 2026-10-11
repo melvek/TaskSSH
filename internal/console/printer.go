@@ -1,7 +1,7 @@
 // Package console 提供分级、彩色终端输出。
 //
 // 三个级别：Verbose / Brief / Quiet，由 SetLevel 设置。
-// Output 是唯一底层出口，其余预设函数内部转调 Output。
+// Output 是唯一底层出口，其余预设函数见 presets.go。
 //
 // 颜色基于 fatih/color 自动检测，NO_COLOR=1 可强制禁用。
 //
@@ -159,95 +159,6 @@ func formatMsg(format string, args ...any) string {
 	}
 	return fmt.Sprintf(format, args...)
 }
-
-// ==================== 预设输出 ====================
-
-// Debug 调试信息（Verbose）。
-func Debug(format string, args ...any) { Output(LevelVerbose, StyleDebug, format, args...) }
-
-// Info 普通信息（Verbose）。
-func Info(format string, args ...any) { Output(LevelVerbose, StyleNone, format, args...) }
-
-// Hint 提示信息（Verbose，青色缩进）。
-func Hint(format string, args ...any) { Output(LevelVerbose, StyleHint, format, args...) }
-
-// Warn 警告（Brief）。
-func Warn(format string, args ...any) { Output(LevelBrief, StyleWarn, format, args...) }
-
-// Success 成功状态（Brief）。
-func Success(format string, args ...any) { Output(LevelBrief, StyleSuccess, format, args...) }
-
-// Error 错误（Quiet）。
-func Error(format string, args ...any) { Output(LevelQuiet, StyleError, format, args...) }
-
-// Section 区块标题（Brief）。
-func Section(title string) { Output(LevelBrief, StyleSection, "%s", title) }
-
-// Step 步骤（Brief）。
-func Step(current, total int, name string) {
-	Output(LevelBrief, StyleStep, "[STEP %d/%d] %s", current, total, name)
-}
-
-// Progress 主机进度（Brief）。
-func Progress(current, total int, name, host string) {
-	Output(LevelBrief, StyleProgress, "[Processing %d/%d] %s [%s]", current, total, name, host)
-}
-
-// Skipped 步骤跳过（Brief）。
-func Skipped(format string, args ...any) { Output(LevelBrief, StyleSkip, format, args...) }
-
-// Ignored 步骤失败但忽略（Brief）。
-func Ignored(format string, args ...any) { Output(LevelBrief, StyleIgnore, format, args...) }
-
-// FailedItem 失败项（Quiet）。
-func FailedItem(key, value string) {
-	Output(LevelQuiet, StyleFailedItem, "%s: %s", key, value)
-}
-
-// KeyValue 键值对（Verbose）。
-func KeyValue(key string, value any) {
-	Output(LevelVerbose, StyleNone, "%s: %v", key, value)
-}
-
-// ListItem 列表项（Verbose）。
-func ListItem(key, value string) {
-	Output(LevelVerbose, StyleNone, "%-20s: %s", key, value)
-}
-
-// Targets 输出目标主机清单（Brief）。
-//
-// 每行格式为 "name: host"，由调用方拼好。
-func Targets(lines []string) {
-	Section("Target hosts")
-	for _, l := range lines {
-		Output(LevelBrief, StyleNone, "%s", l)
-	}
-	Output(LevelBrief, StyleNone, "")
-}
-
-// Summary 执行摘要（Brief）。
-func Summary(total, success, failed int, failedHosts []string) {
-	Section("Execution Summary")
-	Output(LevelBrief, StyleNone, "Total tasks: %d", total)
-	Output(LevelBrief, StyleNone, "Succeeded: %d", success)
-	if failed > 0 {
-		Output(LevelBrief, StyleFailedItem, "Failed: %d", failed)
-		for _, h := range failedHosts {
-			Output(LevelBrief, StyleFailedItem, "  - %s", h)
-		}
-	} else {
-		Output(LevelBrief, StyleNone, "Failed: 0")
-	}
-	Output(LevelBrief, StyleNone, "")
-}
-
-func ExecutionID(execId string) {
-	Output(LevelBrief, StyleNone, "----------------------")
-	Output(LevelBrief, StyleNone, "Execution ID: %s", execId)
-}
-
-// EmptyLine 空行（Verbose）。
-func EmptyLine() { Output(LevelVerbose, StyleNone, "") }
 
 // RawOutput 原样输出字符串（不做级别过滤，用于刷出缓冲区）。
 func RawOutput(s string) {
