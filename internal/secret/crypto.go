@@ -235,3 +235,23 @@ func promptKeyPrompt(prompt string) (string, error) {
 
 	return key, nil
 }
+
+// HasKeySource 判断是否有可用密钥来源（不含交互输入）。
+//
+// 依次检查：会话缓存、-V 参数、环境变量、默认文件。
+// 只要有一项存在即返回 true，后续由 loadRawKey 决定实际读取。
+func HasKeySource() bool {
+	if rawKey != "" {
+		return true
+	}
+	if SecretKeyFile != "" {
+		return true
+	}
+	if os.Getenv(EnvKeyFile) != "" {
+		return true
+	}
+	if fileExists(DefaultKeyFile) {
+		return true
+	}
+	return false
+}
