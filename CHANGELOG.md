@@ -17,6 +17,10 @@
   - `{{host_user}}`：登录用户名
 - **保留变量校验**：清单中定义保留变量名时报错
   - 保留列表：`date` / `exec_id` / `host_name` / `group_name` / `host_addr` / `host_port` / `host_user`
+- **`encrypt` / `decrypt` 支持交互输入**：不带参数时从终端读取，避免命令进入 shell history
+  - `encrypt`：隐藏回显 + 二次确认
+  - `decrypt`：普通回显
+  - 带参数时仍可用，但会输出安全警告
 
 ### Changed
 
@@ -42,7 +46,6 @@
   - `global_vars`：深合并，主文件优先，其次后 include，最后先 include
   - `servers`：按组名合并，同名报错并指明冲突文件
   - `tasks`：按任务名合并，同名报错并指明冲突文件
-
 
 ## [2.4.1] - 2026-10-08
 
