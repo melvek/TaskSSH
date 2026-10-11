@@ -15,7 +15,6 @@ var (
 var scriptCmd = &cobra.Command{
 	Use:   "script [hosts...]",
 	Short: "Execute a local shell script on remote hosts",
-	Long:  `将本地 shell 脚本上传到目标主机并执行。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		with := action.ScriptWith{

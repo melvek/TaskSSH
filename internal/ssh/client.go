@@ -20,10 +20,9 @@ const DefaultConnectTimeout = 10 * time.Second
 
 // Client 包装 SSH 连接。
 type Client struct {
-	conn   *ssh.Client
-	sftp   *sftp.Client
-	host   *config.Host
-	dryRun bool
+	conn *ssh.Client
+	sftp *sftp.Client
+	host *config.Host
 }
 
 // Connect 建立 SSH 连接。
@@ -150,10 +149,6 @@ func (c *Client) ListFiles(root string) ([]string, error) {
 //
 // dry-run 时跳过。
 func (c *Client) MkdirAll(remotePath string) error {
-	if c.dryRun {
-		return nil
-	}
-
 	sftpClient, err := c.getSFTP()
 	if err != nil {
 		return err

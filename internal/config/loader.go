@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"mestrap.com/taskssh/internal/console"
 )
 
 // Load 从文件加载清单。
@@ -16,6 +17,8 @@ import (
 // 如果主文件含 include 段，则加载被 include 的文件并合并。
 // 子文件不允许再有 include 段。
 func Load(path string) (*Inventory, error) {
+	console.Debug("loading invertory file: %s ...", path)
+
 	inv, err := readInventoryFile(path)
 	if err != nil {
 		return nil, err
@@ -75,7 +78,7 @@ func readInventoryFile(path string) (*Inventory, error) {
 	}
 
 	if inv.GlobalVars.Extra == nil {
-		inv.GlobalVars.Extra = make(map[string]interface{})
+		inv.GlobalVars.Extra = make(map[string]any)
 	}
 
 	return &inv, nil

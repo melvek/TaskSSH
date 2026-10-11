@@ -26,8 +26,8 @@ type PushWith struct {
 	Zip   bool   `yaml:"zip"`
 }
 
-func (a *PushAction) Execute(ctx *Context) error {
-	w, err := decodeWith[PushWith](ctx.With)
+func (a *PushAction) Execute(ctx *ActionContext) error {
+	w, err := parseWith[PushWith](ctx.With)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (a *PushAction) Execute(ctx *Context) error {
 	return a.pushFile(ctx, localAbs, remote, policy)
 }
 
-func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
+func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
 	console.Info("Upload %s to %s", localAbs, dest)
 
 	if ctx.DryRun {
@@ -86,7 +86,7 @@ func (a *PushAction) pushFile(ctx *Context, localAbs, dest string, policy ssh.Ov
 	return nil
 }
 
-func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
+func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
 	console.Info("Upload directory %s to %s (recursive)", localAbs, dest)
 
 	if ctx.DryRun {
@@ -131,7 +131,7 @@ func (a *PushAction) pushDirRecursive(ctx *Context, localAbs, dest string, polic
 	return nil
 }
 
-func (a *PushAction) pushDirZip(ctx *Context, localAbs, dest string, policy ssh.OverwritePolicy) error {
+func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
 	console.Info("Zip directory %s", localAbs)
 
 	zipPath, err := zipDir(localAbs)

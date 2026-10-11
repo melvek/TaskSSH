@@ -8,13 +8,7 @@ import (
 )
 
 // Download 从远程下载文件到指定的本地路径。
-//
-// dry-run 时跳过实际下载。
 func (c *Client) Download(remotePath, localPath string) error {
-
-	if c.dryRun {
-		return nil
-	}
 
 	if c.conn == nil {
 		return fmt.Errorf("client not connected")
@@ -38,10 +32,6 @@ func (c *Client) Download(remotePath, localPath string) error {
 	}
 	if info.IsDir() {
 		return fmt.Errorf("remote path is a directory: %s (please pack it first)", remotePath)
-	}
-
-	if c.dryRun {
-		return nil
 	}
 
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {

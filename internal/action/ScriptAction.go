@@ -24,8 +24,8 @@ type ScriptWith struct {
 	Force  bool   `yaml:"force"`
 }
 
-func (a *ScriptAction) Execute(ctx *Context) error {
-	w, err := decodeWith[ScriptWith](ctx.With)
+func (a *ScriptAction) Execute(ctx *ActionContext) error {
+	w, err := parseWith[ScriptWith](ctx.With)
 	if err != nil {
 		return err
 	}

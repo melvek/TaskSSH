@@ -22,12 +22,12 @@ import (
 )
 
 var (
-	green    = color.New(color.FgGreen)
-	red      = color.New(color.FgRed)
-	yellow   = color.New(color.FgYellow)
-	cyan     = color.New(color.FgCyan)
-	purple   = color.New(color.FgMagenta)
-	boldBlue = color.New(color.Bold, color.FgBlue)
+	green  = color.New(color.FgGreen)
+	red    = color.New(color.FgRed)
+	yellow = color.New(color.FgYellow)
+	cyan   = color.New(color.FgCyan)
+	blue   = color.New(color.FgBlue)
+	gray   = color.New(color.FgHiBlack)
 
 	// outputMu 保护所有输出与 pending 状态。
 	outputMu sync.Mutex
@@ -52,8 +52,8 @@ var styleMetas = map[Style]styleMeta{
 	StyleError:      {red, "[ERROR] "},
 	StyleWarn:       {yellow, "[WARN] "},
 	StyleHint:       {cyan, "  "},
-	StyleDebug:      {purple, "[DEBUG] "},
-	StyleSection:    {boldBlue, ">>> "},
+	StyleDebug:      {gray, "[DEBUG] "},
+	StyleSection:    {blue, ">>> "},
 	StyleStep:       {cyan, ""},
 	StyleProgress:   {cyan, "\n"},
 	StyleSkip:       {cyan, ""},

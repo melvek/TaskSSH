@@ -7,7 +7,7 @@ import (
 	"mestrap.com/taskssh/internal/config"
 )
 
-// runDynamicTask 从 inventory.yaml 动态查找 task。
+// runDynamicTask 从 inventory.yaml 动态查找自定义的 task
 func runDynamicTask(ctx context.Context, args []string) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {

@@ -6,11 +6,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func decodeWith[T any](raw any) (T, error) {
+func parseWith[T any](raw any) (T, error) {
 	var out T
 	if raw == nil {
 		return out, nil
 	}
+
 	switch v := raw.(type) {
 	case T:
 		return v, nil

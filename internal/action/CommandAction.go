@@ -21,8 +21,8 @@ type CommandWith struct {
 
 func (a *CommandAction) Name() string { return "command" }
 
-func (a *CommandAction) Execute(ctx *Context) error {
-	w, err := decodeWith[CommandWith](ctx.With)
+func (a *CommandAction) Execute(ctx *ActionContext) error {
+	w, err := parseWith[CommandWith](ctx.With)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (a *CommandAction) Execute(ctx *Context) error {
 	return nil
 }
 
-func runLocalCommand(ctx *Context, cmd string) error {
+func runLocalCommand(ctx *ActionContext, cmd string) error {
 
 	console.Info("Execute local command: %s", cmd)
 

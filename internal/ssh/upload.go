@@ -54,10 +54,6 @@ func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (s
 		return "", err
 	}
 
-	if c.dryRun {
-		return finalPath, nil
-	}
-
 	if exists(sftpClient, finalPath) {
 		if err := handleExisting(finalPath, policy); err != nil {
 			return "", err

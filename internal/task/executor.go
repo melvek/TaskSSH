@@ -135,10 +135,7 @@ func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error)
 		}
 
 		for start := 0; start < len(groupHosts); start += batchSize {
-			end := start + batchSize
-			if end > len(groupHosts) {
-				end = len(groupHosts)
-			}
+			end := min(start+batchSize, len(groupHosts))
 			plan = append(plan, Batch{Group: gname, Hosts: groupHosts[start:end]})
 		}
 	}
@@ -307,7 +304,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *confi
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
-		actx := &action.Context{
+		actx := &action.ActionContext{
 			Host:   host,
 			Vars:   vars,
 			With:   step.With,
@@ -327,7 +324,10 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, host *confi
 				return fmt.Errorf("step %s: %w", step.Name, err)
 			}
 		} else {
-			console.Success("Success")
+			// 这里如果是DR模式，就不输出结果了，防止造成困扰
+			if !e.dryRun {
+				console.Success("Success")
+			}
 		}
 
 		if step.Delay > 0 {

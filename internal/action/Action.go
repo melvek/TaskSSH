@@ -7,7 +7,9 @@ import (
 )
 
 // 动作执行上下文
-type Context struct {
+// 主要用于任务流模式下，多任务间的参数传递
+// 后续扩展时可以将执行结果注册到此上下文中
+type ActionContext struct {
 	Host   *config.Host
 	Vars   resolve.Vars
 	With   any
@@ -17,5 +19,5 @@ type Context struct {
 
 type Action interface {
 	Name() string
-	Execute(ctx *Context) error
+	Execute(ctx *ActionContext) error
 }

@@ -15,7 +15,6 @@ var (
 var pushCmd = &cobra.Command{
 	Use:   "push [hosts...]",
 	Short: "Upload a file or directory to remote server",
-	Long:  `将本地文件或目录上传到远程服务器。目录上传默认递归，加 -z 则打包上传。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		with := action.PushWith{

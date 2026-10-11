@@ -9,10 +9,10 @@ var (
 	executeFlag  string
 	executeLocal bool
 )
+
 var commandCmd = &cobra.Command{
 	Use:   "command [hosts...]",
 	Short: "Execute a remote command",
-	Long:  `在目标主机上执行指定的远程命令。`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		with := action.CommandWith{
@@ -25,5 +25,6 @@ var commandCmd = &cobra.Command{
 
 func init() {
 	commandCmd.Flags().StringVarP(&executeFlag, "execute", "e", "", "Command to execute")
+	// 为了配合一些需要在本地执行的命令，比如进行一些复杂任务时，需要对本地文件进行清理，或者执行不同项目的打包之类
 	commandCmd.Flags().BoolVarP(&executeLocal, "local", "L", false, "Execute command locally instead of remote")
 }

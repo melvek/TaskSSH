@@ -27,8 +27,8 @@ type FetchWith struct {
 
 func (a *FetchAction) Name() string { return "fetch" }
 
-func (a *FetchAction) Execute(ctx *Context) error {
-	w, err := decodeWith[FetchWith](ctx.With)
+func (a *FetchAction) Execute(ctx *ActionContext) error {
+	w, err := parseWith[FetchWith](ctx.With)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (a *FetchAction) Execute(ctx *Context) error {
 }
 
 // 下载单个文件
-func (a *FetchAction) fetchFile(ctx *Context, remote, dest string) error {
+func (a *FetchAction) fetchFile(ctx *ActionContext, remote, dest string) error {
 	finalPath, err := resolveFinalPath(dest, remote, ctx.Host.Host)
 	if err != nil {
 		return err
@@ -97,7 +97,7 @@ func (a *FetchAction) fetchFile(ctx *Context, remote, dest string) error {
 }
 
 // 下载文件夹
-func (a *FetchAction) fetchDirRecursive(ctx *Context, remote, dest string) error {
+func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string) error {
 	console.Info("Download directory %s to %s (recursive)", remote, dest)
 
 	baseName := path.Base(remote)
@@ -134,7 +134,7 @@ func (a *FetchAction) fetchDirRecursive(ctx *Context, remote, dest string) error
 }
 
 // 下载压缩包
-func (a *FetchAction) fetchDirZip(ctx *Context, remote, dest string, tmpDir string) error {
+func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDir string) error {
 	baseName := path.Base(remote)
 	remoteDir := path.Dir(remote)
 
