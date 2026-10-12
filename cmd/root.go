@@ -25,15 +25,14 @@ var (
 	serialFlag        int
 	minAvailableFlag  int
 	stopOnFailureFlag bool
-	// execId         string
-	verboseFlag bool
-	quietFlag   bool
+	verboseFlag       bool
+	quietFlag         bool
 )
 
 var rootCmd = &cobra.Command{
 	Use:           "taskssh <task> [hosts...] [options]",
-	Short:         "TaskSSH - 轻量级批量运维工具",
-	Long:          buildLongDescription(),
+	Short:         "TaskSSH is a lightweight operations tool.",
+	Long:          "TaskSSH is a lightweight, SSH-based batch operations tool.\nhttps://taskssh.mestrap.com/",
 	Version:       Version,
 	Args:          cobra.ArbitraryArgs,
 	SilenceUsage:  true,
@@ -64,7 +63,6 @@ func init() {
 	// 注册全局参数
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "inventory.yaml", "Inventory file")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
-	// rootCmd.PersistentFlags().StringVarP(&execId, "execute-id", "E", "", "Execute ID")
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation")
 	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "port")
@@ -99,14 +97,10 @@ func init() {
 	}
 
 	// 注册子命令
-	rootCmd.AddCommand(encryptCmd)
-	rootCmd.AddCommand(decryptCmd)
 	rootCmd.AddCommand(commandCmd)
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(fetchCmd)
 	rootCmd.AddCommand(scriptCmd)
-}
-
-func buildLongDescription() string {
-	return "TaskSSH is a lightweight, SSH-based batch operations tool.\nhttps://taskssh.mestrap.com/"
+	rootCmd.AddCommand(encryptCmd)
+	rootCmd.AddCommand(decryptCmd)
 }

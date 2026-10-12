@@ -113,9 +113,7 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 	return info, nil
 }
 
-// ListFiles 递归列出远程目录下的所有文件。
-//
-// 只读操作，dry-run 时也正常执行。
+// ListFiles 递归列出远程目录下的所有文件
 func (c *Client) ListFiles(root string) ([]string, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {

@@ -192,30 +192,6 @@ put(elephant, fridge)
 // TODO(your-name, 2026/09/22): 支持多主机并行
 ```
 
-### 项目结构
-
-```
-taskssh/
-├── main.go                     程序入口
-├── cmd/                        CLI 命令层
-│   ├── root.go                 根命令与全局 flag
-│   ├── command.go              command 子命令
-│   ├── push.go                 push 子命令
-│   ├── fetch.go                fetch 子命令
-│   ├── encrypt.go              encrypt / decrypt
-│   ├── dynamic.go              动态任务分发
-│   └── run.go                  公共执行逻辑
-├── internal/                   内部包（不对外暴露）
-│   ├── config/                 清单解析
-│   ├── ssh/                    SSH 通信
-│   ├── action/                 原子动作
-│   ├── task/                   任务执行
-│   ├── resolve/                变量替换
-│   ├── secret/                 加解密
-│   └── utils/                  工具与常量
-└── testdata/                   测试数据
-```
-
 ### 测试要求
 
 - 新增功能必须包含单元测试

@@ -7,7 +7,7 @@ import (
 	"mestrap.com/taskssh/internal/console"
 )
 
-// Batch 是一批待执行的主机，属于同一组。
+// Batch 是一批待执行的主机，属于同一组
 type Batch struct {
 	Group string
 	Hosts []HostEntry

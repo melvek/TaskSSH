@@ -18,6 +18,5 @@ type ActionContext struct {
 }
 
 type Action interface {
-	Name() string
 	Execute(ctx *ActionContext) error
 }

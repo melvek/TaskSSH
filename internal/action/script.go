@@ -15,8 +15,6 @@ type ScriptAction struct{}
 
 var _ Action = &ScriptAction{}
 
-func (a *ScriptAction) Name() string { return "script" }
-
 type ScriptWith struct {
 	File   string `yaml:"file"`
 	Dest   string `yaml:"dest"`
@@ -25,24 +23,24 @@ type ScriptWith struct {
 }
 
 func (a *ScriptAction) Execute(ctx *ActionContext) error {
-	w, err := parseWith[ScriptWith](ctx.With)
+	with, err := parseWith[ScriptWith](ctx.With)
 	if err != nil {
 		return err
 	}
 
-	localAbs, err := filepath.Abs(w.File)
+	localAbs, err := filepath.Abs(with.File)
 	if err != nil {
-		return fmt.Errorf("resolve path %s: %w", w.File, err)
+		return fmt.Errorf("resolve path %s: %w", with.File, err)
 	}
 
-	remote := resolveScriptPath(w.Dest, localAbs)
+	remote := resolveScriptPath(with.Dest, localAbs)
 
 	console.Info("Upload script %s to %s", localAbs, remote)
 
 	// 上传脚本到远程服务器
-	policy := ssh.NewPolicy(w.Force)
+	policy := ssh.NewPolicy(with.Force)
 
-	var finalPath = fmt.Sprintf("%s/%s", remote, filepath.Base(w.File))
+	var finalPath = fmt.Sprintf("%s/%s", remote, filepath.Base(with.File))
 
 	if !ctx.DryRun {
 		f, err := ctx.Client.Upload(localAbs, remote, policy)
@@ -61,7 +59,7 @@ func (a *ScriptAction) Execute(ctx *ActionContext) error {
 
 	cmd := shellQuote(finalPath)
 	// 如果需要删除，则在需要执行的脚本后，拼接删除脚本操作
-	if w.Remove {
+	if with.Remove {
 		console.Info("Delete remote tmp script %s", finalPath)
 		if !ctx.DryRun {
 			cmd = fmt.Sprintf("%s; rc=$?; rm -f %s; exit $rc", cmd, shellQuote(finalPath))

@@ -19,24 +19,23 @@ type CommandWith struct {
 	Local   bool   `yaml:"local"`
 }
 
-func (a *CommandAction) Name() string { return "command" }
-
 func (a *CommandAction) Execute(ctx *ActionContext) error {
-	w, err := parseWith[CommandWith](ctx.With)
+	with, err := parseWith[CommandWith](ctx.With)
 	if err != nil {
 		return err
 	}
 
-	if w.Command == "" {
+	if with.Command == "" {
 		return fmt.Errorf("command action requires 'command' parameter")
 	}
 
-	cmd, err := ctx.Vars.Replace(w.Command)
+	cmd, err := ctx.Vars.Replace(with.Command)
 	if err != nil {
 		return err
 	}
 
-	if w.Local {
+	// 在本地环境下执行当前命令，主要用于 task 的步骤中，需要处理一些本地化的内容
+	if with.Local {
 		return runLocalCommand(ctx, cmd)
 	}
 
@@ -51,6 +50,7 @@ func (a *CommandAction) Execute(ctx *ActionContext) error {
 		return err
 	}
 
+	// 根据返回的退出码对执行结果进行判断，只要 exit code 不为0，就视为失败
 	if result.ExitCode != 0 {
 		return fmt.Errorf("command failed with exit code %d", result.ExitCode)
 	}

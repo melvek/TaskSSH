@@ -25,31 +25,33 @@ type FetchWith struct {
 	TmpDir string `yaml:"tmp_dir"`
 }
 
-func (a *FetchAction) Name() string { return "fetch" }
-
 func (a *FetchAction) Execute(ctx *ActionContext) error {
-	w, err := parseWith[FetchWith](ctx.With)
+	with, err := parseWith[FetchWith](ctx.With)
 	if err != nil {
 		return err
 	}
 
-	if w.File == "" {
+	if with.File == "" {
 		return fmt.Errorf("fetch action requires 'file' parameter")
 	}
-	fileStr := fmt.Sprintf("%v", w.File)
-	if fileStr == "" {
-		return fmt.Errorf("fetch action requires non-empty 'file' parameter")
-	}
-	remote, err := ctx.Vars.Replace(fileStr)
+
+	remote, err := ctx.Vars.Replace(with.File)
 	if err != nil {
 		return err
+	}
+	if remote == "" {
+		return fmt.Errorf("fetch action: 'file' resolved to empty string")
 	}
 
 	dest := "./"
-	if w.Dest != "" {
-		dest, err = ctx.Vars.Replace(w.Dest)
+	if with.Dest != "" {
+		dest, err = ctx.Vars.Replace(with.Dest)
 		if err != nil {
 			return err
+		}
+
+		if dest == "" {
+			return fmt.Errorf("fetch action: 'dest' resolved to empty string")
 		}
 	}
 
@@ -59,10 +61,10 @@ func (a *FetchAction) Execute(ctx *ActionContext) error {
 	}
 
 	if info.IsDir() {
-		if w.Zip {
+		if with.Zip {
 			tmpDir := "/tmp"
-			if w.TmpDir != "" {
-				tmpDir, err = ctx.Vars.Replace(w.TmpDir)
+			if with.TmpDir != "" {
+				tmpDir, err = ctx.Vars.Replace(with.TmpDir)
 				if err != nil {
 					return err
 				}
@@ -71,7 +73,6 @@ func (a *FetchAction) Execute(ctx *ActionContext) error {
 		}
 		return a.fetchDirRecursive(ctx, remote, dest)
 	}
-
 	return a.fetchFile(ctx, remote, dest)
 }
 

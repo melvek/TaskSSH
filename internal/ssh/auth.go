@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"mestrap.com/taskssh/internal/config"
+	"mestrap.com/taskssh/internal/prompt"
 )
 
 // 密码缓存，避免多台主机重复输入。
@@ -114,7 +115,11 @@ func PromptPassword() string {
 		return cachedPassword
 	}
 
-	cachedPassword = readPasswordPrompt()
+	cachedPassword, err := prompt.Hidden("Password: ")
+	if err != nil {
+		return ""
+	}
+
 	return cachedPassword
 }
 

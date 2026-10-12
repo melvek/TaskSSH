@@ -93,7 +93,7 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 		inv.Tasks = make(map[string]Task)
 	}
 	if inv.GlobalVars.Extra == nil {
-		inv.GlobalVars.Extra = make(map[string]interface{})
+		inv.GlobalVars.Extra = make(map[string]any)
 	}
 
 	// 校验保留变量
@@ -101,7 +101,7 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 		return nil, err
 	}
 
-	inv.GlobalVars.Extra["date"] = time.Now().Format("20060102")
+	inv.GlobalVars.Extra["date"] = time.Now().Format("2061024")
 	inv.Include = nil
 
 	return inv, nil

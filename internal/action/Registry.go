@@ -10,16 +10,16 @@ func NewRegistry() *Registry {
 	r := &Registry{
 		actions: make(map[string]Action),
 	}
-	r.Register(&CommandAction{})
-	r.Register(&PushAction{})
-	r.Register(&FetchAction{})
-	r.Register(&ScriptAction{})
+	r.Register(&CommandAction{}, "command")
+	r.Register(&PushAction{}, "push")
+	r.Register(&FetchAction{}, "fetch")
+	r.Register(&ScriptAction{}, "srcipt")
 	return r
 }
 
 // Register 注册一个动作
-func (r *Registry) Register(a Action) {
-	r.actions[a.Name()] = a
+func (r *Registry) Register(a Action, name string) {
+	r.actions[name] = a
 }
 
 // Get 按名查找动作

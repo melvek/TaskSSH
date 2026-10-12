@@ -17,8 +17,6 @@ type PushAction struct{}
 
 var _ Action = &PushAction{}
 
-func (a *PushAction) Name() string { return "push" }
-
 type PushWith struct {
 	File  string `yaml:"file"`
 	Dest  string `yaml:"dest"`
@@ -27,15 +25,15 @@ type PushWith struct {
 }
 
 func (a *PushAction) Execute(ctx *ActionContext) error {
-	w, err := parseWith[PushWith](ctx.With)
+	with, err := parseWith[PushWith](ctx.With)
 	if err != nil {
 		return err
 	}
-	if w.File == "" {
+	if with.File == "" {
 		return fmt.Errorf("push action requires 'file' parameter")
 	}
 
-	local, err := ctx.Vars.Replace(w.File)
+	local, err := ctx.Vars.Replace(with.File)
 	if err != nil {
 		return err
 	}
@@ -50,19 +48,19 @@ func (a *PushAction) Execute(ctx *ActionContext) error {
 		return fmt.Errorf("local file: %w", err)
 	}
 
-	if w.Dest == "" {
+	if with.Dest == "" {
 		return fmt.Errorf("push action requires 'dest' parameter")
 	}
 
-	remote, err := ctx.Vars.Replace(w.Dest)
+	remote, err := ctx.Vars.Replace(with.Dest)
 	if err != nil {
 		return err
 	}
 
-	policy := ssh.NewPolicy(w.Force)
+	policy := ssh.NewPolicy(with.Force)
 
 	if info.IsDir() {
-		if w.Zip {
+		if with.Zip {
 			return a.pushDirZip(ctx, localAbs, remote, policy)
 		}
 		return a.pushDirRecursive(ctx, localAbs, remote, policy)

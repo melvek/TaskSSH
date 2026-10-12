@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"sort"
 
@@ -27,9 +28,7 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 		host.Merge(&groupVars)
 
 		vars := make(resolve.Vars, len(host.Extra))
-		for k, v := range host.Extra {
-			vars[k] = v
-		}
+		maps.Copy(vars, host.Extra)
 
 		if ip := resolveHostIP(host.Host); ip != "" {
 			host.Host = ip
@@ -53,9 +52,7 @@ func resolveStandalone(hostName string, inv *config.Inventory) HostEntry {
 	host.Merge(&inv.GlobalVars)
 
 	vars := make(resolve.Vars, len(host.Extra))
-	for k, v := range host.Extra {
-		vars[k] = v
-	}
+	maps.Copy(vars, host.Extra)
 
 	if ip := resolveHostIP(hostName); ip != "" {
 		host.Host = ip

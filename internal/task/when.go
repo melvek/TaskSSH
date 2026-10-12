@@ -146,7 +146,7 @@ func evalIn(lhs, rhs string) bool {
 		rhs = rhs[1 : len(rhs)-1]
 	}
 
-	for _, item := range strings.Split(rhs, ",") {
+	for item := range strings.SplitSeq(rhs, ",") {
 		if trim(item) == value {
 			return true
 		}

@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // includedFile 是被 include 的文件及其来源路径。
 type includedFile struct {
@@ -14,11 +17,7 @@ type includedFile struct {
 //   - global_vars：主文件优先，其次后 include，最后先 include
 //   - servers：按组名合并，同名报错
 //   - tasks：按任务名合并，同名报错
-func mergeInventories(
-	mainPath string,
-	mainInv *Inventory,
-	subs []includedFile,
-) (*Inventory, error) {
+func mergeInventories(mainPath string, mainInv *Inventory, subs []includedFile) (*Inventory, error) {
 	result := &Inventory{
 		GlobalVars: mainInv.GlobalVars,
 		Servers:    make(map[string]Group),
@@ -74,8 +73,8 @@ func mergeInventories(
 	// Host.Merge 的语义是「source 补充 target 的空白」，
 	// 所以从后往前 Merge 得到优先级：
 	//   主文件 > subs[last] > ... > subs[0]
-	for i := len(subs) - 1; i >= 0; i-- {
-		result.GlobalVars.Merge(&subs[i].inv.GlobalVars)
+	for _, sub := range slices.Backward(subs) {
+		result.GlobalVars.Merge(&sub.inv.GlobalVars)
 	}
 
 	return result, nil

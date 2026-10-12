@@ -16,9 +16,7 @@ type ExecResult struct {
 	ExitCode int
 }
 
-// Exec 执行命令，输出实时写入当前 goroutine 的输出目标。
-//
-// dry-run 时跳过实际执行，返回空结果。
+// Exec 执行命令，输出实时写入当前 goroutine 的输出目标
 func (c *Client) Exec(command string) (*ExecResult, error) {
 
 	if c.conn == nil {
