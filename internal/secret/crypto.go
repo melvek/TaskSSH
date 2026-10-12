@@ -255,3 +255,43 @@ func HasKeySource() bool {
 	}
 	return false
 }
+
+// KeyFileExists 判断密钥文件是否存在（含 ~ 展开）。
+func KeyFileExists(path string) bool {
+	return fileExists(path)
+}
+
+// ExpandHome 展开路径中的 ~ 前缀。
+//
+// 供 cmd 层输出友好路径用。
+func ExpandHome(path string) string {
+	return expandHome(path)
+}
+
+// GenerateKeyFile 生成 32 字节随机密钥并写入文件。
+//
+// 文件父目录不存在时自动创建（权限 0700）。
+// 文件权限设为 0600（Unix）。
+func GenerateKeyFile(path string) error {
+	expanded := expandHome(path)
+
+	// 创建父目录
+	dir := filepath.Dir(expanded)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("create key directory %s: %w", dir, err)
+	}
+
+	// 生成 32 字节随机数
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Errorf("generate random key: %w", err)
+	}
+	key := base64.StdEncoding.EncodeToString(buf)
+
+	// 写入文件，权限 0600
+	if err := os.WriteFile(expanded, []byte(key), 0o600); err != nil {
+		return fmt.Errorf("write key file %s: %w", expanded, err)
+	}
+
+	return nil
+}

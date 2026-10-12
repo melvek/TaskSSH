@@ -103,4 +103,5 @@ func init() {
 	rootCmd.AddCommand(scriptCmd)
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
+	rootCmd.AddCommand(keygenCmd)
 }

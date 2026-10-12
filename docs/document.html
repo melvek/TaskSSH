@@ -80,7 +80,7 @@
                     </ul>
                 </div>
 
-                                <div class="nav-group">
+                <div class="nav-group">
                     <div class="nav-group-title">认证</div>
                     <ul class="docs-nav-list">
                         <li><a href="#auth">认证方式</a></li>
@@ -89,6 +89,7 @@
                         <li><a href="#auth-password">密码认证</a></li>
                         <li><a href="#auth-encrypt">加密与解密</a></li>
                         <li><a href="#auth-vault">Vault 密钥</a></li>
+                        <li><a href="#keygen">生成密钥</a></li>
                     </ul>
                 </div>
 
@@ -501,7 +502,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                 <code>date</code> 与 <code>execId</code> 为运行时全局注入，所有主机共享同一值。
             </p>
 
-                        <h3>include：拆分清单</h3>
+            <h3>include：拆分清单</h3>
 
             <p>
                 清单变大后，可按服务器组、任务拆成多个文件，用 <code>include</code> 段引入。
@@ -1097,7 +1098,8 @@ servers:
                         <tr>
                             <td><code>action</code></td>
                             <td>是</td>
-                            <td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code></td>
+                            <td>action 类型：<code>command</code> / <code>push</code> / <code>fetch</code> /
+                                <code>script</code></td>
                         </tr>
                         <tr>
                             <td><code>with</code></td>
@@ -1911,7 +1913,7 @@ servers:
                 </p>
             </div>
 
-                        <h2 id="auth">认证方式</h2>
+            <h2 id="auth">认证方式</h2>
 
             <p>TaskSSH 按以下顺序尝试认证方式，第一个成功即完成连接：</p>
 
@@ -1974,7 +1976,7 @@ servers:
                     也就<strong>不需要使用加解密功能</strong>。
                 </p>
             </div>
-            
+
             <h2 id="auth-agent">SSH Agent</h2>
 
             <p>
@@ -2260,7 +2262,8 @@ servers:
                 适用于临时排查场景，不建议在正式流程中使用。
             </p>
 
-            <pre class="language-bash"><code>taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y</code></pre>
+            <pre
+                class="language-bash"><code>taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y</code></pre>
 
             <h3>终端交互输入</h3>
 
@@ -2344,6 +2347,30 @@ servers:
 
             <h3>创建密钥文件</h3>
 
+            <p>使用内置的 <code>keygen</code> 命令生成：</p>
+
+            <pre class="language-bash"><code>taskssh keygen</code></pre>
+
+            <p>默认写入 <code>~/.taskssh/vault-key</code>，权限 <code>600</code>。若文件已存在会报错，需加 <code>--force</code> 覆盖：</p>
+
+            <pre class="language-bash"><code>taskssh keygen --force</code></pre>
+
+            <div class="callout warn">
+                <span class="co-icon">⚠️</span>
+                <p>
+                    覆盖已有密钥后，<strong>之前用旧密钥加密的所有密文将无法解密</strong>。
+                    执行 <code>--force</code> 前请确认没有仍在使用中的密文。
+                </p>
+            </div>
+
+            <p>也可用 <code>-V</code> 指定自定义路径：</p>
+
+            <pre class="language-bash"><code>taskssh keygen -V /etc/taskssh/vault-key</code></pre>
+
+            <h4>手动生成（可选）</h4>
+
+            <p>如已有 <code>openssl</code>，也可手动生成：</p>
+
             <pre class="language-bash"><code>mkdir -p ~/.taskssh
 openssl rand -base64 32 > ~/.taskssh/vault-key
 chmod 600 ~/.taskssh/vault-key</code></pre>
@@ -2364,6 +2391,73 @@ taskssh encrypt "your-password"</code></pre>
                     使用 SSH Agent 或公钥认证时，不需要密钥文件。
                 </p>
             </div>
+
+            <h2 id="keygen">生成密钥</h2>
+
+            <p>
+                <code>keygen</code> 生成 32 字节随机密钥，Base64 编码后写入文件。
+                默认路径 <code>~/.taskssh/vault-key</code>，权限 <code>600</code>。
+            </p>
+
+            <pre class="language-bash"><code>taskssh keygen</code></pre>
+
+            <p>输出示例：</p>
+
+            <pre class="language-bash"><code>Vault key generated: /home/user/.taskssh/vault-key
+
+Keep this file safe. If lost, existing encrypted secrets cannot be recovered.</code></pre>
+
+            <h3>选项</h3>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选项</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>-V / --secret-key-file</code></td>
+                            <td>指定输出路径，默认 <code>~/.taskssh/vault-key</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>-F / --force</code></td>
+                            <td>覆盖已存在的密钥文件</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>已存在时</h3>
+
+            <p>
+                若目标文件已存在，<code>keygen</code> 会报错并要求显式确认：
+            </p>
+
+            <pre class="language-bash"><code>Error: vault key already exists: ~/.taskssh/vault-key
+       use --force to overwrite (existing encrypted secrets will become unreadable)</code></pre>
+
+            <div class="callout warn">
+                <span class="co-icon">⚠️</span>
+                <p>
+                    <code>--force</code> 会直接覆盖旧密钥。
+                    <strong>已有密文将无法解密</strong>，需要重新用新密钥加密。
+                </p>
+            </div>
+
+            <h3>备份</h3>
+
+            <p>
+                密钥文件是解密清单中密码的唯一凭据。建议：
+            </p>
+
+            <ul>
+                <li>生成后立即备份到安全位置（如密码管理器、加密存储）；</li>
+                <li>不要提交到 git；</li>
+                <li>不要通过明文邮件或聊天工具传输。</li>
+            </ul>
 
             <h2 id="concurrency">串行与并发</h2>
 
