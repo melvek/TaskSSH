@@ -12,6 +12,7 @@ taskssh-*
 /dist/
 /bin/
 /release/
+build.bat
 
 # 测试二进制
 *.test
