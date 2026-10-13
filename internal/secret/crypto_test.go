@@ -8,10 +8,10 @@ import (
 // withKey 在测试期间设置固定的内存密钥，结束后清理。
 func withKey(t *testing.T, key string) {
 	t.Helper()
-	ClearRawKey()
-	SetRawKey(key)
+	ClearVaultKey()
+	SetVaultKey(key)
 	t.Cleanup(func() {
-		ClearRawKey()
+		ClearVaultKey()
 	})
 }
 
@@ -70,15 +70,15 @@ func TestEncrypt_ProducesDifferentCiphertexts(t *testing.T) {
 }
 
 func TestDecrypt_WrongKeyFails(t *testing.T) {
-	SetRawKey("key-a")
+	SetVaultKey("key-a")
 	cipher, err := Encrypt("secret")
 	if err != nil {
 		t.Fatalf("Encrypt error: %v", err)
 	}
 
-	ClearRawKey()
-	SetRawKey("key-b")
-	defer ClearRawKey()
+	ClearVaultKey()
+	SetVaultKey("key-b")
+	defer ClearVaultKey()
 
 	_, err = Decrypt(cipher)
 	if err == nil {
@@ -107,7 +107,7 @@ func TestDecrypt_TooShort(t *testing.T) {
 }
 
 func TestEncrypt_NoKey(t *testing.T) {
-	ClearRawKey()
+	ClearVaultKey()
 	// 清掉所有密钥来源，但 SecretKeyFile 是包级变量，需要临时置空
 	oldFile := SecretKeyFile
 	SecretKeyFile = ""

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/spf13/cobra"
-
 	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/secret"
 )

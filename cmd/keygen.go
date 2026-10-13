@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-
 	"mestrap.com/taskssh/internal/secret"
 )
 
@@ -45,6 +44,5 @@ encrypted secrets unrecoverable.`,
 }
 
 func init() {
-	keygenCmd.Flags().BoolVarP(&keygenForce, "force", "F", false,
-		"Overwrite existing key file")
+	keygenCmd.Flags().BoolVarP(&keygenForce, "force", "F", false, "Overwrite existing key file")
 }

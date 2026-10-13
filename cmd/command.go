@@ -10,6 +10,9 @@ var (
 	executeLocal bool
 )
 
+// 执行远程命令
+// -e/--execute 需要执行的远程命令，支持变量替换
+// -L/--local   指定命令在本地环境执行
 var commandCmd = &cobra.Command{
 	Use:   "command [hosts...]",
 	Short: "Execute a remote command",

@@ -28,6 +28,7 @@ func (a *ScriptAction) Execute(ctx *ActionContext) error {
 		return err
 	}
 
+	// 获取路径的实际绝对路径
 	localAbs, err := filepath.Abs(with.File)
 	if err != nil {
 		return fmt.Errorf("resolve path %s: %w", with.File, err)

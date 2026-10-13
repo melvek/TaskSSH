@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"golang.org/x/crypto/ssh"
-
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/prompt"
 )
@@ -19,23 +18,16 @@ var (
 	cachedPasswordMu sync.Mutex
 )
 
-// buildAuthMethods 构造认证方法列表。
-//
-// 优先级：
-//  1. SSH Agent（通过 SSH_AUTH_SOCK）
-//  2. 公钥（identity_file）
-//  3. keyboard-interactive（用密码应答）
-//  4. password（后备）
-//  5. 终端交互（未配置任何认证时）
+// 构造认证方法列表。
 func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
-	// 1. SSH Agent
+	// SSH Agent
 	if ag := getAgent(); ag != nil {
 		methods = append(methods, ssh.PublicKeysCallback(ag.Signers))
 	}
 
-	// 2. 公钥
+	// 公钥
 	if host.IdentityFile != "" {
 		signer, err := loadPrivateKey(host.IdentityFile, host.Passphrase)
 		if err != nil {
@@ -48,7 +40,7 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 		}
 	}
 
-	// 3/4/5. 密码相关
+	// 密码相关
 	if host.Password != "" {
 		pwd := host.Password
 
@@ -79,11 +71,16 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 	return methods, nil
 }
 
-// loadPrivateKey 加载私钥。
+// 加载私钥
 func loadPrivateKey(path, passphrase string) (ssh.Signer, error) {
-	expanded := expandHome(path)
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			path = filepath.Join(home, path[2:])
+		}
+	}
 
-	data, err := os.ReadFile(expanded)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read key: %w", err)
 	}
@@ -93,17 +90,6 @@ func loadPrivateKey(path, passphrase string) (ssh.Signer, error) {
 	}
 
 	return ssh.ParsePrivateKeyWithPassphrase(data, []byte(passphrase))
-}
-
-// expandHome 展开 ~ 为当前用户 home 目录。
-func expandHome(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			return filepath.Join(home, path[2:])
-		}
-	}
-	return path
 }
 
 // PromptPassword 从终端读取密码，结果缓存。

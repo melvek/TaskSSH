@@ -25,37 +25,46 @@ const DefaultKeyFile = "~/.taskssh/vault-key"
 // EnvKeyFile 是密钥文件路径的环境变量名。
 const EnvKeyFile = "TASKSSH_SECRET_KEY_FILE"
 
-// rawKey 缓存本次会话的密钥，避免重复提示。
-var rawKey string
+// vaultKey 缓存本次会话的密钥，避免重复提示。
+var vaultKey string
 
-// ErrNoKey 表示未设置密钥。
-var ErrNoKey = errors.New("no encryption key available")
-
-// SetRawKey 设置本次会话使用的密钥。
-func SetRawKey(key string) {
-	rawKey = key
+// SetVaultKey 设置本次会话使用的密钥。
+func SetVaultKey(key string) {
+	vaultKey = key
 }
 
-// ClearRawKey 清除缓存的密钥。
-func ClearRawKey() {
-	rawKey = ""
+// ClearVaultKey 清除缓存的密钥。
+func ClearVaultKey() {
+	vaultKey = ""
 }
 
-// Encrypt 加密明文，返回 Base64 编码的密文。
-func Encrypt(plain string) (string, error) {
-	key, err := loadKey()
+// newGCM 统一创建 AES-GCM。
+func newGCM() (cipher.AEAD, error) {
+	raw, err := LoadVaultKey()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	block, err := aes.NewCipher(key)
+	key := sha256.Sum256([]byte(raw))
+
+	block, err := aes.NewCipher(key[:])
 	if err != nil {
-		return "", fmt.Errorf("create cipher: %w", err)
+		return nil, fmt.Errorf("create cipher: %w", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", fmt.Errorf("create GCM: %w", err)
+		return nil, fmt.Errorf("create GCM: %w", err)
+	}
+
+	return gcm, nil
+}
+
+// Encrypt 加密明文，返回 Base64 编码的密文。
+func Encrypt(plain string) (string, error) {
+	gcm, err := newGCM()
+	if err != nil {
+		return "", err
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
@@ -67,9 +76,9 @@ func Encrypt(plain string) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Decrypt 解密 Base64 编码的密文。
+// Decrypt 解密 Base64 编码的密文
 func Decrypt(encoded string) (string, error) {
-	key, err := loadKey()
+	gcm, err := newGCM()
 	if err != nil {
 		return "", err
 	}
@@ -77,16 +86,6 @@ func Decrypt(encoded string) (string, error) {
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return "", fmt.Errorf("decode base64: %w", err)
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", fmt.Errorf("create cipher: %w", err)
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", fmt.Errorf("create GCM: %w", err)
 	}
 
 	nonceSize := gcm.NonceSize()
@@ -99,63 +98,45 @@ func Decrypt(encoded string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("decrypt: %w", err)
 	}
+
 	return string(plain), nil
 }
 
-// loadKey 派生 32 字节密钥。
-func loadKey() ([]byte, error) {
-	raw, err := loadRawKey()
-	if err != nil {
-		return nil, err
+// 获取原始密钥字符串
+func LoadVaultKey() (string, error) {
+	if vaultKey != "" {
+		return vaultKey, nil
 	}
 
-	h := sha256.Sum256([]byte(raw))
-	return h[:], nil
-}
-
-// loadRawKey 获取原始密钥字符串。
-//
-// 优先级：
-//  1. 本次会话缓存的 rawKey
-//  2. --secret-key-file
-//  3. TASKSSH_SECRET_KEY_FILE 环境变量
-//  4. 默认路径 ~/.taskssh/key
-//  5. 交互输入
-func loadRawKey() (string, error) {
-	if rawKey != "" {
-		return rawKey, nil
-	}
-
-	if SecretKeyFile != "" {
-		return readKeyFile(SecretKeyFile)
-	}
-
-	if path := os.Getenv(EnvKeyFile); path != "" {
+	if path, ok := configuredKeyFile(); ok {
 		return readKeyFile(path)
 	}
 
-	if fileExists(DefaultKeyFile) {
-		return readKeyFile(DefaultKeyFile)
-	}
-
-	return promptKey()
+	return promptKeyPrompt("Secret key: ")
 }
 
-// readKeyFile 从文件读密钥。
-//
-// 支持两种形式：
-//   - 普通文本文件，内容即密钥
-//   - 可执行文件，执行输出作为密钥
-func readKeyFile(path string) (string, error) {
-	expanded := expandHome(path)
-
-	info, err := os.Stat(expanded)
-	if err != nil {
-		return "", fmt.Errorf("stat key file %s: %w", expanded, err)
+// 返回已配置的密钥文件路径
+func configuredKeyFile() (string, bool) {
+	if SecretKeyFile != "" {
+		return SecretKeyFile, true
 	}
 
-	if info.Mode().Perm()&0o111 != 0 {
-		return runKeyScript(expanded)
+	if path := os.Getenv(EnvKeyFile); path != "" {
+		return path, true
+	}
+
+	if KeyFileExists(DefaultKeyFile) {
+		return DefaultKeyFile, true
+	}
+
+	return "", false
+}
+
+// 从文件读密钥
+func readKeyFile(path string) (string, error) {
+	expanded, err := checkKeyFile(path)
+	if err != nil {
+		return "", err
 	}
 
 	data, err := os.ReadFile(expanded)
@@ -171,33 +152,26 @@ func readKeyFile(path string) (string, error) {
 	return key, nil
 }
 
-// fileExists 判断文件是否存在且不是目录。
-func fileExists(path string) bool {
-	expanded := expandHome(path)
+func checkKeyFile(path string) (string, error) {
+	expanded := ExpandHome(path)
+
 	info, err := os.Stat(expanded)
 	if err != nil {
-		return false
+		return expanded, fmt.Errorf("stat key file %s: %w", expanded, err)
 	}
-	return !info.IsDir()
-}
 
-// expandHome 展开 ~ 为当前用户 home 目录。
-func expandHome(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			return filepath.Join(home, path[2:])
-		}
+	if info.IsDir() {
+		return expanded, fmt.Errorf("key file %s is a directory", expanded)
 	}
-	return path
+
+	return expanded, nil
 }
 
-// promptKey 从终端读取密钥，无回显。
-func promptKey() (string, error) {
-	return promptKeyPrompt("Secret key: ")
+func KeyFileExists(path string) bool {
+	info, err := os.Stat(ExpandHome(path))
+	return err == nil && !info.IsDir()
 }
 
-// PromptKeyConfirm 从终端读取密钥并要求确认（用于加密）。
 func PromptKeyConfirm() (string, error) {
 	first, err := promptKeyPrompt("Secret key: ")
 	if err != nil {
@@ -216,11 +190,9 @@ func PromptKeyConfirm() (string, error) {
 	return first, nil
 }
 
-// promptKeyPrompt 读取密钥，可指定提示语。
 func promptKeyPrompt(prompt string) (string, error) {
 	fmt.Fprint(os.Stderr, prompt)
 
-	var keyBytes []byte
 	keyBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", fmt.Errorf("read secret key: %w", err)
@@ -236,36 +208,14 @@ func promptKeyPrompt(prompt string) (string, error) {
 	return key, nil
 }
 
-// HasKeySource 判断是否有可用密钥来源（不含交互输入）。
-//
-// 依次检查：会话缓存、-V 参数、环境变量、默认文件。
-// 只要有一项存在即返回 true，后续由 loadRawKey 决定实际读取。
-func HasKeySource() bool {
-	if rawKey != "" {
-		return true
-	}
-	if SecretKeyFile != "" {
-		return true
-	}
-	if os.Getenv(EnvKeyFile) != "" {
-		return true
-	}
-	if fileExists(DefaultKeyFile) {
-		return true
-	}
-	return false
-}
-
-// KeyFileExists 判断密钥文件是否存在（含 ~ 展开）。
-func KeyFileExists(path string) bool {
-	return fileExists(path)
-}
-
-// ExpandHome 展开路径中的 ~ 前缀。
-//
-// 供 cmd 层输出友好路径用。
 func ExpandHome(path string) string {
-	return expandHome(path)
+	if strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
 }
 
 // GenerateKeyFile 生成 32 字节随机密钥并写入文件。
@@ -273,22 +223,19 @@ func ExpandHome(path string) string {
 // 文件父目录不存在时自动创建（权限 0700）。
 // 文件权限设为 0600（Unix）。
 func GenerateKeyFile(path string) error {
-	expanded := expandHome(path)
+	expanded := ExpandHome(path)
 
-	// 创建父目录
 	dir := filepath.Dir(expanded)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create key directory %s: %w", dir, err)
 	}
 
-	// 生成 32 字节随机数
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
 		return fmt.Errorf("generate random key: %w", err)
 	}
 	key := base64.StdEncoding.EncodeToString(buf)
 
-	// 写入文件，权限 0600
 	if err := os.WriteFile(expanded, []byte(key), 0o600); err != nil {
 		return fmt.Errorf("write key file %s: %w", expanded, err)
 	}

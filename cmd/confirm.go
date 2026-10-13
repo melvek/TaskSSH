@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-// confirm 询问用户。
 func confirm(message string) bool {
 	fmt.Printf("\n%s (y/n): ", message)
 
