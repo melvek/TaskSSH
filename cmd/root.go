@@ -60,7 +60,7 @@ func init() {
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
 	// 注册全局参数
-	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "inventory.yaml", "Inventory file")
+	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "", "Inventory file (default: inventory.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
 	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation")

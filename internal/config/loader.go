@@ -10,13 +10,31 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/secret"
 )
+
+const DefaultInventory = "inventory.yaml"
 
 // Load 从文件加载清单。
 //
 // 如果主文件含 include 段，则加载被 include 的文件并合并。
 // 子文件不允许再有 include 段。
 func Load(path string) (*Inventory, error) {
+	explicit := path != ""
+	if path == "" {
+		path = DefaultInventory
+	}
+
+	path = secret.ExpandHome(path)
+
+	// 顶层文件不存在
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if explicit {
+			return nil, fmt.Errorf("inventory file not found: %s", path)
+		}
+		return finalizeInventory(&Inventory{})
+	}
+
 	console.Debug("loading invertory file: %s ...", path)
 
 	inv, err := readInventoryFile(path)
@@ -69,6 +87,10 @@ func Load(path string) (*Inventory, error) {
 func readInventoryFile(path string) (*Inventory, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("inventory file not found: %s\n"+
+				"       create one or specify with -i / --inventory", path)
+		}
 		return nil, fmt.Errorf("read inventory %s: %w", path, err)
 	}
 
@@ -101,7 +123,7 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 		return nil, err
 	}
 
-	inv.GlobalVars.Extra["date"] = time.Now().Format("2061024")
+	inv.GlobalVars.Extra["date"] = time.Now().Format("20060102")
 	inv.Include = nil
 
 	return inv, nil

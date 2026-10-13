@@ -29,7 +29,7 @@ func runBuiltinTask(ctx context.Context, taskName string, hosts []string, with a
 		Steps: []config.Step{step},
 	}
 
-	return executeTask(ctx, &t, hosts, inv)
+	return executeTask(ctx, &t, hosts, inv, false)
 }
 
 // runDynamicTask 从 inventory.yaml 动态查找自定义的 task
@@ -50,11 +50,11 @@ func runDynamicTask(ctx context.Context, args []string) error {
 		return fmt.Errorf("no target hosts")
 	}
 
-	return executeTask(ctx, &t, hostNames, inv)
+	return executeTask(ctx, &t, hostNames, inv, true)
 }
 
 // executeTask 是公共执行入口。
-func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *config.Inventory) error {
+func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *config.Inventory, needConfirm bool) error {
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
@@ -83,18 +83,20 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 		return fmt.Errorf("no target hosts")
 	}
 
-	lines := make([]string, 0, len(entries))
-	for _, e := range entries {
-		lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
-	}
-	console.Targets(lines)
+	if listOnly || dryRun {
+		lines := make([]string, 0, len(entries))
+		for _, e := range entries {
+			lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
+		}
+		console.Targets(lines)
 
-	if listOnly {
-		return nil
+		if !dryRun {
+			return nil
+		}
 	}
 
 	// dry run 不需要确认操作
-	if !yesFlag && !dryRun {
+	if needConfirm && !yesFlag && !dryRun {
 		if !confirm("Confirm to proceed") {
 			return nil
 		}
