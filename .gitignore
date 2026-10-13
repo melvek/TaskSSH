@@ -13,6 +13,7 @@ taskssh-*
 /bin/
 /release/
 build.bat
+*.syso
 
 # 测试二进制
 *.test
