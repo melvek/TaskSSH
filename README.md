@@ -85,7 +85,7 @@ taskssh encrypt "your-password"
 ### 3. 创建 `inventory.yaml`
 
 ```yaml
-global_vars:
+defaults:
   username: deploy
   password: "xxxxx"        # 上一步的密文
 
@@ -123,7 +123,7 @@ taskssh release prod -y
 
 完整文档见 [document.html](https://taskssh.mestrap.com/document.html)，包含：
 
-- 清单文件详解（`global_vars` / `servers` / `tasks`）
+- 清单文件详解（`defaults` / `servers` / `tasks`）
 - Action 参考（`command` / `push` / `fetch` / `script`）
 - 变量替换规则
 - Vault 密钥管理

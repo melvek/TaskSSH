@@ -17,7 +17,7 @@ import (
 //
 // 变量合并顺序：
 //
-//	global_vars -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
+//	defaults -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
 func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostEntry,
 	globalVars resolve.Vars) error {
 

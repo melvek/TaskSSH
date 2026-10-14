@@ -31,13 +31,12 @@ func Load(path string) (*Inventory, error) {
 	}
 
 	console.Debug("loading invertory file: %s ...", path)
-
 	inv, err := readInventoryFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	// 无 include：直接收尾
+	// 没有 include 文件时，处理参数合并
 	if len(inv.Include) == 0 {
 		return finalizeInventory(inv)
 	}
@@ -52,6 +51,7 @@ func Load(path string) (*Inventory, error) {
 	// 依次加载子文件
 	subs := make([]includedFile, 0, len(files))
 	for _, f := range files {
+		console.Debug("loading include invertory file: %s ...", f)
 		sub, err := readInventoryFile(f)
 		if err != nil {
 			return nil, err
@@ -66,6 +66,9 @@ func Load(path string) (*Inventory, error) {
 					"           - servers/prod/db.yaml",
 				f)
 		}
+
+		applyDefaultsToGroups(sub)
+
 		subs = append(subs, includedFile{path: f, inv: sub})
 	}
 
@@ -80,6 +83,7 @@ func Load(path string) (*Inventory, error) {
 
 // 读取单个清单文件，不含 include 处理
 func readInventoryFile(path string) (*Inventory, error) {
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -94,14 +98,13 @@ func readInventoryFile(path string) (*Inventory, error) {
 		return nil, fmt.Errorf("parse inventory %s: %w", path, err)
 	}
 
-	if inv.GlobalVars.Extra == nil {
-		inv.GlobalVars.Extra = make(map[string]any)
+	if inv.Defaults.Extra == nil {
+		inv.Defaults.Extra = make(map[string]any)
 	}
 
 	return &inv, nil
 }
 
-// finalizeInventory 收尾：初始化 map、注入内置变量、清理 Include 字段。
 func finalizeInventory(inv *Inventory) (*Inventory, error) {
 	if inv.Servers == nil {
 		inv.Servers = make(map[string]Group)
@@ -109,19 +112,35 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 	if inv.Tasks == nil {
 		inv.Tasks = make(map[string]Task)
 	}
-	if inv.GlobalVars.Extra == nil {
-		inv.GlobalVars.Extra = make(map[string]any)
+	if inv.Defaults.Extra == nil {
+		inv.Defaults.Extra = make(map[string]any)
 	}
 
-	// 校验保留变量
 	if err := validateReservedVars(inv); err != nil {
 		return nil, err
 	}
 
-	inv.GlobalVars.Extra["date"] = time.Now().Format("20060102")
+	inv.Defaults.Extra["date"] = time.Now().Format("20060102")
 	inv.Include = nil
 
 	return inv, nil
+}
+
+// applyDefaultsToGroups 把 inv.Defaults 下沉到 inv.Servers 里每个 group 的 Vars，
+// 然后清空 inv.Defaults。
+//
+// 用于 include 的子文件：子文件的 defaults 只作用于该文件的 servers，
+// 不会污染其他文件。
+//
+// 合并方向：group.Vars 优先，inv.Defaults 补充空白。
+func applyDefaultsToGroups(inv *Inventory) {
+	for name, group := range inv.Servers {
+		groupVars := group.Vars
+		groupVars.Merge(&inv.Defaults)
+		group.Vars = groupVars
+		inv.Servers[name] = group
+	}
+	inv.Defaults = Host{Extra: map[string]any{}}
 }
 
 // expandIncludes 展开 include 模式列表

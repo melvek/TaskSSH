@@ -7,7 +7,7 @@ import (
 )
 
 // Host 描述主机配置。
-// 同时用于 global_vars、组的 vars、以及具体主机。
+// 同时用于 defaults、组的 vars、以及具体主机。
 type Host struct {
 	Host         string `yaml:"host"`
 	Port         int    `yaml:"port"`

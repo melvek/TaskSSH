@@ -11,13 +11,13 @@ func TestLoad(t *testing.T) {
 	}
 
 	// 全局变量
-	if inv.GlobalVars.Port != 22 {
-		t.Errorf("expected port 22, got %d", inv.GlobalVars.Port)
+	if inv.Defaults.Port != 22 {
+		t.Errorf("expected port 22, got %d", inv.Defaults.Port)
 	}
-	if inv.GlobalVars.Username != "deploy" {
-		t.Errorf("expected username deploy, got %s", inv.GlobalVars.Username)
+	if inv.Defaults.Username != "deploy" {
+		t.Errorf("expected username deploy, got %s", inv.Defaults.Username)
 	}
-	if _, ok := inv.GlobalVars.Extra["date"]; !ok {
+	if _, ok := inv.Defaults.Extra["date"]; !ok {
 		t.Error("expected date injected")
 	}
 

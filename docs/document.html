@@ -52,7 +52,7 @@
                     <div class="nav-group-title">清单</div>
                     <ul class="docs-nav-list">
                         <li><a href="#inventory">inventory</a></li>
-                        <li><a href="#inventory-global">global_vars</a></li>
+                        <li><a href="#inventory-global">defaults</a></li>
                         <li><a href="#inventory-servers">servers</a></li>
                         <li><a href="#hostvars">host</a></li>
                         <li><a href="#inventory-tasks">tasks</a></li>
@@ -276,7 +276,7 @@ taskssh fetch "192.168.1.10" -u deploy -f /var/log/app.log -d ./logs/ -y</code><
                 当主机较多、需要分组、或需要复用配置时，引入 <code>inventory.yaml</code>。
             </p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   username: deploy
   password: "encrypted-password"
 
@@ -353,12 +353,12 @@ taskssh command uat -e "uptime" -y</code></pre>
                 <code>inventory.yaml</code> 是 TaskSSH 的配置文件，由三个顶层段组成：
             </p>
 
-            <pre class="language-yaml"><code>global_vars:   # 全局变量，由所有主机与任务继承
+            <pre class="language-yaml"><code>defaults:   # 全局变量，由所有主机与任务继承
 servers:       # 服务器组与主机定义
 tasks:         # 任务定义，包含有序步骤</code></pre>
 
             <p>
-                <code>global_vars</code> 和 <code>servers</code> 定义<strong>目标主机</strong>及其认证、变量；
+                <code>defaults</code> 和 <code>servers</code> 定义<strong>目标主机</strong>及其认证、变量；
                 <code>tasks</code> 段定义<strong>执行流程</strong>，由一个或多个有序 step 组成。
             </p>
 
@@ -470,7 +470,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td><code>global_vars</code></td>
+                            <td><code>defaults</code></td>
                             <td>所有主机</td>
                         </tr>
                         <tr>
@@ -514,7 +514,7 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
   - servers/*.yaml
   - tasks/*.yaml
 
-global_vars:
+defaults:
   username: deploy
   password: "encrypted-password"
   app_name: myapp</code></pre>
@@ -584,7 +584,7 @@ tasks:
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>global_vars</code></td>
+                            <td><code>defaults</code></td>
                             <td>深合并</td>
                             <td>主文件优先，其次后 include，最后先 include</td>
                         </tr>
@@ -633,16 +633,16 @@ tasks:
             <div class="callout tip">
                 <span class="co-icon">💡</span>
                 <p>
-                    <code>global_vars</code> 的合并规则使得主文件可以作为「最终调整」的位置。
+                    <code>defaults</code> 的合并规则使得主文件可以作为「最终调整」的位置。
                     例如各环境文件定义了默认的 <code>username</code>，主文件里写一个
                     <code>username</code> 就能统一覆盖所有环境。
                 </p>
             </div>
 
-            <h2 id="inventory-global">global_vars</h2>
+            <h2 id="inventory-global">defaults</h2>
 
             <p>
-                <code>global_vars</code> 定义全局默认值，所有主机都会继承。
+                <code>defaults</code> 定义全局默认值，所有主机都会继承。
                 字段结构与主机定义完全一致，包含 <code>host</code>、<code>port</code>、
                 <code>username</code>、<code>password</code>、<code>identity_file</code>、
                 <code>passphrase</code> 等连接相关字段；除这些专有字段外，其余字段将作为变量进入变量池。
@@ -652,7 +652,7 @@ tasks:
                 各字段的具体含义见 <a href="#hostvars">host</a>。
             </p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   username: deploy
   password: "encrypted-password"
   identity_file: ~/.ssh/id_ed25519
@@ -880,7 +880,7 @@ taskssh release uat -y</code></pre>
             <h2 id="hostvars">host</h2>
 
             <p>
-                <code>global_vars</code>、组 <code>vars</code>、主机定义三层使用相同的字段结构，
+                <code>defaults</code>、组 <code>vars</code>、主机定义三层使用相同的字段结构，
                 含义一致，仅作用范围不同。本节列出全部字段。
             </p>
 
@@ -945,7 +945,7 @@ taskssh release uat -y</code></pre>
 
             <h3>扩展示例</h3>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   username: deploy
   identity_file: ~/.ssh/id_ed25519
 
@@ -955,10 +955,10 @@ servers:
       web1:
         host: 192.168.1.10
         port: 2222
-        # username / identity_file 继承 global_vars
+        # username / identity_file 继承 defaults
       web2:
         host: 192.168.1.11
-        username: root             # 覆盖 global_vars
+        username: root             # 覆盖 defaults
         password: "encrypted-pwd"  # 该主机走密码认证</code></pre>
 
             <h3>命令行覆盖</h3>
@@ -1645,7 +1645,7 @@ taskssh script prod -f ./scripts/deploy.sh -r -F -y</code></pre>
                     <tbody>
                         <tr>
                             <td>1</td>
-                            <td><code>global_vars</code></td>
+                            <td><code>defaults</code></td>
                             <td>所有主机</td>
                         </tr>
                         <tr>
@@ -1686,7 +1686,7 @@ taskssh script prod -f ./scripts/deploy.sh -r -F -y</code></pre>
 
             <p>变量值本身可引用其他变量，最多递归展开 4 层。</p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   app_name: myapp
   version: 1.0.0
   package: "{{app_name}}-{{version}}.jar"   # 递归展开后的结果</code></pre>
@@ -1871,7 +1871,7 @@ taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
             <h2 id="hostvars-extra">扩展字段</h2>
 
             <p>
-                <code>global_vars</code>、组 <code>vars</code>、主机定义中，
+                <code>defaults</code>、组 <code>vars</code>、主机定义中，
                 除专有字段（<code>host</code> / <code>port</code> / <code>username</code> /
                 <code>password</code> / <code>identity_file</code> / <code>passphrase</code>）之外的
                 任意字段，都会进入 <code>Extra</code> 映射，参与变量替换。
@@ -1881,7 +1881,7 @@ taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
                 <code>Extra</code> 中的字段只在变量池中生效，不影响连接行为。
             </p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   app_name: myapp
 
 servers:
@@ -2113,7 +2113,7 @@ exit</code></pre>
 
             <p>验证通过后，在清单中指定私钥路径即可：</p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   username: deploy
   identity_file: ~/.ssh/id_ed25519
 
@@ -2125,7 +2125,7 @@ servers:
 
             <p>
                 <code>~</code> 会自动展开为当前用户的 home 目录。
-                配置在 <code>global_vars</code> 中后，所有主机继承该私钥路径。
+                配置在 <code>defaults</code> 中后，所有主机继承该私钥路径。
             </p>
 
             <p>也可按主机单独配置，适用于不同主机使用不同密钥的场景：</p>
@@ -2245,7 +2245,7 @@ taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
 
             <p>将输出填入清单：</p>
 
-            <pre class="language-yaml"><code>global_vars:
+            <pre class="language-yaml"><code>defaults:
   username: deploy
   password: "xxxxx"
 
@@ -2997,9 +2997,9 @@ Execution ID: 0K8X7A2B</code></pre>
                             <td><a href="#dryrun">Dry-run</a></td>
                         </tr>
                         <tr>
-                            <td><code>-y</code></td>
-                            <td><code>--yes</code></td>
-                            <td>跳过执行前确认</td>
+                            <td><code>—</code></td>
+                            <td><code>--confirm</code></td>
+                            <td>列出目标主机并等待确认后再执行</td>
                             <td><a href="#dryrun">Dry-run</a></td>
                         </tr>
                         <tr>
@@ -3076,7 +3076,7 @@ Execution ID: 0K8X7A2B</code></pre>
 
             <h3>执行时报变量未解析错误，如何处理？</h3>
             <p>
-                请检查该变量是否在 <code>global_vars</code>、<code>servers.vars</code> 或主机
+                请检查该变量是否在 <code>defaults</code>、<code>servers.vars</code> 或主机
                 <code>Extra</code> 中定义，或通过 CLI <code>-D</code> 传入。未解析的变量会直接中断执行，
                 属内置的严格策略。
             </p>

@@ -22,7 +22,7 @@ func IsReservedVar(name string) bool {
 
 // validateReservedVars 校验清单中是否定义了保留变量。
 func validateReservedVars(inv *Inventory) error {
-	if err := checkExtra("global_vars", inv.GlobalVars.Extra); err != nil {
+	if err := checkExtra("defaults", inv.Defaults.Extra); err != nil {
 		return err
 	}
 	for groupName, group := range inv.Servers {

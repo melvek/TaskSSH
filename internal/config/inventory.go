@@ -2,10 +2,10 @@ package config
 
 // Inventory 是清单文件的顶层结构。
 type Inventory struct {
-	Include    []string         `yaml:"include,omitempty"`
-	GlobalVars Host             `yaml:"global_vars"`
-	Servers    map[string]Group `yaml:"servers"`
-	Tasks      map[string]Task  `yaml:"tasks"`
+	Include  []string         `yaml:"include,omitempty"`
+	Defaults Host             `yaml:"defaults"`
+	Servers  map[string]Group `yaml:"servers"`
+	Tasks    map[string]Task  `yaml:"tasks"`
 }
 
 // Group 是服务器组。

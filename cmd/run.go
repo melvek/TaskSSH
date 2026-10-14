@@ -102,7 +102,7 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 	}
 
 	globalVars := make(resolve.Vars)
-	maps.Copy(globalVars, inv.GlobalVars.Extra)
+	maps.Copy(globalVars, inv.Defaults.Extra)
 
 	// 一次性加载所有Action，之后根据任务创建执行器
 	serial := t.Serial

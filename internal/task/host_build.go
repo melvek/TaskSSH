@@ -21,7 +21,7 @@ func resolveGroup(groupName string, group *config.Group, inv *config.Inventory) 
 	sort.Strings(names)
 
 	groupVars := group.Vars
-	groupVars.Merge(&inv.GlobalVars)
+	groupVars.Merge(&inv.Defaults)
 
 	for _, name := range names {
 		host := group.Hosts[name]
@@ -49,7 +49,7 @@ func resolveStandalone(hostName string, inv *config.Inventory) HostEntry {
 	host := config.Host{
 		Host: hostName,
 	}
-	host.Merge(&inv.GlobalVars)
+	host.Merge(&inv.Defaults)
 
 	vars := make(resolve.Vars, len(host.Extra))
 	maps.Copy(vars, host.Extra)

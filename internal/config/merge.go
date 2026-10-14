@@ -1,9 +1,6 @@
 package config
 
-import (
-	"fmt"
-	"slices"
-)
+import "fmt"
 
 // includedFile 是被 include 的文件及其来源路径。
 type includedFile struct {
@@ -14,21 +11,19 @@ type includedFile struct {
 // mergeInventories 合并主文件与 include 的子文件。
 //
 // 合并规则：
-//   - global_vars：主文件优先，其次后 include，最后先 include
 //   - servers：按组名合并，同名报错
 //   - tasks：按任务名合并，同名报错
+//   - defaults：只保留主文件的，子文件的 defaults 已在加载时下沉
 func mergeInventories(mainPath string, mainInv *Inventory, subs []includedFile) (*Inventory, error) {
 	result := &Inventory{
-		GlobalVars: mainInv.GlobalVars,
-		Servers:    make(map[string]Group),
-		Tasks:      make(map[string]Task),
+		Defaults: mainInv.Defaults,
+		Servers:  make(map[string]Group),
+		Tasks:    make(map[string]Task),
 	}
 
-	// 记录每个组/任务的来源文件，用于冲突报错
 	groupSource := make(map[string]string)
 	taskSource := make(map[string]string)
 
-	// 先合并所有 include 文件
 	for _, sub := range subs {
 		for name, g := range sub.inv.Servers {
 			if src, ok := groupSource[name]; ok {
@@ -50,7 +45,6 @@ func mergeInventories(mainPath string, mainInv *Inventory, subs []includedFile) 
 		}
 	}
 
-	// 再合并主文件的 servers / tasks
 	for name, g := range mainInv.Servers {
 		if src, ok := groupSource[name]; ok {
 			return nil, fmt.Errorf(
@@ -66,15 +60,6 @@ func mergeInventories(mainPath string, mainInv *Inventory, subs []includedFile) 
 				name, src, mainPath)
 		}
 		result.Tasks[name] = t
-	}
-
-	// global_vars：从后往前 Merge
-	//
-	// Host.Merge 的语义是「source 补充 target 的空白」，
-	// 所以从后往前 Merge 得到优先级：
-	//   主文件 > subs[last] > ... > subs[0]
-	for _, sub := range slices.Backward(subs) {
-		result.GlobalVars.Merge(&sub.inv.GlobalVars)
 	}
 
 	return result, nil
