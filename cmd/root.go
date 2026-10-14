@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/console"
@@ -78,8 +79,13 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quietFlag, "quiet", "q", false, "Only show errors")
 
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		secret.SecretKeyFile = secretKeyFile
+
+		// 显式指定了密钥文件，但文件不存在
+		if secretKeyFile != "" && !secret.KeyFileExists(secretKeyFile) {
+			return fmt.Errorf("secret key file not found: %s", secretKeyFile)
+		}
 
 		switch {
 		case dryRun || verboseFlag:
@@ -93,6 +99,8 @@ func init() {
 		if passwordFlag != "" {
 			console.Warn("Passing password via command line is insecure; use 'taskssh encrypt' and inventory file instead")
 		}
+
+		return nil
 	}
 
 	// 注册子命令
