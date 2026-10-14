@@ -15,8 +15,6 @@ var reservedVars = map[string]bool{
 	"host_user":  true,
 }
 
-const reservedVarsHint = "date, exec_id, host_name, group_name, host_addr, host_port, host_user"
-
 // IsReservedVar 判断变量名是否为保留变量。
 func IsReservedVar(name string) bool {
 	return reservedVars[name]
@@ -45,11 +43,7 @@ func validateReservedVars(inv *Inventory) error {
 func checkExtra(scope string, extra map[string]any) error {
 	for key := range extra {
 		if reservedVars[key] {
-			return fmt.Errorf(
-				"%s: variable name %q is reserved by TaskSSH\n"+
-					"       reserved: %s\n"+
-					"       please use a different name",
-				scope, key, reservedVarsHint)
+			return fmt.Errorf("%s: variable name %q is reserved by TaskSSH，please use a different name", scope, key)
 		}
 	}
 	return nil

@@ -8,7 +8,7 @@ import (
 	"mestrap.com/taskssh/internal/resolve"
 )
 
-// parseCLIVars 解析 -D 传入的 key=value 变量。
+// 解析 -Dkey=value 自定义参数，自定义参数不能使用保留变量
 func parseCLIVars(vars []string) (resolve.Vars, error) {
 	out := make(resolve.Vars, len(vars))
 

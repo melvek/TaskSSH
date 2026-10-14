@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"mestrap.com/taskssh/internal/fileutil"
 	"mestrap.com/taskssh/internal/secret"
 )
 
@@ -21,7 +22,7 @@ WARNING: overwriting an existing key makes all existing
 encrypted secrets unrecoverable.`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		path := secret.DefaultKeyFile
+		path := fileutil.ExpandHome(secret.DefaultKeyFile)
 		if secret.SecretKeyFile != "" {
 			path = secret.SecretKeyFile
 		}
@@ -37,7 +38,7 @@ encrypted secrets unrecoverable.`,
 			return err
 		}
 
-		fmt.Printf("Vault key generated: %s\n", secret.ExpandHome(path))
+		fmt.Printf("Vault key generated: %s\n", path)
 		fmt.Println("Keep this file safe. If lost, existing encrypted secrets cannot be recovered.")
 		return nil
 	},

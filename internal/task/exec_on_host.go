@@ -45,12 +45,16 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostE
 		defer client.Close()
 	}
 
-	total := len(task.Steps)
-	showStep := total > 1
-
 	for i, step := range task.Steps {
-		if showStep {
-			console.Step(i+1, total, step.Name)
+
+		act := e.actions.Get(step.Action)
+		if act == nil {
+			console.Error("unknown action: %s", step.Action)
+			return fmt.Errorf("unknown action: %s", step.Action)
+		}
+
+		if len(task.Steps) > 1 {
+			console.Step(i+1, len(task.Steps), step.Name)
 		}
 
 		if step.When != "" {
@@ -60,15 +64,9 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostE
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
-				console.Skipped("跳过: %s", expanded)
+				console.Skipped("ignore: %s", expanded)
 				continue
 			}
-		}
-
-		act := e.actions.Get(step.Action)
-		if act == nil {
-			console.Error("unknown action: %s", step.Action)
-			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
 		actx := &action.ActionContext{

@@ -10,28 +10,30 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"mestrap.com/taskssh/internal/console"
-	"mestrap.com/taskssh/internal/secret"
+	"mestrap.com/taskssh/internal/fileutil"
 )
 
 const DefaultInventory = "inventory.yaml"
 
-// Load 从文件加载清单。
-//
-// 如果主文件含 include 段，则加载被 include 的文件并合并。
-// 子文件不允许再有 include 段。
+// 加载清单文件
 func Load(path string) (*Inventory, error) {
+	// 如果用户指定了 -i 参数，使用对应的清单文件
 	explicit := path != ""
+
+	// 如果清单未指定清单文件，则使用默认的路径
 	if path == "" {
 		path = DefaultInventory
 	}
 
-	path = secret.ExpandHome(path)
+	path = fileutil.ExpandHome(path)
 
-	// 顶层文件不存在
+	// 指定的清单文件不存在
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		if explicit {
 			return nil, fmt.Errorf("inventory file not found: %s", path)
 		}
+		// 如果默认的清单文件不存在，则使用空的清单文件
+		// 清单文件并不是必需的
 		return finalizeInventory(&Inventory{})
 	}
 
@@ -83,7 +85,7 @@ func Load(path string) (*Inventory, error) {
 	return finalizeInventory(result)
 }
 
-// readInventoryFile 读取单个清单文件，不含 include 处理。
+// 读取单个清单文件，不含 include 处理
 func readInventoryFile(path string) (*Inventory, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -129,7 +131,7 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 	return inv, nil
 }
 
-// expandIncludes 展开 include 模式列表。
+// expandIncludes 展开 include 模式列表
 func expandIncludes(patterns []string, baseDir string) ([]string, error) {
 	var files []string
 

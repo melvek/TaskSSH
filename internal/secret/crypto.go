@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"golang.org/x/term"
+	"mestrap.com/taskssh/internal/fileutil"
 )
 
 // SecretKeyFile 记录 --secret-key-file 的值，由 cmd 层设置。
@@ -153,7 +154,7 @@ func readKeyFile(path string) (string, error) {
 }
 
 func checkKeyFile(path string) (string, error) {
-	expanded := ExpandHome(path)
+	expanded := fileutil.ExpandHome(path)
 
 	info, err := os.Stat(expanded)
 	if err != nil {
@@ -168,7 +169,7 @@ func checkKeyFile(path string) (string, error) {
 }
 
 func KeyFileExists(path string) bool {
-	info, err := os.Stat(ExpandHome(path))
+	info, err := os.Stat(fileutil.ExpandHome(path))
 	return err == nil && !info.IsDir()
 }
 
@@ -208,22 +209,9 @@ func promptKeyPrompt(prompt string) (string, error) {
 	return key, nil
 }
 
-func ExpandHome(path string) string {
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			return filepath.Join(home, path[2:])
-		}
-	}
-	return path
-}
-
-// GenerateKeyFile 生成 32 字节随机密钥并写入文件。
-//
-// 文件父目录不存在时自动创建（权限 0700）。
-// 文件权限设为 0600（Unix）。
+// 生成 32 字节随机密钥并写入文件
 func GenerateKeyFile(path string) error {
-	expanded := ExpandHome(path)
+	expanded := fileutil.ExpandHome(path)
 
 	dir := filepath.Dir(expanded)
 	if err := os.MkdirAll(dir, 0o700); err != nil {

@@ -25,12 +25,6 @@ func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []Hos
 			Error:   err,
 		})
 
-		if err != nil {
-			console.Error("%s FAILED", entry.Name)
-		} else if !e.dryRun {
-			console.Success("%s OK", entry.Name)
-		}
-
 		// ctx 取消时停止后续主机
 		if ctx.Err() != nil {
 			break
@@ -85,12 +79,6 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []H
 				Host:    entry.Name,
 				Success: err == nil,
 				Error:   err,
-			}
-
-			if err != nil {
-				console.Error("%s FAILED", entry.Name)
-			} else if !e.dryRun {
-				console.Success("%s OK", entry.Name)
 			}
 		}(i, entry)
 	}
