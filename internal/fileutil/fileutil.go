@@ -15,3 +15,8 @@ func ExpandHome(path string) string {
 	}
 	return path
 }
+
+func FileExists(path string) bool {
+	info, err := os.Stat(ExpandHome(path))
+	return err == nil && !info.IsDir()
+}

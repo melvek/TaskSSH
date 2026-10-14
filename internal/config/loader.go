@@ -17,9 +17,6 @@ const DefaultInventory = "inventory.yaml"
 
 // 加载清单文件
 func Load(path string) (*Inventory, error) {
-	// 如果用户指定了 -i 参数，使用对应的清单文件
-	explicit := path != ""
-
 	// 如果清单未指定清单文件，则使用默认的路径
 	if path == "" {
 		path = DefaultInventory
@@ -29,10 +26,6 @@ func Load(path string) (*Inventory, error) {
 
 	// 指定的清单文件不存在
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if explicit {
-			return nil, fmt.Errorf("inventory file not found: %s", path)
-		}
-		// 如果默认的清单文件不存在，则使用空的清单文件
 		// 清单文件并不是必需的
 		return finalizeInventory(&Inventory{})
 	}

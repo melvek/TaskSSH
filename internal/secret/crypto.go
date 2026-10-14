@@ -126,7 +126,7 @@ func configuredKeyFile() (string, bool) {
 		return path, true
 	}
 
-	if KeyFileExists(DefaultKeyFile) {
+	if fileutil.FileExists(DefaultKeyFile) {
 		return DefaultKeyFile, true
 	}
 
@@ -166,11 +166,6 @@ func checkKeyFile(path string) (string, error) {
 	}
 
 	return expanded, nil
-}
-
-func KeyFileExists(path string) bool {
-	info, err := os.Stat(fileutil.ExpandHome(path))
-	return err == nil && !info.IsDir()
 }
 
 func PromptKeyConfirm() (string, error) {

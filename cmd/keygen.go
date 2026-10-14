@@ -27,7 +27,7 @@ encrypted secrets unrecoverable.`,
 			path = secret.SecretKeyFile
 		}
 
-		if secret.KeyFileExists(path) && !keygenForce {
+		if fileutil.FileExists(path) && !keygenForce {
 			return fmt.Errorf(
 				"vault key already exists: %s\n"+
 					"       use --force to overwrite (existing encrypted secrets will become unreadable)",
