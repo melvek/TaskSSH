@@ -71,8 +71,6 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []H
 				console.RawOutput(buf.String())
 			}()
 
-			console.Section(fmt.Sprintf("%s [%s]", entry.Name, entry.Host.Host))
-
 			err := e.runOnHost(ctx, task, entry, globalVars)
 
 			results[idx] = Result{
@@ -96,6 +94,7 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 			break
 		}
 
+		console.Output(console.LevelBrief, console.StyleNone, "")
 		console.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
 			batch.Group, i+1, len(plan), len(batch.Hosts)))
 
@@ -116,8 +115,6 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 				}
 			}
 		}
-
-		console.Output(console.LevelBrief, console.StyleNone, "")
 	}
 
 	return all

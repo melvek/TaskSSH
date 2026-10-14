@@ -70,7 +70,7 @@ func (a *PushAction) Execute(ctx *ActionContext) error {
 }
 
 func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Info("Upload %s to %s", localAbs, dest)
+	console.Debug("Upload %s to %s", localAbs, dest)
 
 	if ctx.DryRun {
 		return nil
@@ -80,12 +80,12 @@ func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy 
 	if err != nil {
 		return err
 	}
-	console.Info("Uploaded: %s -> %s", localAbs, finalPath)
+	console.Debug("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 
 func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Info("Upload directory %s to %s (recursive)", localAbs, dest)
+	console.Debug("Upload directory %s to %s (recursive)", localAbs, dest)
 
 	if ctx.DryRun {
 		return nil
@@ -125,12 +125,12 @@ func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string,
 		return err
 	}
 
-	console.Info("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
+	console.Debug("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
 	return nil
 }
 
 func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Info("Zip directory %s", localAbs)
+	console.Debug("Zip directory %s", localAbs)
 
 	zipPath, err := zipDir(localAbs)
 	if err != nil {
@@ -138,13 +138,13 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 	}
 	defer os.Remove(zipPath)
 
-	console.Info("Upload zip %s to %s", zipPath, dest)
+	console.Debug("Upload zip %s to %s", zipPath, dest)
 
 	finalZip, err := ctx.Client.Upload(zipPath, dest, policy)
 	if err != nil {
 		return err
 	}
-	console.Success("Uploaded zip: %s -> %s", zipPath, finalZip)
+	console.Debug("Uploaded zip: %s -> %s", zipPath, finalZip)
 
 	unzipCmd := fmt.Sprintf(
 		`which unzip &>/dev/null && { cd %s && unzip -o %s && rm -f %s; } || `+
@@ -154,7 +154,7 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 		shellQuote(finalZip),
 		shellQuote(finalZip),
 	)
-	console.Info("Execute unzip: %s", unzipCmd)
+	console.Debug("Execute unzip: %s", unzipCmd)
 
 	result, err := ctx.Client.Exec(unzipCmd)
 	if err != nil {
@@ -164,7 +164,7 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 		return fmt.Errorf("unzip failed with exit code %d", result.ExitCode)
 	}
 
-	console.Info("Directory uploaded: %s -> %s", localAbs, dest)
+	console.Debug("Directory uploaded: %s -> %s", localAbs, dest)
 	return nil
 }
 

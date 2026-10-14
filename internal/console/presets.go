@@ -8,7 +8,7 @@ package console
 func Debug(format string, args ...any) { Output(LevelVerbose, StyleDebug, format, args...) }
 
 // Info 普通信息（Verbose）。
-func Info(format string, args ...any) { Output(LevelVerbose, StyleNone, format, args...) }
+func Info(format string, args ...any) { Output(LevelBrief, StyleNone, format, args...) }
 
 // Hint 提示信息（Verbose，青色缩进）。
 func Hint(format string, args ...any) { Output(LevelVerbose, StyleHint, format, args...) }
@@ -69,6 +69,7 @@ func Targets(lines []string) {
 
 // Summary 执行摘要（Brief）。
 func Summary(total, success, failed int, failedHosts []string) {
+	Output(LevelBrief, StyleNone, "")
 	Section("Execution Summary")
 	Output(LevelBrief, StyleNone, "Total tasks: %d", total)
 	Output(LevelBrief, StyleNone, "Succeeded: %d", success)
@@ -80,11 +81,11 @@ func Summary(total, success, failed int, failedHosts []string) {
 	} else {
 		Output(LevelBrief, StyleNone, "Failed: 0")
 	}
-	Output(LevelBrief, StyleNone, "")
 }
 
 // ExecutionID 输出执行 ID（Brief）。
 func ExecutionID(execID string) {
+	Output(LevelBrief, StyleNone, "")
 	Output(LevelBrief, StyleNone, "----------------------")
 	Output(LevelBrief, StyleNone, "Execution ID: %s", execID)
 }

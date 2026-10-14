@@ -31,13 +31,7 @@ func groupEntries(entries []HostEntry) ([]string, map[string][]HostEntry) {
 	return order, groups
 }
 
-// planBatches 把主机列表规划成一条批队列。
-//
-// 规则：
-//   - 按组分块，组间顺序按 entries 里组第一次出现的顺序
-//   - 组内按 batchSize = min(serial, len(group)-minAvailable) 切片
-//   - 单台组单独一批，不参与 minAvailable 计算
-//   - len(group)-minAvailable <= 0 时报错
+// 计算执行分组
 func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error) {
 	if serial < 0 {
 		serial = 0
@@ -80,7 +74,7 @@ func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error)
 	return plan, nil
 }
 
-// printPlan 打印完整执行队列。
+// printPlan 打印完整执行队列
 func printPlan(plan []Batch) {
 	console.Section("Execution Plan")
 	for i, batch := range plan {
@@ -91,5 +85,4 @@ func printPlan(plan []Batch) {
 				"  - %s [%s]", h.Name, h.Host.Host)
 		}
 	}
-	console.Output(console.LevelBrief, console.StyleNone, "")
 }

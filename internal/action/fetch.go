@@ -83,7 +83,7 @@ func (a *FetchAction) fetchFile(ctx *ActionContext, remote, dest string) error {
 		return err
 	}
 
-	console.Info("Download %s to %s", remote, finalPath)
+	console.Debug("Download %s to %s", remote, finalPath)
 
 	if ctx.DryRun {
 		return nil
@@ -99,7 +99,7 @@ func (a *FetchAction) fetchFile(ctx *ActionContext, remote, dest string) error {
 
 // 下载文件夹
 func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string) error {
-	console.Info("Download directory %s to %s (recursive)", remote, dest)
+	console.Debug("Download directory %s to %s (recursive)", remote, dest)
 
 	baseName := path.Base(remote)
 	hostID := buildHostID(ctx.Host.Host)
@@ -123,7 +123,7 @@ func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string)
 			return fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
 		}
 
-		console.Info("Download %s to %s", rf, localPath)
+		console.Debug("Download %s to %s", rf, localPath)
 
 		if err := ctx.Client.Download(rf, localPath); err != nil {
 			return err
@@ -145,7 +145,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 	zipName := fmt.Sprintf("%s.%d.zip", baseName, time.Now().UnixMicro())
 	remoteZip := path.Join(remoteTmpDir, zipName)
 
-	console.Info("Zip directory %s on remote", remote)
+	console.Debug("Zip directory %s on remote", remote)
 
 	zipCmd := fmt.Sprintf(
 		`which zip &>/dev/null && { mkdir -p %s && cd %s && zip -r %s %s; } || `+
@@ -155,7 +155,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 		shellQuote(remoteZip),
 		shellQuote(baseName),
 	)
-	console.Info("Execute zip files ...")
+	console.Debug("Execute zip files ...")
 
 	result, err := ctx.Client.Exec(zipCmd)
 	if err != nil {
@@ -173,7 +173,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 	localZip.Close()
 	defer os.Remove(localZipPath)
 
-	console.Info("Download zip %s to %s", remoteZip, localZipPath)
+	console.Debug("Download zip %s to %s", remoteZip, localZipPath)
 
 	if err := ctx.Client.Download(remoteZip, localZipPath); err != nil {
 		return err
@@ -186,7 +186,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 
 	rootLocal := filepath.Join(dest, hostID, baseName)
 
-	console.Info("Extract %s to %s", localZipPath, rootLocal)
+	console.Debug("Extract %s to %s", localZipPath, rootLocal)
 
 	if err := extractZip(localZipPath, rootLocal); err != nil {
 		return fmt.Errorf("extract: %w", err)
