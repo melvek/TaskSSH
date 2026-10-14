@@ -13,7 +13,7 @@ import (
 var (
 	inventoryFile     string
 	listOnly          bool
-	yesFlag           bool
+	confirmFlag       bool
 	portFlag          int
 	userFlag          string
 	passwordFlag      string
@@ -65,7 +65,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "", "Inventory file (default: inventory.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
 	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
-	rootCmd.PersistentFlags().BoolVarP(&yesFlag, "yes", "y", false, "Skip confirmation")
+	rootCmd.PersistentFlags().BoolVarP(&confirmFlag, "confirm", "", false, "List target hosts and wait for confirmation before executing")
 	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "port")
 	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "username")
 	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "password (plaintext, not recommended)")
