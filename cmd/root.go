@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/fileutil"
 	"mestrap.com/taskssh/internal/secret"
 )
 
@@ -82,9 +83,16 @@ func init() {
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		secret.SecretKeyFile = secretKeyFile
 
-		// 显式指定了密钥文件，但文件不存在
-		if secretKeyFile != "" && !secret.KeyFileExists(secretKeyFile) {
+		if inventoryFile != "" && !fileutil.FileExists(inventoryFile) {
+			return fmt.Errorf("inventory file not found: %s", inventoryFile)
+		}
+
+		if secretKeyFile != "" && !fileutil.FileExists(secretKeyFile) {
 			return fmt.Errorf("secret key file not found: %s", secretKeyFile)
+		}
+
+		if identityFileFlag != "" && !fileutil.FileExists(identityFileFlag) {
+			return fmt.Errorf("secret key file not found: %s", identityFileFlag)
 		}
 
 		switch {
