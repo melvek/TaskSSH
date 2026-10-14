@@ -28,16 +28,6 @@
             "OriginalFilename": "taskssh-windows-amd64.exe",
             "ProductName": "TaskSSH",
             "ProductVersion": "3.0.0"
-          },
-          "0804": {
-            "CompanyName": "melvek",
-            "FileDescription": "TaskSSH - 轻量级 SSH 批量运维工具",
-            "FileVersion": "3.0.0",
-            "InternalName": "taskssh",
-            "LegalCopyright": "MIT License",
-            "OriginalFilename": "taskssh-windows-amd64.exe",
-            "ProductName": "TaskSSH",
-            "ProductVersion": "3.0.0"
           }
         }
       }
