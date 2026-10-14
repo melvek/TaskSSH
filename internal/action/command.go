@@ -39,7 +39,7 @@ func (a *CommandAction) Execute(ctx *ActionContext) error {
 		return runLocalCommand(ctx, cmd)
 	}
 
-	console.Info("Execute command: %s", cmd)
+	console.Debug("Execute command: %s", cmd)
 
 	if ctx.DryRun {
 		return nil

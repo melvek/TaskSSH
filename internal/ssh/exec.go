@@ -29,12 +29,9 @@ func (c *Client) Exec(command string) (*ExecResult, error) {
 	}
 	defer session.Close()
 
-	out := console.VerboseWriter()
-
 	var stdout, stderr bytes.Buffer
-
-	session.Stdout = io.MultiWriter(out, &stdout)
-	session.Stderr = io.MultiWriter(out, &stderr)
+	session.Stdout = io.MultiWriter(console.CommandWriter(), &stdout)
+	session.Stderr = io.MultiWriter(console.StderrWriter(), &stderr)
 
 	err = session.Run(command)
 

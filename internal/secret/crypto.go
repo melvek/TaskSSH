@@ -97,7 +97,7 @@ func Decrypt(encoded string) (string, error) {
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plain, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", fmt.Errorf("decrypt: %w", err)
+		return "", err
 	}
 
 	return string(plain), nil

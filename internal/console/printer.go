@@ -81,15 +81,24 @@ func GetOutput() io.Writer {
 	return getState().w
 }
 
-// VerboseWriter 返回一个仅在 Verbose 级别下生效的输出目标。
+// CommandWriter 返回远程命令 stdout 的输出目标。
 //
-// 非 Verbose 级别返回 io.Discard，写入被静默丢弃。
-// 用于命令 stdout/stderr 这类「只在详细模式下显示」的输出。
-func VerboseWriter() io.Writer {
-	if currentLevel >= LevelVerbose {
-		return GetOutput()
+// 规则：
+//   - Quiet 级别：丢弃
+//   - 其他级别：输出到当前 goroutine 的目标
+func CommandWriter() io.Writer {
+	if currentLevel <= LevelQuiet {
+		return io.Discard
 	}
-	return io.Discard
+	return GetOutput()
+}
+
+// StderrWriter 返回远程命令 stderr 的输出目标。
+//
+// 规则：所有级别都输出。
+// stderr 表示错误信息，任何级别下都应可见。
+func StderrWriter() io.Writer {
+	return GetOutput()
 }
 
 // getState 返回当前 goroutine 的状态，不存在则创建。
