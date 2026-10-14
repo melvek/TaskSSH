@@ -8,7 +8,7 @@ import (
 )
 
 func confirm(message string) bool {
-	fmt.Printf("\n%s (y/n): ", message)
+	fmt.Printf("%s (y/n): ", message)
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
