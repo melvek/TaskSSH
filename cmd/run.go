@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 
-	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/resolve"
@@ -106,7 +105,6 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 	maps.Copy(globalVars, inv.GlobalVars.Extra)
 
 	// 一次性加载所有Action，之后根据任务创建执行器
-	actions := action.NewRegistry()
 	serial := t.Serial
 	if serialFlag >= 0 {
 		serial = serialFlag
@@ -117,7 +115,7 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 		minAvailable = minAvailableFlag
 	}
 
-	executor := task.NewExecutor(actions, concurrency, connectTimeout, dryRun, cliVarMap,
+	executor := task.NewExecutor(concurrency, connectTimeout, dryRun, cliVarMap,
 		serial, minAvailable, stopOnFailureFlag)
 
 	results, err := executor.Run(ctx, t, entries, globalVars)

@@ -222,3 +222,7 @@ func zipDir(dir string) (string, error) {
 
 	return tmpFile.Name(), nil
 }
+
+func init() {
+	Register("push", &PushAction{})
+}

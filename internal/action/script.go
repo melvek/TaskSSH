@@ -88,3 +88,7 @@ func resolveScriptPath(dest, localAbs string) string {
 	}
 	return dest
 }
+
+func init() {
+	Register("script", &ScriptAction{})
+}

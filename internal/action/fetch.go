@@ -298,3 +298,7 @@ func extractZip(zipPath, destDir string) error {
 
 	return nil
 }
+
+func init() {
+	Register("fetch", &FetchAction{})
+}

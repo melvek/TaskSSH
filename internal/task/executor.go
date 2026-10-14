@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/resolve"
 )
@@ -18,7 +17,6 @@ type Result struct {
 
 // Executor 执行任务。
 type Executor struct {
-	actions        *action.Registry
 	concurrency    int
 	connectTimeout time.Duration
 	dryRun         bool
@@ -32,7 +30,7 @@ type Executor struct {
 // NewExecutor 创建执行器。
 //
 // cliVars 是 CLI -D 传入的变量，优先级最高，覆盖清单中的所有同名变量。
-func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
+func NewExecutor(concurrency int, connectTimeout int,
 	dryRun bool, cliVars resolve.Vars,
 	serial, minAvailable int, stopOnFailure bool) *Executor {
 	if concurrency <= 0 {
@@ -45,7 +43,6 @@ func NewExecutor(actions *action.Registry, concurrency int, connectTimeout int,
 		cliVars = make(resolve.Vars)
 	}
 	return &Executor{
-		actions:        actions,
 		concurrency:    concurrency,
 		connectTimeout: time.Duration(connectTimeout) * time.Second,
 		dryRun:         dryRun,

@@ -47,7 +47,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostE
 
 	for i, step := range task.Steps {
 
-		act := e.actions.Get(step.Action)
+		act := action.Get(step.Action)
 		if act == nil {
 			console.Error("unknown action: %s", step.Action)
 			return fmt.Errorf("unknown action: %s", step.Action)

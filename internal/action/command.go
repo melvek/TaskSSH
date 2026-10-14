@@ -80,3 +80,7 @@ func runLocalCommand(ctx *ActionContext, cmd string) error {
 	}
 	return nil
 }
+
+func init() {
+	Register("command", &CommandAction{})
+}
