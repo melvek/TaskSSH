@@ -29,6 +29,8 @@ var scriptCmd = &cobra.Command{
 		if scriptDest == "" {
 			if len(args) > 1 {
 				scriptDest = args[1]
+			} else {
+				scriptDest = "/tmp"
 			}
 		}
 		with := action.ScriptWith{
@@ -43,7 +45,7 @@ var scriptCmd = &cobra.Command{
 
 func init() {
 	scriptCmd.Flags().StringVarP(&scriptFile, "file", "f", "", "Local script file")
-	scriptCmd.Flags().StringVarP(&scriptDest, "dest", "d", "/tmp", "Remote directory")
+	scriptCmd.Flags().StringVarP(&scriptDest, "dest", "d", "", "Remote directory (default /tmp)")
 	scriptCmd.Flags().BoolVarP(&scriptRemove, "remove", "r", false, "Remove script after execution")
 	scriptCmd.Flags().BoolVarP(&scriptForce, "force", "F", false, "Overwrite existing script")
 }

@@ -26,11 +26,16 @@ var fetchCmd = &cobra.Command{
 				return fmt.Errorf("push action requires 'file' parameter")
 			}
 		}
+
 		if fetchDest == "" {
 			if len(args) > 1 {
 				fetchDest = args[1]
+			} else {
+				// 如果没有指定本地路径，则使用当前路径
+				fetchDest = "./"
 			}
 		}
+
 		with := action.FetchWith{
 			File:   fetchFile,
 			Dest:   fetchDest,
@@ -43,7 +48,7 @@ var fetchCmd = &cobra.Command{
 
 func init() {
 	fetchCmd.Flags().StringVarP(&fetchFile, "file", "f", "", "Remote file or directory")
-	fetchCmd.Flags().StringVarP(&fetchDest, "dest", "d", "./", "Local destination")
+	fetchCmd.Flags().StringVarP(&fetchDest, "dest", "d", "", "Local destination")
 	fetchCmd.Flags().BoolVarP(&fetchZip, "zip", "z", false, "Zip directory on remote before download (requires zip on remote)")
 	fetchCmd.Flags().StringVarP(&fetchTmpDir, "tmp-dir", "T", "/tmp", "Remote temp directory for zip (only with -z)")
 }
