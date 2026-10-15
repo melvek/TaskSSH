@@ -13,7 +13,7 @@ import (
 )
 
 // runBuiltinTask 执行内置任务
-func runBuiltinTask(ctx context.Context, taskName string, hosts []string, with any) error {
+func runBuiltinTask(ctx context.Context, taskName string, with any) error {
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func runBuiltinTask(ctx context.Context, taskName string, hosts []string, with a
 		Steps: []config.Step{step},
 	}
 
-	return executeTask(ctx, &t, hosts, inv)
+	return executeTask(ctx, &t, inv)
 }
 
 // runDynamicTask 从 inventory.yaml 动态查找自定义的 task
@@ -44,16 +44,15 @@ func runDynamicTask(ctx context.Context, args []string) error {
 		return fmt.Errorf("task not found: %s", taskName)
 	}
 
-	hostNames := args[1:]
-	if len(hostNames) == 0 {
+	if len(hostFlag) == 0 {
 		return fmt.Errorf("no target hosts")
 	}
 
-	return executeTask(ctx, &t, hostNames, inv)
+	return executeTask(ctx, &t, inv)
 }
 
 // executeTask 是公共执行入口。
-func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *config.Inventory) error {
+func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) error {
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
@@ -74,7 +73,7 @@ func executeTask(ctx context.Context, t *config.Task, hostNames []string, inv *c
 		IdentityFile: identityFileFlag,
 	}
 
-	entries, err := task.ResolveHosts(hostNames, inv, ov)
+	entries, err := task.ResolveHosts(hostFlag, inv, ov)
 	if err != nil {
 		return err
 	}

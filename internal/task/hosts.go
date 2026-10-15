@@ -44,11 +44,13 @@ type HostEntry struct {
 //	web*                    默认：同时匹配组名和主机名，去重合并
 //	!g:web*                 排除：组名匹配 web* 的组
 //	!h:web1                 排除：主机名匹配 web1 的主机
-func ResolveHosts(hostNames []string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
+func ResolveHosts(hosts string, inv *config.Inventory, ov Overrides) ([]HostEntry, error) {
 	var includes []string
 	var excludes []string
 
-	for _, name := range hostNames {
+	hostNames := strings.SplitSeq(hosts, ",")
+
+	for name := range hostNames {
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue
