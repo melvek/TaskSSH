@@ -17,7 +17,7 @@ var (
 var scriptCmd = &cobra.Command{
 	Use:   "script [hosts...]",
 	Short: "Execute a local shell script on remote hosts",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if scriptFile == "" {
 			if len(args) > 0 {

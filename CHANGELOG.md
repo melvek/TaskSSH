@@ -30,6 +30,11 @@
   - 用 `-V` 指定其他路径
   - 用 `--force` 覆盖已存在的文件
 - **参数省略**: 现在各内置命令在直接使用时，可以省略常用参数前辍，支持根据位置自动判断
+  - command: 位置参数作为 -e 的简写（[cmd]）
+  - push: 位置参数作为 file / dest 的简写（[file] [dest]）
+  - fetch: 位置参数作为 file / dest 的简写（[file] [dest]）
+  - script: 位置参数作为 file 的简写（[file]）
+  - 位置参数与 -e/-f/-d 同时指定时冲突报错
 - **Windows 应用图标**：`taskssh.exe` 现在带有应用图标。
 
 ### Changed
