@@ -254,16 +254,16 @@ echo 'source <(taskssh completion zsh)' >> ~/.zshrc</code></pre>
             </p>
 
             <pre class="language-bash"><code># 单台主机
-taskssh command "192.168.1.10" -u deploy -p "your-password" -e "uptime" -y
+taskssh command -H "192.168.1.10" -u deploy -p "your-password" -e "uptime" -y
 
 # 多台主机
-taskssh command "10.0.0.1" "10.0.0.2" "10.0.0.3" -u deploy -e "df -h" -y
+taskssh command -H "10.0.0.1,10.0.0.2,10.0.0.3" -u deploy -e "df -h" -y
 
 # 上传文件
-taskssh push "192.168.1.10" -u deploy -f app.jar -d /opt/app/ -y
+taskssh push -H "192.168.1.10" -u deploy -f app.jar -d /opt/app/ -y
 
 # 下载文件
-taskssh fetch "192.168.1.10" -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
+taskssh fetch -H "192.168.1.10" -u deploy -f /var/log/app.log -d ./logs/ -y</code></pre>
 
             <p>
                 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
@@ -296,8 +296,8 @@ servers:
 
             <p>按组执行命令：</p>
 
-            <pre class="language-bash"><code>taskssh command prod -e "uptime" -y
-taskssh command uat -e "uptime" -y</code></pre>
+            <pre class="language-bash"><code>taskssh command -H prod -e "uptime" -y
+taskssh command -H uat -e "uptime" -y</code></pre>
 
             <p>
                 认证信息、变量在清单里定义，不需要每次命令行传入。
@@ -333,7 +333,7 @@ taskssh command uat -e "uptime" -y</code></pre>
 
             <p>执行任务：</p>
 
-            <pre class="language-bash"><code>taskssh release prod -y</code></pre>
+            <pre class="language-bash"><code>taskssh release -H prod -y</code></pre>
 
             <p>
                 一条命令完成「上传 → 重启 → 健康检查」整个流程。
@@ -367,15 +367,15 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
             <ul>
                 <li>
                     不写清单时，用位置参数直接指定主机，执行内置 action 的单步操作，例如
-                    <code>taskssh command "192.168.1.10" -e "uptime" -y</code>。
+                    <code>taskssh command -H "192.168.1.10" -e "uptime" -y</code>。
                 </li>
                 <li>
                     写清单但不写 <code>tasks</code> 段时，仍可用内置 action 对清单里的主机或组执行单步操作，
-                    例如 <code>taskssh command prod -e "uptime" -y</code>。
+                    例如 <code>taskssh command -H prod -e "uptime" -y</code>。
                 </li>
                 <li>
                     清单中有 <code>tasks</code> 段时，用任务名调用，一次执行整个流程，
-                    例如 <code>taskssh release prod -y</code>。
+                    例如 <code>taskssh release -H prod -y</code>。
                 </li>
             </ul>
 
@@ -396,19 +396,19 @@ tasks:         # 任务定义，包含有序步骤</code></pre>
                             <td>直接执行</td>
                             <td>否</td>
                             <td>否</td>
-                            <td><code>taskssh command host -e "..."</code></td>
+                            <td><code>taskssh command -H host -e "..."</code></td>
                         </tr>
                         <tr>
                             <td>按组执行</td>
                             <td>是</td>
                             <td>否</td>
-                            <td><code>taskssh command prod -e "..."</code></td>
+                            <td><code>taskssh command -H prod -e "..."</code></td>
                         </tr>
                         <tr>
                             <td>执行任务</td>
                             <td>是</td>
                             <td>是</td>
-                            <td><code>taskssh release prod</code></td>
+                            <td><code>taskssh release -H prod</code></td>
                         </tr>
                     </tbody>
                 </table>
@@ -814,13 +814,13 @@ tasks:
             </div>
 
             <pre class="language-bash"><code># 所有以 web 开头的组
-taskssh command 'g:web*' -e "uptime" -y
+taskssh command -H 'g:web*' -e "uptime" -y
 
 # 所有组内以 web 开头的主机
-taskssh command 'h:web*' -e "uptime" -y
+taskssh command -H 'h:web*' -e "uptime" -y
 
 # 默认匹配：组名和主机名都匹配
-taskssh command 'web*' -e "uptime" -y</code></pre>
+taskssh command -H 'web*' -e "uptime" -y</code></pre>
 
             <p>
                 主机名会自动解析为 IP。解析结果用于连接，同时用于 <code>-l</code> 输出显示。
@@ -838,13 +838,13 @@ taskssh command 'web*' -e "uptime" -y</code></pre>
             </p>
 
             <pre class="language-bash"><code># 所有主机，排除 web* 组
-taskssh command 'g:*' '!g:web*' -e "uptime" -y
+taskssh command -H 'g:*' '!g:web*' -e "uptime" -y
 
 # 只指定排除，默认从所有主机中排除
-taskssh command '!g:web*' -e "uptime" -y
+taskssh command -H '!g:web*' -e "uptime" -y
 
 # 排除单台主机
-taskssh command 'g:*' '!h:web1' -e "uptime" -y</code></pre>
+taskssh command -H 'g:*' '!h:web1' -e "uptime" -y</code></pre>
 
             <p>
                 exclude 匹配不到任何主机时不报错。include 匹配不到时报错。
@@ -874,8 +874,8 @@ taskssh command 'g:*' '!h:web1' -e "uptime" -y</code></pre>
     hosts:
       uat1: 10.1.0.1</code></pre>
 
-            <pre class="language-bash"><code>taskssh release prod -y
-taskssh release uat -y</code></pre>
+            <pre class="language-bash"><code>taskssh release -H prod -y
+taskssh release -H uat -y</code></pre>
 
             <h2 id="hostvars">host</h2>
 
@@ -1401,7 +1401,7 @@ servers:
                 </table>
             </div>
 
-            <pre class="language-bash"><code>taskssh command web-server-01 -e "ls -la /opt" -y</code></pre>
+            <pre class="language-bash"><code>taskssh command -H web-server-01 -e "ls -la /opt" -y</code></pre>
 
             <p>作为 step 使用时，将命令写入 <code>with.command</code>：</p>
 
@@ -1462,13 +1462,13 @@ servers:
             </div>
 
             <pre class="language-bash"><code># 单文件
-taskssh push app-server -f app.jar -d /opt/app/ -y
+taskssh push -H app-server -f app.jar -d /opt/app/ -y
 
 # 目录，递归上传
-taskssh push prod -f ./dist/assets/ -d /opt/app/ -y
+taskssh push -H prod -f ./dist/assets/ -d /opt/app/ -y
 
 # 目录，打包上传
-taskssh push prod -f ./dist/assets/ -d /opt/app/ -z -y</code></pre>
+taskssh push -H prod -f ./dist/assets/ -d /opt/app/ -z -y</code></pre>
 
             <h4>路径与覆盖规则</h4>
 
@@ -1535,16 +1535,16 @@ taskssh push prod -f ./dist/assets/ -d /opt/app/ -z -y</code></pre>
             </div>
 
             <pre class="language-bash"><code># 下载至目录（按主机标识分组存放）
-taskssh fetch prod -f /var/log/app.log -d ./logs/ -y
+taskssh fetch -H prod -f /var/log/app.log -d ./logs/ -y
 
 # 下载至指定文件
-taskssh fetch prod_web_1 -f /var/log/app.log -d ./app.log -y
+taskssh fetch -H prod_web_1 -f /var/log/app.log -d ./app.log -y
 
 # 下载目录，递归
-taskssh fetch prod -f /var/log/app/ -d ./logs/ -y
+taskssh fetch -H prod -f /var/log/app/ -d ./logs/ -y
 
 # 下载目录，打包
-taskssh fetch prod -f /var/log/app/ -d ./logs/ -z -y</code></pre>
+taskssh fetch -H prod -f /var/log/app/ -d ./logs/ -z -y</code></pre>
 
             <h4>路径与覆盖规则</h4>
 
@@ -1605,13 +1605,13 @@ taskssh fetch prod -f /var/log/app/ -d ./logs/ -z -y</code></pre>
             </div>
 
             <pre class="language-bash"><code># 上传并执行
-taskssh script prod -f ./scripts/deploy.sh -y
+taskssh script -H prod -f ./scripts/deploy.sh -y
 
 # 执行后删除远程脚本
-taskssh script prod -f ./scripts/deploy.sh -r -y
+taskssh script -H prod -f ./scripts/deploy.sh -r -y
 
 # 覆盖已存在的远程脚本
-taskssh script prod -f ./scripts/deploy.sh -r -F -y</code></pre>
+taskssh script -H prod -f ./scripts/deploy.sh -r -F -y</code></pre>
 
             <h4>执行规则</h4>
 
@@ -1714,10 +1714,10 @@ taskssh script prod -f ./scripts/deploy.sh -r -F -y</code></pre>
             </p>
 
             <pre class="language-bash"><code># shell 变量，原样传给远程
-taskssh command prod -e "echo $HOME" -y
+taskssh command -H prod -e "echo $HOME" -y
 
 # TaskSSH 变量，执行前替换
-taskssh command prod -e "echo {{app_name}}" -y</code></pre>
+taskssh command -H prod -e "echo {{app_name}}" -y</code></pre>
 
             <h2 id="builtin-vars">内置变量</h2>
 
@@ -1820,7 +1820,7 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
         with:
           command: "ln -sfn {{service_path}}/releases/{{revert_id}} {{service_path}}/current"</code></pre>
 
-            <pre class="language-bash"><code>taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
+            <pre class="language-bash"><code>taskssh revert -H prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
 
             <h2 id="cli-vars">CLI 注入</h2>
 
@@ -1851,13 +1851,13 @@ taskssh command prod -e "echo {{app_name}}" -y</code></pre>
             </div>
 
             <pre class="language-bash"><code># 单变量
-taskssh deploy prod -D version=1.2.3 -y
+taskssh deploy -H prod -D version=1.2.3 -y
 
 # 多变量
-taskssh deploy prod -D version=1.2.3 -D env=uat -y
+taskssh deploy -H prod -D version=1.2.3 -D env=uat -y
 
 # 回退到指定版本
-taskssh revert prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
+taskssh revert -H prod -D revert_id=20260926_0K8X7A2B -y</code></pre>
 
             <h3>规则</h3>
 
@@ -1995,11 +1995,11 @@ eval $(ssh-agent)
 ssh-add ~/.ssh/id_rsa
 
 # 直接执行
-taskssh release prod -y
+taskssh release -H prod -y
 
 # 或通过跳板机
 ssh -A jump-host
-taskssh release prod -y</code></pre>
+taskssh release -H prod -y</code></pre>
 
             <p>
                 Agent 可用时，清单中的 <code>identity_file</code> 和 <code>password</code> 都可以不配置。
@@ -2178,10 +2178,10 @@ ssh-add ~/.ssh/id_ed25519
             </p>
 
             <pre class="language-bash"><code># 用指定私钥执行任务
-taskssh release prod -k ~/.ssh/id_deploy -y
+taskssh release -H prod -k ~/.ssh/id_deploy -y
 
 # 用指定私钥对临时主机执行命令
-taskssh command 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
+taskssh command -H 10.0.0.1 -u deploy -k ~/.ssh/id_rsa -e "uptime" -y</code></pre>
 
             <div class="callout">
                 <span class="co-icon">ℹ️</span>
@@ -2263,7 +2263,7 @@ servers:
             </p>
 
             <pre
-                class="language-bash"><code>taskssh command 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y</code></pre>
+                class="language-bash"><code>taskssh command -H 192.168.1.10 -u deploy -p "your-password" -e "uptime" -y</code></pre>
 
             <h3>终端交互输入</h3>
 
@@ -2489,7 +2489,7 @@ Keep this file safe. If lost, existing encrypted secrets cannot be recovered.</c
                 </table>
             </div>
 
-            <pre class="language-bash"><code>taskssh release prod -c 5 -y</code></pre>
+            <pre class="language-bash"><code>taskssh release -H prod -c 5 -y</code></pre>
 
             <p>上述命令表示：最多同时操作 5 台主机，一台完成后自动补充下一台。</p>
 
@@ -2734,13 +2734,13 @@ Keep this file safe. If lost, existing encrypted secrets cannot be recovered.</c
           force: true</code></pre>
 
             <pre class="language-bash"><code># 使用任务级配置
-taskssh deploy order,stock -y
+taskssh deploy -H order,stock -y
 
 # CLI 覆盖：每批 3 台，留 1 台
-taskssh deploy order,stock -S 3 --min-available 1 -y
+taskssh deploy -H order,stock -S 3 --min-available 1 -y
 
 # CLI 覆盖：不分批，全量执行
-taskssh deploy order,stock -S 0 -y</code></pre>
+taskssh deploy -H order,stock -S 0 -y</code></pre>
 
             <div class="callout tip">
                 <span class="co-icon">💡</span>
@@ -2778,7 +2778,7 @@ taskssh deploy order,stock -S 0 -y</code></pre>
                 </table>
             </div>
 
-            <pre class="language-bash"><code>taskssh release prod --dry-run</code></pre>
+            <pre class="language-bash"><code>taskssh release -H prod --dry-run</code></pre>
 
             <p>输出示例：</p>
 

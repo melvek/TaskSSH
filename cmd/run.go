@@ -56,6 +56,12 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	ssh.ClearPasswordCache()
 	defer ssh.ClearPasswordCache()
 
+	// 未指定具体主机时，报错，因为目前默认是不做确认的，为防止忘了写，导致对全部主机执行一些不可逆的操作
+	// 如果确实需要对所有服务器执行操作，需要显式地指定 --host "*"
+	if hostFlag == "" {
+		return fmt.Errorf("no target hosts, user -H/--host to specify")
+	}
+
 	// dry-run 提醒
 	if dryRun {
 		console.Warn("Dry run (no changes will be made)")

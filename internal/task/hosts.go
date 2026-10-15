@@ -48,9 +48,12 @@ func ResolveHosts(hosts string, inv *config.Inventory, ov Overrides) ([]HostEntr
 	var includes []string
 	var excludes []string
 
-	hostNames := strings.SplitSeq(hosts, ",")
+	// 如果是空格或逗号，则视为分隔符
+	hostNames := strings.FieldsFunc(hosts, func(r rune) bool {
+		return r == ' ' || r == ','
+	})
 
-	for name := range hostNames {
+	for _, name := range hostNames {
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue
