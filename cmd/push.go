@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/action"
 )
@@ -15,15 +17,30 @@ var (
 var pushCmd = &cobra.Command{
 	Use:   "push [hosts...]",
 	Short: "Upload a file or directory to remote server",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if pushFile == "" {
+			if len(args) > 0 {
+				pushFile = args[0]
+			} else {
+				return fmt.Errorf("push action requires 'file' parameter")
+			}
+		}
+		if pushDest == "" {
+			if len(args) > 1 {
+				pushDest = args[1]
+			} else {
+				return fmt.Errorf("push action requires 'dest' parameter")
+			}
+		}
+
 		with := action.PushWith{
 			File:  pushFile,
 			Dest:  pushDest,
 			Force: pushForce,
 			Zip:   pushZip,
 		}
-		return runBuiltinTask(cmd.Context(), "push", args, with)
+		return runBuiltinTask(cmd.Context(), "push", with)
 	},
 }
 

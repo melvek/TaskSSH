@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/action"
 )
@@ -15,15 +17,27 @@ var (
 var scriptCmd = &cobra.Command{
 	Use:   "script [hosts...]",
 	Short: "Execute a local shell script on remote hosts",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if scriptFile == "" {
+			if len(args) > 0 {
+				scriptFile = args[0]
+			} else {
+				return fmt.Errorf("push action requires 'file' parameter")
+			}
+		}
+		if scriptDest == "" {
+			if len(args) > 1 {
+				scriptDest = args[1]
+			}
+		}
 		with := action.ScriptWith{
 			File:   scriptFile,
 			Dest:   scriptDest,
 			Remove: scriptRemove,
 			Force:  scriptForce,
 		}
-		return runBuiltinTask(cmd.Context(), "script", args, with)
+		return runBuiltinTask(cmd.Context(), "script", with)
 	},
 }
 

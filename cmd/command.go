@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/action"
+	"mestrap.com/taskssh/internal/console"
 )
 
 var (
@@ -16,13 +19,22 @@ var (
 var commandCmd = &cobra.Command{
 	Use:   "command [hosts...]",
 	Short: "Execute a remote command",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if executeFlag == "" {
+			if len(args) > 0 {
+				executeFlag = args[0]
+				console.Debug("command: %s", executeFlag)
+			} else {
+				return fmt.Errorf("command action requires 'command' parameter")
+			}
+		}
+
 		with := action.CommandWith{
 			Command: executeFlag,
 			Local:   executeLocal,
 		}
-		return runBuiltinTask(cmd.Context(), "command", args, with)
+		return runBuiltinTask(cmd.Context(), "command", with)
 	},
 }
 

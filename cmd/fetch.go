@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/action"
 )
@@ -15,15 +17,27 @@ var (
 var fetchCmd = &cobra.Command{
 	Use:   "fetch [hosts...]",
 	Short: "Download a file or directory from remote server",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if fetchFile == "" {
+			if len(args) > 0 {
+				fetchFile = args[0]
+			} else {
+				return fmt.Errorf("push action requires 'file' parameter")
+			}
+		}
+		if fetchDest == "" {
+			if len(args) > 1 {
+				fetchDest = args[1]
+			}
+		}
 		with := action.FetchWith{
 			File:   fetchFile,
 			Dest:   fetchDest,
 			Zip:    fetchZip,
 			TmpDir: fetchTmpDir,
 		}
-		return runBuiltinTask(cmd.Context(), "fetch", args, with)
+		return runBuiltinTask(cmd.Context(), "fetch", with)
 	},
 }
 
