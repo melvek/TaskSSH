@@ -55,7 +55,6 @@
                         <li><a href="#inventory-global">defaults</a></li>
                         <li><a href="#inventory-servers">servers</a></li>
                         <li><a href="#hostvars">host</a></li>
-                        <li><a href="#host-pattern">主机 pattern</a></li>  
                         <li><a href="#inventory-tasks">tasks</a></li>
                         <li><a href="#task-step">step</a></li>
                     </ul>
@@ -269,7 +268,7 @@ taskssh fetch -H "192.168.1.10" -u deploy -f /var/log/app.log -d ./logs/ -y</cod
             <p>
                 <code>command</code> / <code>push</code> / <code>fetch</code> / <code>script</code>
                 四个内置 action 都支持通过 <code>-H</code> 直接指定主机，支持逗号分隔多个，
-                也支持组名、glob、排除等 pattern，详见 <a href="#host-pattern">主机 pattern</a>。
+                也支持组名、glob、排除等 pattern，详见 <a href="#host-pattern">主机查找</a>。
             </p>
 
             <h3>使用清单文件</h3>
@@ -721,8 +720,8 @@ tasks:
             <h3>主机查找</h3>
 
             <p>
-                目标主机通过 <code>-H / --host</code> 指定，支持多种 pattern 形式。
-                完整语法见 <a href="#host-pattern">主机 pattern</a>。
+                目标主机通过 <code>-H / --host</code> 指定，支持多种查找形式。
+                完整语法见 <a href="#host-pattern">主机查找</a>。
             </p>
 
             <div class="table-wrap">
