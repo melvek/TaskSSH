@@ -5,18 +5,19 @@ import (
 	"strings"
 
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/host"
 )
 
 // Batch 是一批待执行的主机，属于同一组
 type Batch struct {
 	Group string
-	Hosts []HostEntry
+	Hosts []host.HostEntry
 }
 
 // groupEntries 按 Name 的 "/" 前缀分组，返回组顺序和分组结果。
-func groupEntries(entries []HostEntry) ([]string, map[string][]HostEntry) {
+func groupEntries(entries []host.HostEntry) ([]string, map[string][]host.HostEntry) {
 	order := []string{}
-	groups := map[string][]HostEntry{}
+	groups := map[string][]host.HostEntry{}
 
 	for _, e := range entries {
 		g := "standalone"
@@ -32,7 +33,7 @@ func groupEntries(entries []HostEntry) ([]string, map[string][]HostEntry) {
 }
 
 // 计算执行分组
-func planBatches(entries []HostEntry, serial, minAvailable int) ([]Batch, error) {
+func planBatches(entries []host.HostEntry, serial, minAvailable int) ([]Batch, error) {
 	if serial < 0 {
 		serial = 0
 	}

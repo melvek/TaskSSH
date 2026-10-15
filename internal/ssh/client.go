@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
-
 	"mestrap.com/taskssh/internal/config"
 )
 

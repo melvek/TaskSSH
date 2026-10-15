@@ -9,6 +9,7 @@ import (
 	"mestrap.com/taskssh/internal/action"
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/host"
 	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/ssh"
 )
@@ -18,14 +19,11 @@ import (
 // 变量合并顺序：
 //
 //	defaults -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
-func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostEntry,
+func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.HostEntry,
 	globalVars resolve.Vars) error {
 
 	// 1. 清单变量：global -> 组 -> 主机
-	vars := mergeVars(globalVars, entry.Vars)
-
-	// 2. 标准变量（host_name / group_name / host_addr / host_port / host_user）
-	maps.Copy(vars, entry.StandardVars())
+	vars := entry.BaseVars(globalVars)
 
 	// 3. CLI -D
 	maps.Copy(vars, e.cliVars)
@@ -103,12 +101,4 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry HostE
 	}
 
 	return nil
-}
-
-// mergeVars 合并变量池：global -> host，host 优先。
-func mergeVars(globalVars, hostVars resolve.Vars) resolve.Vars {
-	vars := make(resolve.Vars, len(globalVars)+len(hostVars))
-	maps.Copy(vars, globalVars)
-	maps.Copy(vars, hostVars)
-	return vars
 }

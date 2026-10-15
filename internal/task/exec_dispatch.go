@@ -8,11 +8,12 @@ import (
 
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/host"
 	"mestrap.com/taskssh/internal/resolve"
 )
 
 // runSerial 串行执行，实时输出。
-func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []host.HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
@@ -35,7 +36,7 @@ func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []Hos
 }
 
 // runParallel 并发执行，按主机缓冲输出。
-func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) []Result {
+func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []host.HostEntry, globalVars resolve.Vars) []Result {
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
 	var wg sync.WaitGroup
@@ -49,7 +50,7 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []H
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(idx int, entry HostEntry) {
+		go func(idx int, entry host.HostEntry) {
 			defer wg.Done()
 			defer func() { <-sem }()
 

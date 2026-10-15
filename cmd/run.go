@@ -7,6 +7,7 @@ import (
 
 	"mestrap.com/taskssh/internal/config"
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/host"
 	"mestrap.com/taskssh/internal/resolve"
 	"mestrap.com/taskssh/internal/ssh"
 	"mestrap.com/taskssh/internal/task"
@@ -72,14 +73,15 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 		return err
 	}
 
-	ov := task.Overrides{
+	ov := host.Overrides{
 		Port:         portFlag,
 		Username:     userFlag,
 		Password:     passwordFlag,
 		IdentityFile: identityFileFlag,
 	}
 
-	entries, err := task.ResolveHosts(hostFlag, inv, ov)
+	entries, err := host.ResolveHosts(hostFlag, inv, ov)
+
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"mestrap.com/taskssh/internal/config"
+	"mestrap.com/taskssh/internal/host"
 	"mestrap.com/taskssh/internal/resolve"
 )
 
@@ -61,7 +62,7 @@ func (e *Executor) ExecID() string {
 }
 
 // Run 对一批主机执行任务。
-func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []HostEntry, globalVars resolve.Vars) ([]Result, error) {
+func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []host.HostEntry, globalVars resolve.Vars) ([]Result, error) {
 
 	e.execID = generateExecID()
 
