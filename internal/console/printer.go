@@ -48,10 +48,10 @@ type styleMeta struct {
 var styleMetas = map[Style]styleMeta{
 	StyleNone:       {},
 	StyleSuccess:    {green, ""},
-	StyleError:      {red, "[ERROR] "},
-	StyleWarn:       {yellow, "[WARN] "},
+	StyleError:      {red, "error: "},
+	StyleWarn:       {yellow, "warning: "},
 	StyleHint:       {cyan, "  "},
-	StyleDebug:      {gray, "[DEBUG] "},
+	StyleDebug:      {gray, ""},
 	StyleSection:    {blue, ">>> "},
 	StyleStep:       {cyan, ""},
 	StyleProgress:   {cyan, ""},
