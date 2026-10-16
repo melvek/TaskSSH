@@ -19,8 +19,8 @@ type Overrides struct {
 
 // HostEntry 是目标主机的一项。
 type HostEntry struct {
-	Name string      // 显示名：组内主机为 "组名/主机名"，独立主机为输入值
-	Host config.Host // Host.Host 为最终连接用的 IP
+	Name string
+	Host config.Host
 	Vars resolve.Vars
 }
 

@@ -1,6 +1,7 @@
 package host
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -8,19 +9,15 @@ import (
 )
 
 // resolver 是展开后的主机索引。
-//
-// 构造时一次性把所有组和主机展开成 []HostEntry，
-// 后续所有 pattern 查找走 map，避免重复展开。
 type resolver struct {
 	inv        *config.Inventory
-	entries    []HostEntry         // 所有主机，按组名 / 主机名字典序
-	byName     map[string]int      // "group/host" → entries 索引
-	groups     map[string][]int    // group → entries 索引列表
-	groupOrder []string            // 组名（已排序）
-	hostOrder  map[string][]string // group → 主机名（已排序）
+	entries    []HostEntry
+	byName     map[string]int
+	groups     map[string][]int
+	groupOrder []string
+	hostOrder  map[string][]string
 }
 
-// newResolver 展开清单，构建主机索引。
 func newResolver(inv *config.Inventory) *resolver {
 	r := &resolver{
 		inv:       inv,
@@ -29,14 +26,12 @@ func newResolver(inv *config.Inventory) *resolver {
 		hostOrder: make(map[string][]string),
 	}
 
-	// 排序组名
 	r.groupOrder = make([]string, 0, len(inv.Servers))
 	for name := range inv.Servers {
 		r.groupOrder = append(r.groupOrder, name)
 	}
 	sort.Strings(r.groupOrder)
 
-	// 逐个组展开
 	for _, groupName := range r.groupOrder {
 		group := inv.Servers[groupName]
 
@@ -63,32 +58,21 @@ func newResolver(inv *config.Inventory) *resolver {
 
 // resolve 解析 pattern 字符串，返回匹配的主机列表。
 //
-// pattern 用空格或逗号分隔多个子表达式，从左到右依次应用：
-//
-//	prefix        操作
-//	（无）        并集：加到当前结果
-//	!             差集：从当前结果移除
-//	&             交集：在当前结果中过滤
-//
-// 初始集：
-//   - 第一个子表达式以 & 或 ! 开头 → 从 g:* 开始
-//   - 否则 → 从空集开始，第一个子表达式作为并集加入
-//
-// 无任何子表达式时默认 g:*。! 匹配错误容忍，& 匹配错误时结果为空并继续。
+// 各子表达式只负责「匹配」，匹配不到返回空结果。
+// 最终结果为空时报错。
 func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 	tokens := splitPattern(pattern)
 
 	var result []HostEntry
 
 	if len(tokens) == 0 {
-		// 空 pattern → 默认 g:*
 		sub, err := r.resolveSingle("g:*")
 		if err != nil {
 			return nil, err
 		}
 		result = sub
 	} else {
-		// 第一个 token 是 & 或 ! 开头 → 从 g:* 开始
+		// 第一个 token 以 & 或 ! 开头 → 从 g:* 开始
 		if strings.HasPrefix(tokens[0], "&") || strings.HasPrefix(tokens[0], "!") {
 			sub, err := r.resolveSingle("g:*")
 			if err != nil {
@@ -102,17 +86,14 @@ func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 			case strings.HasPrefix(t, "&"):
 				sub, err := r.resolveSingle(t[1:])
 				if err != nil {
-					// & 过滤：匹配不到时结果为空，不中断，后续 token 继续处理
-					result = nil
-					continue
+					return nil, err
 				}
 				result = intersectEntries(result, sub)
 
 			case strings.HasPrefix(t, "!"):
 				sub, err := r.resolveSingle(t[1:])
 				if err != nil {
-					// ! 排除：匹配不到时跳过，不中断
-					continue
+					return nil, err
 				}
 				result = subtractEntries(result, sub)
 
@@ -124,6 +105,10 @@ func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 				result = unionEntries(result, sub)
 			}
 		}
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("no hosts matched: %q", pattern)
 	}
 
 	applyOverrides(result, ov)

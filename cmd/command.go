@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"mestrap.com/taskssh/internal/action"
-	"mestrap.com/taskssh/internal/console"
 )
 
 var (
@@ -24,7 +23,6 @@ var commandCmd = &cobra.Command{
 		if executeFlag == "" {
 			if len(args) > 0 {
 				executeFlag = args[0]
-				console.Debug("command: %s", executeFlag)
 			} else {
 				return fmt.Errorf("command action requires 'command' parameter")
 			}

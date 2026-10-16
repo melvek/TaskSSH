@@ -60,7 +60,7 @@ func (e *HostEntry) StandardVars() resolve.Vars {
 
 	// host_name / group_name
 	// Name 格式：组内主机为 "组名/主机名"，独立主机为 "主机名"
-	if groupName, hostName, ok := cutSlash(e.Name); ok {
+	if groupName, hostName, ok := strings.Cut(e.Name, "/"); ok {
 		vars["group_name"] = groupName
 		vars["host_name"] = hostName
 	} else {
