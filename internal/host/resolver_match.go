@@ -161,6 +161,16 @@ func (r *resolver) byDefault(name string, strict bool) ([]HostEntry, error) {
 		return all, nil
 	}
 
+	// 3.5 IP 字面量（含 [::1]、[fe80::1%eth0] 这类带方括号的写法）优先按
+	// 独立主机处理。它们的 "[" 会被 isGlobPattern 误判为 glob 元字符，
+	// 若不在此提前拦截，[::1] 会被当成非法的 glob 模式而遭拒。
+	if parseStandaloneIP(name) != nil {
+		if strict {
+			return nil, fmt.Errorf("no hosts matched: %q", name)
+		}
+		return []HostEntry{standaloneEntry(name, r.inv)}, nil
+	}
+
 	// 4. glob 匹配组名 + 主机名，去重合并
 	if isGlobPattern(name) {
 		// 先校验语法
@@ -198,7 +208,7 @@ func (r *resolver) byDefault(name string, strict bool) ([]HostEntry, error) {
 // 调用方负责先校验 pattern 语法；path.Match 出错仅在 pattern 非法时触发，
 // 此处仍返回错误以防意外。
 func (r *resolver) matchGroups(pattern string) ([]HostEntry, error) {
-	all := make([]HostEntry, 0, len(r.groupOrder))
+	all := make([]HostEntry, 0, len(r.entries))
 	for _, groupName := range r.groupOrder {
 		ok, err := path.Match(pattern, groupName)
 		if err != nil {
@@ -212,19 +222,18 @@ func (r *resolver) matchGroups(pattern string) ([]HostEntry, error) {
 }
 
 // matchHosts 返回所有主机名匹配 pattern 的条目。
+//
+// 平铺遍历 entries（其顺序即 groupOrder x hostOrder），借 hostOf 直接取主机名，
+// 全程无字符串拼接、无哈希查表。
 func (r *resolver) matchHosts(pattern string) ([]HostEntry, error) {
 	all := make([]HostEntry, 0, len(r.entries))
-	for _, groupName := range r.groupOrder {
-		for _, hostName := range r.hostOrder[groupName] {
-			ok, err := path.Match(pattern, hostName)
-			if err != nil {
-				return nil, fmt.Errorf("invalid host pattern %q: %w", pattern, err)
-			}
-			if ok {
-				if idx, ok := r.byName[groupName+"/"+hostName]; ok {
-					all = append(all, r.entries[idx])
-				}
-			}
+	for i := range r.entries {
+		ok, err := path.Match(pattern, r.hostOf[i])
+		if err != nil {
+			return nil, fmt.Errorf("invalid host pattern %q: %w", pattern, err)
+		}
+		if ok {
+			all = append(all, r.entries[i])
 		}
 	}
 	return all, nil
@@ -250,15 +259,14 @@ func (r *resolver) matchGroupHost(groupPat, hostPat string) ([]HostEntry, error)
 		if !ok {
 			continue
 		}
-		for _, hostName := range r.hostOrder[groupName] {
-			ok, err := path.Match(hostPat, hostName)
+		// 直接用该组的 entries 下标，主机名从 hostOf 取，无拼接无查表
+		for _, idx := range r.groups[groupName] {
+			ok, err := path.Match(hostPat, r.hostOf[idx])
 			if err != nil {
 				return nil, fmt.Errorf("invalid host pattern %q: %w", hostPat, err)
 			}
 			if ok {
-				if idx, ok := r.byName[groupName+"/"+hostName]; ok {
-					all = append(all, r.entries[idx])
-				}
+				all = append(all, r.entries[idx])
 			}
 		}
 	}
@@ -398,6 +406,9 @@ func isValidZoneID(zone string) bool {
 //   - 禁止连续点（空 label）
 //   - 禁止前导点、尾随点
 func validateHostname(name string) error {
+	if name == "" {
+		return fmt.Errorf("empty name")
+	}
 	// 先扫一遍非法字符
 	for _, c := range name {
 		if !isHostnameChar(c) {
@@ -444,7 +455,10 @@ func validateHostLabel(label string) error {
 		return fmt.Errorf("host label %q must end with a letter or digit", label)
 	}
 	// 首尾已校验是 alnum，中间允许 alnum / - / _
-	for _, c := range label[1 : len(label)-1] {
+	// 注意：单字符 label（如 "a"）时区间为空，必须用 i < len(label)-1 循环，
+	// 不能写 label[1:len(label)-1]（len==1 时是 [1:0]，会 panic）。
+	for i := 1; i < len(label)-1; i++ {
+		c := rune(label[i])
 		if !isHostnameChar(c) {
 			return fmt.Errorf("invalid character %q in host label %q", c, label)
 		}

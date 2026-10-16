@@ -17,6 +17,7 @@ type resolver struct {
 	groupOrder  []string            // 已排序的组名
 	hostOrder   map[string][]string // 组名 → 该组已排序主机名
 	hostsByName map[string][]int    // 主机名 → entries 下标列表（跨组，O(1) 精确匹配）
+	hostOf      []string            // 与 entries 一一对应：该条目的主机名（不含组名前缀）
 }
 
 func newResolver(inv *config.Inventory) *resolver {
@@ -55,6 +56,7 @@ func newResolver(inv *config.Inventory) *resolver {
 			r.entries = append(r.entries, entry)
 			r.byName[entry.Name] = idx
 			r.hostsByName[hostName] = append(r.hostsByName[hostName], idx)
+			r.hostOf = append(r.hostOf, hostName)
 			idxs = append(idxs, idx)
 		}
 		r.groups[groupName] = idxs
@@ -91,6 +93,9 @@ func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 		for _, t := range tokens {
 			switch {
 			case strings.HasPrefix(t, "&"):
+				if t == "&" {
+					return nil, fmt.Errorf("empty operand after %q in pattern %q", "&", pattern)
+				}
 				sub, err := r.resolveSingle(t[1:], true)
 				if err != nil {
 					return nil, err
@@ -98,6 +103,9 @@ func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 				result = intersectEntries(result, sub)
 
 			case strings.HasPrefix(t, "!"):
+				if t == "!" {
+					return nil, fmt.Errorf("empty operand after %q in pattern %q", "!", pattern)
+				}
 				sub, err := r.resolveSingle(t[1:], true)
 				if err != nil {
 					return nil, err

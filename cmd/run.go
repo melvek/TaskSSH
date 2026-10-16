@@ -92,7 +92,11 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	if listOnly || confirmFlag || dryRun {
 		lines := make([]string, 0, len(entries))
 		for _, e := range entries {
-			lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
+			if e.Name == e.Host.Host {
+				lines = append(lines, fmt.Sprintf("%s", e.Name))
+			} else {
+				lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
+			}
 		}
 		console.Targets(lines)
 	}
