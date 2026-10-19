@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"mestrap.com/taskssh/internal/fileutil"
 )
 
 // Download 从远程下载文件到指定的本地路径。
@@ -26,16 +28,25 @@ func (c *Client) Download(remotePath, localPath string) error {
 		return err
 	}
 
-	info, err := sftpClient.Stat(remotePath)
+	info, err := sftpClient.Lstat(remotePath)
 	if err != nil {
-		return fmt.Errorf("remote file %s: %w", remotePath, err)
+		return fmt.Errorf("lstat remote file %s: %w", remotePath, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to download remote symbolic link %s", remotePath)
 	}
 	if info.IsDir() {
 		return fmt.Errorf("remote path is a directory: %s (please pack it first)", remotePath)
 	}
 
+	if err := fileutil.EnsureNoSymlinkPath(localPath); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
 		return fmt.Errorf("create local dir: %w", err)
+	}
+	if err := fileutil.EnsureNoSymlinkPath(localPath); err != nil {
+		return err
 	}
 
 	src, err := sftpClient.Open(remotePath)
@@ -44,7 +55,7 @@ func (c *Client) Download(remotePath, localPath string) error {
 	}
 	defer src.Close()
 
-	dst, err := os.Create(localPath)
+	dst, err := os.OpenFile(localPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return fmt.Errorf("create local: %w", err)
 	}

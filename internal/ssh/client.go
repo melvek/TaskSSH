@@ -130,6 +130,20 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 	return info, nil
 }
 
+// Lstat 返回远程路径本身的信息，不跟随符号链接。
+func (c *Client) Lstat(remotePath string) (os.FileInfo, error) {
+	sftpClient, err := c.getSFTP()
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := sftpClient.Lstat(remotePath)
+	if err != nil {
+		return nil, fmt.Errorf("lstat %s: %w", remotePath, err)
+	}
+	return info, nil
+}
+
 // 递归列出远程目录下的所有文件
 func (c *Client) ListFiles(root string) ([]string, error) {
 	sftpClient, err := c.getSFTP()
@@ -148,6 +162,9 @@ func (c *Client) ListFiles(root string) ([]string, error) {
 		info := walker.Stat()
 		if info == nil {
 			continue
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("refusing to download remote symbolic link %s", walker.Path())
 		}
 
 		if info.IsDir() {

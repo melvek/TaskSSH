@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"mestrap.com/taskssh/internal/console"
+	"mestrap.com/taskssh/internal/fileutil"
 )
 
 // FetchAction 从远程下载文件或目录。
@@ -55,9 +56,12 @@ func (a *FetchAction) Execute(ctx *ActionContext) error {
 		}
 	}
 
-	info, err := ctx.Client.Stat(remote)
+	info, err := ctx.Client.Lstat(remote)
 	if err != nil {
 		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to fetch remote symbolic link %s", remote)
 	}
 
 	if info.IsDir() {
@@ -115,13 +119,12 @@ func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string)
 		if err != nil {
 			return err
 		}
+		if rel == ".." || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid remote file path: %s", rf)
+		}
 		rel = filepath.ToSlash(rel)
 
 		localPath := filepath.Join(rootLocal, rel)
-
-		if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
-			return fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
-		}
 
 		console.Debug("Download %s to %s", rf, localPath)
 
@@ -148,7 +151,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 	console.Debug("Zip directory %s on remote", remote)
 
 	zipCmd := fmt.Sprintf(
-		`which zip &>/dev/null && { mkdir -p %s && cd %s && zip -r %s %s; } || `+
+		`which zip &>/dev/null && { mkdir -p %s && cd %s && zip -r -y %s %s; } || `+
 			`{ echo "need install 'zip' command"; exit 1; }`,
 		shellQuote(remoteTmpDir),
 		shellQuote(remoteDir),
@@ -250,6 +253,9 @@ func extractZip(zipPath, destDir string) error {
 	}
 	defer r.Close()
 
+	if err := fileutil.EnsureNoSymlinkPath(destDir); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", destDir, err)
 	}
@@ -257,22 +263,41 @@ func extractZip(zipPath, destDir string) error {
 	destClean := filepath.Clean(destDir)
 
 	for _, f := range r.File {
-		target := filepath.Join(destDir, f.Name)
+		if f.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to extract symbolic link: %s", f.Name)
+		}
 
-		if !strings.HasPrefix(filepath.Clean(target), destClean+string(os.PathSeparator)) &&
-			filepath.Clean(target) != destClean {
+		entryPath := filepath.FromSlash(f.Name)
+		if filepath.IsAbs(entryPath) || filepath.VolumeName(entryPath) != "" {
 			return fmt.Errorf("invalid zip entry: %s", f.Name)
+		}
+		target := filepath.Clean(filepath.Join(destClean, entryPath))
+		rel, err := filepath.Rel(destClean, target)
+		if err != nil {
+			return fmt.Errorf("invalid zip entry %s: %w", f.Name, err)
+		}
+		if rel == ".." || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid zip entry: %s", f.Name)
+		}
+		if err := fileutil.EnsureNoSymlinkPath(target); err != nil {
+			return err
 		}
 
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, f.Mode()); err != nil {
 				return fmt.Errorf("mkdir %s: %w", target, err)
 			}
+			if err := fileutil.EnsureNoSymlinkPath(target); err != nil {
+				return err
+			}
 			continue
 		}
 
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return fmt.Errorf("mkdir %s: %w", filepath.Dir(target), err)
+		}
+		if err := fileutil.EnsureNoSymlinkPath(target); err != nil {
+			return err
 		}
 
 		rc, err := f.Open()
