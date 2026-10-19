@@ -1815,33 +1815,49 @@ chmod 600 ~/.taskssh/vault-key</code></pre>
                     <thead>
                         <tr>
                             <th>级别</th>
-                            <th>触发</th>
+                            <th>选项</th>
                             <th>显示内容</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>概要（默认）</td>
-                            <td>—</td>
-                            <td>步骤成功 / 失败、警告、错误、执行摘要</td>
+                            <td>Error</td>
+                            <td>始终显示；<code>-q / --quiet</code></td>
+                            <td>错误及失败诊断</td>
                         </tr>
                         <tr>
-                            <td>详细</td>
+                            <td>Warn</td>
+                            <td>默认</td>
+                            <td>警告及被忽略的步骤失败</td>
+                        </tr>
+                        <tr>
+                            <td>Info（默认）</td>
+                            <td>默认</td>
+                            <td>步骤状态、主机进度、成功信息、执行摘要、远程命令 stdout / stderr</td>
+                        </tr>
+                        <tr>
+                            <td>Debug</td>
                             <td><code>-v / --verbose</code></td>
-                            <td>增加调试信息、远程命令 stdout / stderr、重试过程</td>
+                            <td>增加调试信息、重试细节</td>
                         </tr>
                         <tr>
-                            <td>静默</td>
-                            <td><code>-q / --quiet</code></td>
-                            <td>仅错误</td>
+                            <td>Trace</td>
+                            <td><code>--trace</code></td>
+                            <td>高频细节，例如逐文件传输信息</td>
+                        </tr>
+                        <tr>
+                            <td>附加行为</td>
+                            <td>—</td>
+                            <td><code>--dry-run</code> 至少启用 Debug；<code>--trace</code> 优先级最高；同时指定 <code>-v</code> 与 <code>-q</code> 时 <code>-v</code> 优先。</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <p>
-                两个选项同时出现时 <code>-v</code> 优先。
-                <code>--dry-run</code> 强制详细级别。
+                远程命令的 stdout / stderr 默认实时显示；<code>-q</code> 下隐藏原始命令输出。
+                命令非零退出时，错误信息始终包含退出码及限长诊断（优先 stderr，stderr 为空时使用 stdout）；
+                设置 <code>ignore_errors</code> 时作为警告输出。
             </p>
 
             <h2 id="cli-reference">CLI 选项</h2>
@@ -1971,6 +1987,12 @@ chmod 600 ~/.taskssh/vault-key</code></pre>
                             <td><code>-q</code></td>
                             <td><code>--quiet</code></td>
                             <td>仅输出错误</td>
+                            <td><a href="#log-level">日志级别</a></td>
+                        </tr>
+                        <tr>
+                            <td>—</td>
+                            <td><code>--trace</code></td>
+                            <td>启用跟踪输出</td>
                             <td><a href="#log-level">日志级别</a></td>
                         </tr>
                         <tr>

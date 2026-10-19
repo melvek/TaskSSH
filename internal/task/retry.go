@@ -67,8 +67,7 @@ func withRetryLogger(ctx context.Context, logger *console.Logger, fn func() erro
 			return fmt.Errorf("timeout after %ds (last error: %w)", timeout, err)
 		}
 
-		// Verbose 下输出重试信息
-		logger.Info("attempt %d failed: %v", attempt, err)
+		logger.Debug("attempt %d failed: %v", attempt, err)
 
 		select {
 		case <-time.After(time.Duration(interval) * time.Second):

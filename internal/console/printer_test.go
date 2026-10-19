@@ -9,6 +9,10 @@ import (
 )
 
 func TestLoggerConcurrentWritesAreNotInterleaved(t *testing.T) {
+	previousLevel := GetLevel()
+	SetLevel(LevelDebug)
+	defer SetLevel(previousLevel)
+
 	var output bytes.Buffer
 	logger := NewLogger(&output)
 	const workers = 64
@@ -41,5 +45,32 @@ func TestLoggerConcurrentWritesAreNotInterleaved(t *testing.T) {
 				t.Errorf("output line %q is missing or corrupted", line)
 			}
 		}
+	}
+}
+
+func TestCommandWritersEmitAtInfoAndAbove(t *testing.T) {
+	previousLevel := GetLevel()
+	defer SetLevel(previousLevel)
+
+	for _, tc := range []struct {
+		name  string
+		level Level
+		want  string
+	}{
+		{name: "info emits command output", level: LevelInfo, want: "stdout\nstderr\n"},
+		{name: "quiet suppresses command output", level: LevelError},
+		{name: "debug emits command output", level: LevelDebug, want: "stdout\nstderr\n"},
+		{name: "trace emits command output", level: LevelTrace, want: "stdout\nstderr\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			SetLevel(tc.level)
+			var output bytes.Buffer
+			logger := NewLogger(&output)
+			_, _ = fmt.Fprintln(logger.CommandWriter(), "stdout")
+			_, _ = fmt.Fprintln(logger.StderrWriter(), "stderr")
+			if got := output.String(); got != tc.want {
+				t.Fatalf("output = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }

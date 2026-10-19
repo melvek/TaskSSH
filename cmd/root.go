@@ -29,6 +29,7 @@ var (
 	stopOnFailureFlag bool
 	verboseFlag       bool
 	quietFlag         bool
+	traceFlag         bool
 )
 
 var rootCmd = &cobra.Command{
@@ -89,6 +90,7 @@ func init() {
 	// 日志输出相关
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quietFlag, "quiet", "q", false, "Only show errors")
+	rootCmd.PersistentFlags().BoolVar(&traceFlag, "trace", false, "Enable trace output")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		secret.SecretKeyFile = secretKeyFile
@@ -106,12 +108,14 @@ func init() {
 		}
 
 		switch {
+		case traceFlag:
+			console.SetLevel(console.LevelTrace)
 		case dryRun || verboseFlag:
-			console.SetLevel(console.LevelVerbose)
+			console.SetLevel(console.LevelDebug)
 		case quietFlag:
-			console.SetLevel(console.LevelQuiet)
+			console.SetLevel(console.LevelError)
 		default:
-			console.SetLevel(console.LevelBrief)
+			console.SetLevel(console.LevelInfo)
 		}
 
 		if passwordFlag != "" {

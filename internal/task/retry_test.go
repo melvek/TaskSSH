@@ -16,7 +16,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// 测试期间静默 console，避免 withRetry 的输出污染测试日志
-	console.SetLevel(console.LevelQuiet)
+	console.SetLevel(console.LevelError)
 	m.Run()
 }
 

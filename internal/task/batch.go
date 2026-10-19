@@ -79,10 +79,10 @@ func planBatches(entries []host.HostEntry, serial, minAvailable int) ([]Batch, e
 func printPlan(plan []Batch) {
 	console.Default.Section("Execution Plan")
 	for i, batch := range plan {
-		console.Default.Output(console.LevelBrief, console.StyleNone,
+		console.Default.Output(console.LevelInfo, console.StyleNone,
 			"Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
 		for _, h := range batch.Hosts {
-			console.Default.Output(console.LevelBrief, console.StyleNone,
+			console.Default.Output(console.LevelInfo, console.StyleNone,
 				"  - %s [%s]", h.Name, h.Host.Host)
 		}
 	}

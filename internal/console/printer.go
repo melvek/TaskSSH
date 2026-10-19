@@ -1,6 +1,6 @@
 // Package console 提供分级、彩色终端输出。
 //
-// 三个级别：Verbose / Brief / Quiet，由 SetLevel 设置。
+// 五个级别：Error / Warn / Info / Debug / Trace，由 SetLevel 设置。
 // 并发任务可创建独立 Logger，避免不同主机的输出混杂。
 //
 // 颜色基于 fatih/color 自动检测，NO_COLOR=1 可强制禁用。
@@ -86,9 +86,9 @@ func (l *Logger) Output(level Level, style Style, format string, args ...any) {
 }
 
 // CommandWriter 返回远程命令 stdout 的输出目标。
-// Quiet 级别丢弃 stdout，其他级别写入此 Logger。
+// Info 及更详细级别输出原始命令内容。
 func (l *Logger) CommandWriter() io.Writer {
-	if currentLevel <= LevelQuiet {
+	if currentLevel < LevelInfo {
 		return io.Discard
 	}
 	return synchronizedWriter{logger: l}
@@ -96,7 +96,7 @@ func (l *Logger) CommandWriter() io.Writer {
 
 // StderrWriter 返回远程命令 stderr 的输出目标。
 func (l *Logger) StderrWriter() io.Writer {
-	return synchronizedWriter{logger: l}
+	return l.CommandWriter()
 }
 
 // RawOutput 原样输出 s，不进行级别过滤。

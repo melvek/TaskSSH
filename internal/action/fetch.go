@@ -126,7 +126,7 @@ func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string)
 
 		localPath := filepath.Join(rootLocal, rel)
 
-		ctx.Log().Debug("Download %s to %s", rf, localPath)
+		ctx.Log().Trace("Download %s to %s", rf, localPath)
 
 		if err := ctx.Client.Download(rf, localPath); err != nil {
 			return err

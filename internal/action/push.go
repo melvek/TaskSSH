@@ -79,7 +79,7 @@ func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy 
 	if err != nil {
 		return err
 	}
-	ctx.Log().Debug("Uploaded: %s -> %s", localAbs, finalPath)
+	ctx.Log().Success("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 
@@ -117,6 +117,7 @@ func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string,
 			return ctx.Client.MkdirAll(remotePath)
 		}
 
+		ctx.Log().Trace("Upload %s -> %s", localPath, remotePath)
 		if _, err := ctx.Client.Upload(localPath, remotePath, policy); err != nil {
 			return fmt.Errorf("upload %s: %w", localPath, err)
 		}
@@ -127,7 +128,7 @@ func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string,
 		return err
 	}
 
-	ctx.Log().Debug("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
+	ctx.Log().Success("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
 	return nil
 }
 
@@ -173,7 +174,7 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 		return fmt.Errorf("unzip failed with exit code %d", result.ExitCode)
 	}
 
-	ctx.Log().Debug("Directory uploaded: %s -> %s", localAbs, dest)
+	ctx.Log().Success("Directory uploaded: %s -> %s", localAbs, dest)
 	return nil
 }
 

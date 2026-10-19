@@ -36,7 +36,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 	if !e.dryRun {
 		c, err := ssh.ConnectContext(ctx, &entry.Host, e.connectTimeout)
 		if err != nil {
-			logger.Error("%v", err)
+			logger.Error("host=%s connect: %v", entry.Name, err)
 			return err
 		}
 		client = c
@@ -50,7 +50,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 
 		act := action.Get(step.Action)
 		if act == nil {
-			logger.Error("unknown action: %s", step.Action)
+			logger.Error("host=%s step=%s: unknown action %s", entry.Name, step.Name, step.Action)
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
@@ -61,7 +61,7 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 		if step.When != "" {
 			ok, expanded, err := evalWhen(step.When, vars)
 			if err != nil {
-				logger.Error("eval when: %v", err)
+				logger.Error("host=%s step=%s eval when: %v", entry.Name, step.Name, err)
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
@@ -90,11 +90,13 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 
 		if err != nil {
 			if step.IgnoreErrors {
-				logger.Ignored("Ignored with error: %v", err)
+				logger.Ignored("host=%s step=%s: %v", entry.Name, step.Name, err)
 			} else {
-				logger.Error("Failure: %v", err)
+				logger.Error("host=%s step=%s: %v", entry.Name, step.Name, err)
 				return fmt.Errorf("step %s: %w", step.Name, err)
 			}
+		} else {
+			logger.Success("Step completed: %s", step.Name)
 		}
 
 		if step.Delay > 0 {

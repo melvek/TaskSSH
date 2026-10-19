@@ -103,7 +103,7 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 			break
 		}
 
-		console.Default.Output(console.LevelBrief, console.StyleNone, "")
+		console.Default.Output(console.LevelInfo, console.StyleNone, "")
 		console.Default.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
 			batch.Group, i+1, len(plan), len(batch.Hosts)))
 

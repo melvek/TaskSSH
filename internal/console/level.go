@@ -4,15 +4,19 @@ package console
 type Level int
 
 const (
-	// LevelQuiet 只输出错误。
-	LevelQuiet Level = iota
-	// LevelBrief 输出步骤状态、区块标题、警告与错误。
-	LevelBrief
-	// LevelVerbose 输出全部内容，含调试信息与命令输出。
-	LevelVerbose
+	// LevelError 只输出错误。
+	LevelError Level = iota
+	// LevelWarn 增加警告。
+	LevelWarn
+	// LevelInfo 增加常规执行状态。
+	LevelInfo
+	// LevelDebug 增加调试信息和命令输出。
+	LevelDebug
+	// LevelTrace 增加高频细节。
+	LevelTrace
 )
 
-var currentLevel = LevelBrief
+var currentLevel = LevelInfo
 
 // SetLevel 设置全局日志级别。
 //
@@ -24,12 +28,16 @@ func GetLevel() Level { return currentLevel }
 
 func (l Level) String() string {
 	switch l {
-	case LevelQuiet:
-		return "quiet"
-	case LevelBrief:
-		return "brief"
-	case LevelVerbose:
-		return "verbose"
+	case LevelError:
+		return "error"
+	case LevelWarn:
+		return "warn"
+	case LevelInfo:
+		return "info"
+	case LevelDebug:
+		return "debug"
+	case LevelTrace:
+		return "trace"
 	}
 	return "unknown"
 }

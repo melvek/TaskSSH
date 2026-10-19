@@ -4,7 +4,35 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 )
+
+const maxCommandDiagnosticBytes = 4096
+
+// CommandError 描述远程命令的非零退出及其诊断输出。
+type CommandError struct {
+	ExitCode int
+	Stdout   string
+	Stderr   string
+}
+
+func (e *CommandError) Error() string {
+	message := fmt.Sprintf("command failed with exit code %d", e.ExitCode)
+	diagnostic := strings.TrimSpace(e.Stderr)
+	if diagnostic == "" {
+		diagnostic = strings.TrimSpace(e.Stdout)
+	}
+	if diagnostic == "" {
+		return message
+	}
+	if len(diagnostic) > maxCommandDiagnosticBytes {
+		diagnostic = strings.ToValidUTF8(diagnostic[:maxCommandDiagnosticBytes], "?") + "... (truncated)"
+	}
+	diagnostic = strings.ReplaceAll(diagnostic, "\r\n", "\n")
+	diagnostic = strings.ReplaceAll(diagnostic, "\r", "")
+	diagnostic = strings.ReplaceAll(diagnostic, "\n", "\n    ")
+	return message + ":\n    " + diagnostic
+}
 
 // CommandAction 执行远程命令
 type CommandAction struct{}
@@ -49,7 +77,11 @@ func (a *CommandAction) Execute(ctx *ActionContext) error {
 
 	// 根据返回的退出码对执行结果进行判断，只要 exit code 不为0，就视为失败
 	if result.ExitCode != 0 {
-		return fmt.Errorf("command failed with exit code %d", result.ExitCode)
+		return &CommandError{
+			ExitCode: result.ExitCode,
+			Stdout:   result.Stdout,
+			Stderr:   result.Stderr,
+		}
 	}
 	return nil
 }
