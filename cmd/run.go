@@ -45,10 +45,6 @@ func runDynamicTask(ctx context.Context, args []string) error {
 		return fmt.Errorf("task not found: %s", taskName)
 	}
 
-	if len(hostFlag) == 0 {
-		return fmt.Errorf("no target hosts")
-	}
-
 	return executeTask(ctx, &t, inv)
 }
 
@@ -80,11 +76,14 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 		IdentityFile: identityFileFlag,
 	}
 
+	// 解析主机匹配
 	entries, err := host.ResolveHosts(hostFlag, inv, ov)
 
 	if err != nil {
 		return err
 	}
+
+	// 如果解析后，未匹配到任何服务器，则报错退出
 	if len(entries) == 0 {
 		return fmt.Errorf("no target hosts")
 	}
