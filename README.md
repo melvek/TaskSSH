@@ -36,6 +36,7 @@ TaskSSH 是一个单文件、无依赖的 SSH 批量运维工具。你只需要�
 
 - **密码加密存储**：AES-256-GCM 加密，清单中不出现明文。
 - **密钥外置**：密钥由用户管理，不硬编码在二进制中。
+- **SSH 主机密钥校验**：连接前校验 `~/.ssh/known_hosts` 中的主机密钥；缺少记录或密钥不匹配时拒绝连接。Windows 使用用户目录下 `.ssh\known_hosts`。
 - **多种认证**：公钥、keyboard-interactive、密码，按优先级尝试。
 
 ### 传输能力
@@ -114,6 +115,8 @@ tasks:
 ```
 
 ### 4. 执行任务
+
+连接前，请确认目标主机的密钥已通过可信渠道验证并记录在 OpenSSH `known_hosts` 文件中。TaskSSH 不会自动信任未知或已变更的主机密钥。
 
 ```bash
 taskssh release prod -y

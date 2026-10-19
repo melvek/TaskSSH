@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"mestrap.com/taskssh/internal/config"
 )
 
@@ -48,10 +50,19 @@ func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
 		port = DefaultPort
 	}
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve home directory for SSH known_hosts: %w", err)
+	}
+	hostKeyCallback, err := newHostKeyCallback(home)
+	if err != nil {
+		return nil, err
+	}
+
 	sshConfig := &ssh.ClientConfig{
 		User:            host.Username,
 		Auth:            authMethods,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hostKeyCallback,
 		Timeout:         timeout,
 	}
 
@@ -65,6 +76,15 @@ func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
 		conn: conn,
 		host: host,
 	}, nil
+}
+
+func newHostKeyCallback(homeDir string) (ssh.HostKeyCallback, error) {
+	path := filepath.Join(homeDir, ".ssh", "known_hosts")
+	callback, err := knownhosts.New(path)
+	if err != nil {
+		return nil, fmt.Errorf("load SSH known_hosts %s: %w", path, err)
+	}
+	return callback, nil
 }
 
 // Close 关闭 SFTP 会话和 SSH 连接。
