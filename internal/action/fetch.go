@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/fileutil"
 )
 
@@ -56,6 +55,11 @@ func (a *FetchAction) Execute(ctx *ActionContext) error {
 		}
 	}
 
+	if ctx.DryRun {
+		ctx.Log().Info("Fetch %s -> %s (dry-run)", remote, dest)
+		return nil
+	}
+
 	info, err := ctx.Client.Lstat(remote)
 	if err != nil {
 		return err
@@ -87,23 +91,19 @@ func (a *FetchAction) fetchFile(ctx *ActionContext, remote, dest string) error {
 		return err
 	}
 
-	console.Debug("Download %s to %s", remote, finalPath)
-
-	if ctx.DryRun {
-		return nil
-	}
+	ctx.Log().Debug("Download %s to %s", remote, finalPath)
 
 	if err := ctx.Client.Download(remote, finalPath); err != nil {
 		return err
 	}
 
-	console.Success("Downloaded: %s -> %s", remote, finalPath)
+	ctx.Log().Success("Downloaded: %s -> %s", remote, finalPath)
 	return nil
 }
 
 // 下载文件夹
 func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string) error {
-	console.Debug("Download directory %s to %s (recursive)", remote, dest)
+	ctx.Log().Debug("Download directory %s to %s (recursive)", remote, dest)
 
 	baseName := path.Base(remote)
 	hostID := buildHostID(ctx.Host.Host)
@@ -126,14 +126,14 @@ func (a *FetchAction) fetchDirRecursive(ctx *ActionContext, remote, dest string)
 
 		localPath := filepath.Join(rootLocal, rel)
 
-		console.Debug("Download %s to %s", rf, localPath)
+		ctx.Log().Debug("Download %s to %s", rf, localPath)
 
 		if err := ctx.Client.Download(rf, localPath); err != nil {
 			return err
 		}
 	}
 
-	console.Success("Directory downloaded: %s -> %s (%d files)", remote, rootLocal, len(files))
+	ctx.Log().Success("Directory downloaded: %s -> %s (%d files)", remote, rootLocal, len(files))
 	return nil
 }
 
@@ -148,7 +148,7 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 	zipName := fmt.Sprintf("%s.%d.zip", baseName, time.Now().UnixMicro())
 	remoteZip := path.Join(remoteTmpDir, zipName)
 
-	console.Debug("Zip directory %s on remote", remote)
+	ctx.Log().Debug("Zip directory %s on remote", remote)
 
 	zipCmd := fmt.Sprintf(
 		`which zip &>/dev/null && { mkdir -p %s && cd %s && zip -r -y %s %s; } || `+
@@ -158,9 +158,9 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 		shellQuote(remoteZip),
 		shellQuote(baseName),
 	)
-	console.Debug("Execute zip files ...")
+	ctx.Log().Debug("Execute zip files ...")
 
-	result, err := ctx.Client.Exec(zipCmd)
+	result, err := ctx.Client.ExecContext(ctx.Context, zipCmd, ctx.Log())
 	if err != nil {
 		return fmt.Errorf("zip: %w", err)
 	}
@@ -176,26 +176,26 @@ func (a *FetchAction) fetchDirZip(ctx *ActionContext, remote, dest string, tmpDi
 	localZip.Close()
 	defer os.Remove(localZipPath)
 
-	console.Debug("Download zip %s to %s", remoteZip, localZipPath)
+	ctx.Log().Debug("Download zip %s to %s", remoteZip, localZipPath)
 
 	if err := ctx.Client.Download(remoteZip, localZipPath); err != nil {
 		return err
 	}
 
 	rmCmd := fmt.Sprintf("rm -f %s", shellQuote(remoteZip))
-	if _, err := ctx.Client.Exec(rmCmd); err != nil {
-		console.Warn("Failed to remove remote zip: %v", err)
+	if _, err := ctx.Client.ExecContext(ctx.Context, rmCmd, ctx.Log()); err != nil {
+		ctx.Log().Warn("Failed to remove remote zip: %v", err)
 	}
 
 	rootLocal := filepath.Join(dest, hostID, baseName)
 
-	console.Debug("Extract %s to %s", localZipPath, rootLocal)
+	ctx.Log().Debug("Extract %s to %s", localZipPath, rootLocal)
 
 	if err := extractZip(localZipPath, rootLocal); err != nil {
 		return fmt.Errorf("extract: %w", err)
 	}
 
-	console.Success("Directory downloaded: %s -> %s", remote, rootLocal)
+	ctx.Log().Success("Directory downloaded: %s -> %s", remote, rootLocal)
 	return nil
 }
 

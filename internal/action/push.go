@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -70,7 +69,7 @@ func (a *PushAction) Execute(ctx *ActionContext) error {
 }
 
 func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Debug("Upload %s to %s", localAbs, dest)
+	ctx.Log().Debug("Upload %s to %s", localAbs, dest)
 
 	if ctx.DryRun {
 		return nil
@@ -80,12 +79,12 @@ func (a *PushAction) pushFile(ctx *ActionContext, localAbs, dest string, policy 
 	if err != nil {
 		return err
 	}
-	console.Debug("Uploaded: %s -> %s", localAbs, finalPath)
+	ctx.Log().Debug("Uploaded: %s -> %s", localAbs, finalPath)
 	return nil
 }
 
 func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Debug("Upload directory %s to %s (recursive)", localAbs, dest)
+	ctx.Log().Debug("Upload directory %s to %s (recursive)", localAbs, dest)
 
 	if ctx.DryRun {
 		return nil
@@ -128,12 +127,19 @@ func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string,
 		return err
 	}
 
-	console.Debug("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
+	ctx.Log().Debug("Directory uploaded: %s -> %s (%d files)", localAbs, dest, fileCount)
 	return nil
 }
 
 func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, policy ssh.OverwritePolicy) error {
-	console.Debug("Zip directory %s", localAbs)
+	if ctx.DryRun {
+		ctx.Log().Info("Upload directory %s -> %s (zip, dry-run)", localAbs, dest)
+		return nil
+	}
+
+	ctx.Log().Debug("Zip directory %s", localAbs)
+
+	ctx.Log().Debug("Zip directory %s", localAbs)
 
 	zipPath, err := zipDir(localAbs)
 	if err != nil {
@@ -141,13 +147,13 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 	}
 	defer os.Remove(zipPath)
 
-	console.Debug("Upload zip %s to %s", zipPath, dest)
+	ctx.Log().Debug("Upload zip %s to %s", zipPath, dest)
 
 	finalZip, err := ctx.Client.Upload(zipPath, dest, policy)
 	if err != nil {
 		return err
 	}
-	console.Debug("Uploaded zip: %s -> %s", zipPath, finalZip)
+	ctx.Log().Debug("Uploaded zip: %s -> %s", zipPath, finalZip)
 
 	unzipCmd := fmt.Sprintf(
 		`which unzip &>/dev/null && { cd %s && unzip -o %s && rm -f %s; } || `+
@@ -157,9 +163,9 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 		shellQuote(finalZip),
 		shellQuote(finalZip),
 	)
-	console.Debug("Execute unzip: %s", unzipCmd)
+	ctx.Log().Debug("Execute unzip: %s", unzipCmd)
 
-	result, err := ctx.Client.Exec(unzipCmd)
+	result, err := ctx.Client.ExecContext(ctx.Context, unzipCmd, ctx.Log())
 	if err != nil {
 		return fmt.Errorf("unzip: %w", err)
 	}
@@ -167,7 +173,7 @@ func (a *PushAction) pushDirZip(ctx *ActionContext, localAbs, dest string, polic
 		return fmt.Errorf("unzip failed with exit code %d", result.ExitCode)
 	}
 
-	console.Debug("Directory uploaded: %s -> %s", localAbs, dest)
+	ctx.Log().Debug("Directory uploaded: %s -> %s", localAbs, dest)
 	return nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/ssh"
 )
 
@@ -36,7 +35,7 @@ func (a *ScriptAction) Execute(ctx *ActionContext) error {
 
 	remote := resolveScriptPath(with.Dest, localAbs)
 
-	console.Debug("Upload script %s to %s", localAbs, remote)
+	ctx.Log().Debug("Upload script %s to %s", localAbs, remote)
 
 	// 上传脚本到远程服务器
 	policy := ssh.NewPolicy(with.Force)
@@ -53,7 +52,7 @@ func (a *ScriptAction) Execute(ctx *ActionContext) error {
 		finalPath = f
 
 		// 给脚本可执行权限
-		if _, err := ctx.Client.Exec(fmt.Sprintf("chmod +x %s", shellQuote(finalPath))); err != nil {
+		if _, err := ctx.Client.ExecContext(ctx.Context, fmt.Sprintf("chmod +x %s", shellQuote(finalPath)), ctx.Log()); err != nil {
 			return fmt.Errorf("chmod script: %w", err)
 		}
 	}
@@ -61,17 +60,17 @@ func (a *ScriptAction) Execute(ctx *ActionContext) error {
 	cmd := shellQuote(finalPath)
 	// 如果需要删除，则在需要执行的脚本后，拼接删除脚本操作
 	if with.Remove {
-		console.Debug("Delete remote tmp script %s", finalPath)
+		ctx.Log().Debug("Delete remote tmp script %s", finalPath)
 		if !ctx.DryRun {
 			cmd = fmt.Sprintf("%s; rc=$?; rm -f %s; exit $rc", cmd, shellQuote(finalPath))
 		}
 	}
 
-	console.Debug("Execute script %s", finalPath)
+	ctx.Log().Debug("Execute script %s", finalPath)
 
 	if !ctx.DryRun {
 		// 执行脚本
-		result, err := ctx.Client.Exec(cmd)
+		result, err := ctx.Client.ExecContext(ctx.Context, cmd, ctx.Log())
 		if err != nil {
 			return err
 		}

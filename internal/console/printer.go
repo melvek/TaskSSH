@@ -1,20 +1,15 @@
 // Package console 提供分级、彩色终端输出。
 //
 // 三个级别：Verbose / Brief / Quiet，由 SetLevel 设置。
-// Output 是唯一底层出口，其余预设函数见 presets.go。
+// Output 是默认 Logger 的底层出口；并发任务可使用独立 Logger 缓冲输出。
 //
 // 颜色基于 fatih/color 自动检测，NO_COLOR=1 可强制禁用。
-//
-// 支持按 goroutine 缓冲输出：串行时直接写 os.Stdout，并发时每个 goroutine
-// 输出到独立缓冲，执行完统一刷出。所有输出均独立成行。
 package console
 
 import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -29,15 +24,23 @@ var (
 	blue   = color.New(color.FgBlue)
 	gray   = color.New(color.FgHiBlack)
 
-	// outputMu 保护所有输出。
-	outputMu sync.Mutex
-
-	// states 保存每个 goroutine 的输出目标。
-	states sync.Map // int -> *outputState
+	defaultLogger = &Logger{}
 )
 
-type outputState struct {
-	w io.Writer
+// Logger 将输出发送到指定 writer。单个 Logger 可以安全地被多个写入者共享。
+type Logger struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+// NewLogger 创建一个写入指定目标的 Logger。nil writer 使用 os.Stdout。
+func NewLogger(w io.Writer) *Logger {
+	return &Logger{w: w}
+}
+
+// DefaultLogger 返回全局默认 Logger。
+func DefaultLogger() *Logger {
+	return defaultLogger
 }
 
 type styleMeta struct {
@@ -60,90 +63,90 @@ var styleMetas = map[Style]styleMeta{
 	StyleFailedItem: {red, ""},
 }
 
-// ==================== 输出目标控制 ====================
-
-// SetOutput 设置当前 goroutine 的输出目标。
-func SetOutput(w io.Writer) {
-	outputMu.Lock()
-	defer outputMu.Unlock()
-	states.Store(getGID(), &outputState{w: w})
+// Output 是默认 Logger 的底层输出出口。
+func Output(level Level, style Style, format string, args ...any) {
+	defaultLogger.Output(level, style, format, args...)
 }
 
-// ResetOutput 恢复当前 goroutine 的默认输出。
-func ResetOutput() {
-	outputMu.Lock()
-	defer outputMu.Unlock()
-	states.Delete(getGID())
+// Output 按指定级别和样式输出。
+func (l *Logger) Output(level Level, style Style, format string, args ...any) {
+	if level > currentLevel {
+		return
+	}
+	l.write(style, formatMsg(format, args...))
 }
 
-// GetOutput 返回当前 goroutine 的输出目标。
-func GetOutput() io.Writer {
-	return getState().w
+func (l *Logger) write(style Style, msg string) {
+	if l == nil {
+		l = defaultLogger
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	meta := styleMetas[style]
+	body := meta.prefix + strings.TrimRight(msg, "\n")
+	fprintStyled(l.writer(), meta, body, true)
+}
+
+func (l *Logger) writer() io.Writer {
+	if l == nil || l.w == nil {
+		return os.Stdout
+	}
+	return l.w
+}
+
+type synchronizedWriter struct {
+	logger *Logger
+}
+
+func (w synchronizedWriter) Write(p []byte) (int, error) {
+	l := w.logger
+	if l == nil {
+		l = defaultLogger
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.writer().Write(p)
 }
 
 // CommandWriter 返回远程命令 stdout 的输出目标。
 //
-// 规则：
-//   - Quiet 级别：丢弃
-//   - 其他级别：输出到当前 goroutine 的目标
+// Quiet 级别下丢弃输出，其他级别写入该 Logger。
 func CommandWriter() io.Writer {
+	return defaultLogger.CommandWriter()
+}
+
+// CommandWriter 返回该 Logger 的远程命令 stdout 输出目标。
+func (l *Logger) CommandWriter() io.Writer {
 	if currentLevel <= LevelQuiet {
 		return io.Discard
 	}
-	return GetOutput()
+	return synchronizedWriter{logger: l}
 }
 
-// StderrWriter 返回远程命令 stderr 的输出目标。
-//
-// 规则：所有级别都输出。
-// stderr 表示错误信息，任何级别下都应可见。
+// StderrWriter 返回远程命令 stderr 的默认输出目标。
 func StderrWriter() io.Writer {
-	return GetOutput()
+	return defaultLogger.StderrWriter()
 }
 
-// getState 返回当前 goroutine 的状态，不存在则创建。
-func getState() *outputState {
-	gid := getGID()
-	if v, ok := states.Load(gid); ok {
-		return v.(*outputState)
+// StderrWriter 返回该 Logger 的远程命令 stderr 输出目标。
+func (l *Logger) StderrWriter() io.Writer {
+	return synchronizedWriter{logger: l}
+}
+
+// RawOutput 原样输出字符串（不做级别过滤）。
+func RawOutput(s string) {
+	defaultLogger.RawOutput(s)
+}
+
+// RawOutput 原样输出字符串（不做级别过滤）。
+func (l *Logger) RawOutput(s string) {
+	if l == nil {
+		l = defaultLogger
 	}
-	st := &outputState{w: os.Stdout}
-	actual, _ := states.LoadOrStore(gid, st)
-	return actual.(*outputState)
-}
-
-// getGID 获取当前 goroutine 的 ID。
-func getGID() int {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	fields := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))
-	id, _ := strconv.Atoi(fields[0])
-	return id
-}
-
-// ==================== 底层出口 ====================
-
-// Output 是唯一底层输出出口。
-//
-// 无 args 时按纯字符串输出，有 args 时按 fmt.Sprintf 语义格式化。
-// 调用方优先使用预设函数（Success / Error / Step 等）。
-func Output(level Level, style Style, format string, args ...any) {
-	if level > currentLevel {
-		return
-	}
-	write(style, formatMsg(format, args...))
-}
-
-func write(style Style, msg string) {
-	outputMu.Lock()
-	defer outputMu.Unlock()
-
-	st := getState()
-	out := st.w
-	meta := styleMetas[style]
-	body := meta.prefix + strings.TrimRight(msg, "\n")
-
-	fprintStyled(out, meta, body, true)
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	_, _ = io.WriteString(l.writer(), s)
 }
 
 func fprintStyled(out io.Writer, meta styleMeta, s string, newline bool) {
@@ -168,17 +171,6 @@ func formatMsg(format string, args ...any) string {
 	}
 	return fmt.Sprintf(format, args...)
 }
-
-// RawOutput 原样输出字符串（不做级别过滤，用于刷出缓冲区）。
-func RawOutput(s string) {
-	outputMu.Lock()
-	defer outputMu.Unlock()
-
-	st := getState()
-	fmt.Fprint(st.w, s)
-}
-
-// ==================== 颜色控制 ====================
 
 // Disable 禁用颜色。
 func Disable() { color.NoColor = true }
