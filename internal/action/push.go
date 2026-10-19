@@ -102,6 +102,9 @@ func (a *PushAction) pushDirRecursive(ctx *ActionContext, localAbs, dest string,
 		if walkErr != nil {
 			return walkErr
 		}
+		if err := rejectSymlink(localPath, info); err != nil {
+			return err
+		}
 
 		rel, err := filepath.Rel(base, localPath)
 		if err != nil {
@@ -173,7 +176,16 @@ func zipDir(dir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)
 	}
-	defer tmpFile.Close()
+	fileClosed := false
+	removeTemp := true
+	defer func() {
+		if !fileClosed {
+			tmpFile.Close()
+		}
+		if removeTemp {
+			os.Remove(tmpFile.Name())
+		}
+	}()
 
 	zw := zip.NewWriter(tmpFile)
 
@@ -181,6 +193,9 @@ func zipDir(dir string) (string, error) {
 
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			return err
+		}
+		if err := rejectSymlink(path, info); err != nil {
 			return err
 		}
 
@@ -220,7 +235,19 @@ func zipDir(dir string) (string, error) {
 		return "", err
 	}
 
+	if err := tmpFile.Close(); err != nil {
+		return "", err
+	}
+	fileClosed = true
+	removeTemp = false
 	return tmpFile.Name(), nil
+}
+
+func rejectSymlink(localPath string, info os.FileInfo) error {
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to upload symbolic link %s", localPath)
+	}
+	return nil
 }
 
 func init() {
