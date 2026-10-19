@@ -30,7 +30,7 @@ func Load(path string) (*Inventory, error) {
 		return finalizeInventory(&Inventory{})
 	}
 
-	console.Debug("loading invertory file: %s ...", path)
+	console.Default.Debug("loading invertory file: %s ...", path)
 	inv, err := readInventoryFile(path)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func Load(path string) (*Inventory, error) {
 	// 依次加载子文件
 	subs := make([]includedFile, 0, len(files))
 	for _, f := range files {
-		console.Debug("loading include invertory file: %s ...", f)
+		console.Default.Debug("loading include invertory file: %s ...", f)
 		sub, err := readInventoryFile(f)
 		if err != nil {
 			return nil, err

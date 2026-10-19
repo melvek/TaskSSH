@@ -19,7 +19,7 @@ type ExecResult struct {
 
 // Exec 执行命令，输出实时写入默认 Logger。
 func (c *Client) Exec(command string) (*ExecResult, error) {
-	return c.ExecContext(context.Background(), command, console.DefaultLogger())
+	return c.ExecContext(context.Background(), command, console.Default)
 }
 
 // ExecContext 执行命令；ctx 取消时关闭 SSH 连接以中断远程操作。
@@ -46,7 +46,7 @@ func (c *Client) ExecContext(ctx context.Context, command string, logger *consol
 	defer session.Close()
 
 	if logger == nil {
-		logger = console.DefaultLogger()
+		logger = console.Default
 	}
 	var stdout, stderr bytes.Buffer
 	session.Stdout = io.MultiWriter(logger.CommandWriter(), &stdout)

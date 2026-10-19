@@ -36,7 +36,7 @@ func shouldRetry(interval int) bool {
 //
 // interval 必须 > 0，否则直接执行一次不重试。
 func withRetry(ctx context.Context, fn func() error, interval, timeout int) error {
-	return withRetryLogger(ctx, console.DefaultLogger(), fn, interval, timeout)
+	return withRetryLogger(ctx, console.Default, fn, interval, timeout)
 }
 
 func withRetryLogger(ctx context.Context, logger *console.Logger, fn func() error, interval, timeout int) error {

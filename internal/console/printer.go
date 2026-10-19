@@ -1,7 +1,7 @@
 // Package console 提供分级、彩色终端输出。
 //
 // 三个级别：Verbose / Brief / Quiet，由 SetLevel 设置。
-// Output 是默认 Logger 的底层出口；并发任务可使用独立 Logger 缓冲输出。
+// 并发任务可创建独立 Logger，避免不同主机的输出混杂。
 //
 // 颜色基于 fatih/color 自动检测，NO_COLOR=1 可强制禁用。
 package console
@@ -24,23 +24,22 @@ var (
 	blue   = color.New(color.FgBlue)
 	gray   = color.New(color.FgHiBlack)
 
-	defaultLogger = &Logger{}
+	// Default 用于不关联特定主机的输出。
+	Default = &Logger{w: os.Stdout}
 )
 
-// Logger 将输出发送到指定 writer。单个 Logger 可以安全地被多个写入者共享。
+// Logger 将格式化输出写入自己的目标。
 type Logger struct {
 	mu sync.Mutex
 	w  io.Writer
 }
 
-// NewLogger 创建一个写入指定目标的 Logger。nil writer 使用 os.Stdout。
+// NewLogger 创建写入 w 的 Logger；w 为 nil 时使用 os.Stdout。
 func NewLogger(w io.Writer) *Logger {
+	if w == nil {
+		w = os.Stdout
+	}
 	return &Logger{w: w}
-}
-
-// DefaultLogger 返回全局默认 Logger。
-func DefaultLogger() *Logger {
-	return defaultLogger
 }
 
 type styleMeta struct {
@@ -63,60 +62,31 @@ var styleMetas = map[Style]styleMeta{
 	StyleFailedItem: {red, ""},
 }
 
-// Output 是默认 Logger 的底层输出出口。
-func Output(level Level, style Style, format string, args ...any) {
-	defaultLogger.Output(level, style, format, args...)
-}
-
-// Output 按指定级别和样式输出。
+// Output 在应用级别过滤和样式后输出消息。
 func (l *Logger) Output(level Level, style Style, format string, args ...any) {
 	if level > currentLevel {
 		return
 	}
-	l.write(style, formatMsg(format, args...))
-}
 
-func (l *Logger) write(style Style, msg string) {
-	if l == nil {
-		l = defaultLogger
+	message := format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
 	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
 
 	meta := styleMetas[style]
-	body := meta.prefix + strings.TrimRight(msg, "\n")
-	fprintStyled(l.writer(), meta, body, true)
-}
+	message = meta.prefix + strings.TrimRight(message, "\n")
 
-func (l *Logger) writer() io.Writer {
-	if l == nil || l.w == nil {
-		return os.Stdout
-	}
-	return l.w
-}
-
-type synchronizedWriter struct {
-	logger *Logger
-}
-
-func (w synchronizedWriter) Write(p []byte) (int, error) {
-	l := w.logger
-	if l == nil {
-		l = defaultLogger
-	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.writer().Write(p)
+	if meta.color != nil && !color.NoColor {
+		meta.color.Fprintln(l.w, message)
+		return
+	}
+	fmt.Fprintln(l.w, message)
 }
 
 // CommandWriter 返回远程命令 stdout 的输出目标。
-//
-// Quiet 级别下丢弃输出，其他级别写入该 Logger。
-func CommandWriter() io.Writer {
-	return defaultLogger.CommandWriter()
-}
-
-// CommandWriter 返回该 Logger 的远程命令 stdout 输出目标。
+// Quiet 级别丢弃 stdout，其他级别写入此 Logger。
 func (l *Logger) CommandWriter() io.Writer {
 	if currentLevel <= LevelQuiet {
 		return io.Discard
@@ -124,52 +94,26 @@ func (l *Logger) CommandWriter() io.Writer {
 	return synchronizedWriter{logger: l}
 }
 
-// StderrWriter 返回远程命令 stderr 的默认输出目标。
-func StderrWriter() io.Writer {
-	return defaultLogger.StderrWriter()
-}
-
-// StderrWriter 返回该 Logger 的远程命令 stderr 输出目标。
+// StderrWriter 返回远程命令 stderr 的输出目标。
 func (l *Logger) StderrWriter() io.Writer {
 	return synchronizedWriter{logger: l}
 }
 
-// RawOutput 原样输出字符串（不做级别过滤）。
-func RawOutput(s string) {
-	defaultLogger.RawOutput(s)
-}
-
-// RawOutput 原样输出字符串（不做级别过滤）。
+// RawOutput 原样输出 s，不进行级别过滤。
 func (l *Logger) RawOutput(s string) {
-	if l == nil {
-		l = defaultLogger
-	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	_, _ = io.WriteString(l.writer(), s)
+	_, _ = io.WriteString(l.w, s)
 }
 
-func fprintStyled(out io.Writer, meta styleMeta, s string, newline bool) {
-	if meta.color != nil && !color.NoColor {
-		if newline {
-			meta.color.Fprintln(out, s)
-		} else {
-			meta.color.Fprint(out, s)
-		}
-		return
-	}
-	if newline {
-		fmt.Fprintln(out, s)
-	} else {
-		fmt.Fprint(out, s)
-	}
+type synchronizedWriter struct {
+	logger *Logger
 }
 
-func formatMsg(format string, args ...any) string {
-	if len(args) == 0 {
-		return format
-	}
-	return fmt.Sprintf(format, args...)
+func (w synchronizedWriter) Write(p []byte) (int, error) {
+	w.logger.mu.Lock()
+	defer w.logger.mu.Unlock()
+	return w.logger.w.Write(p)
 }
 
 // Disable 禁用颜色。

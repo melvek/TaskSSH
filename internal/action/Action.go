@@ -26,7 +26,7 @@ func (ctx *ActionContext) Log() *console.Logger {
 	if ctx.Logger != nil {
 		return ctx.Logger
 	}
-	return console.DefaultLogger()
+	return console.Default
 }
 
 type Action interface {

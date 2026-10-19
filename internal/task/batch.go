@@ -77,12 +77,12 @@ func planBatches(entries []host.HostEntry, serial, minAvailable int) ([]Batch, e
 
 // printPlan 打印完整执行队列
 func printPlan(plan []Batch) {
-	console.Section("Execution Plan")
+	console.Default.Section("Execution Plan")
 	for i, batch := range plan {
-		console.Output(console.LevelBrief, console.StyleNone,
+		console.Default.Output(console.LevelBrief, console.StyleNone,
 			"Batch %d: group %s, %d hosts", i+1, batch.Group, len(batch.Hosts))
 		for _, h := range batch.Hosts {
-			console.Output(console.LevelBrief, console.StyleNone,
+			console.Default.Output(console.LevelBrief, console.StyleNone,
 				"  - %s [%s]", h.Name, h.Host.Host)
 		}
 	}

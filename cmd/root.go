@@ -115,7 +115,7 @@ func init() {
 		}
 
 		if passwordFlag != "" {
-			console.Warn("Passing password via command line is insecure; use 'taskssh encrypt' and inventory file instead")
+			console.Default.Warn("Passing password via command line is insecure; use 'taskssh encrypt' and inventory file instead")
 		}
 
 		return nil

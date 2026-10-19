@@ -65,7 +65,7 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 
 	// dry-run 提醒
 	if dryRun {
-		console.Warn("Dry run (no changes will be made)")
+		console.Default.Warn("Dry run (no changes will be made)")
 	}
 
 	cliVarMap, err := parseCLIVars(cliVars)
@@ -98,7 +98,7 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 				lines = append(lines, fmt.Sprintf("%s: %s", e.Name, e.Host.Host))
 			}
 		}
-		console.Targets(lines)
+		console.Default.Targets(lines)
 	}
 
 	if listOnly {
@@ -148,10 +148,10 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 			}
 		}
 
-		console.Summary(len(results), success, failed, failedHosts)
+		console.Default.Summary(len(results), success, failed, failedHosts)
 	}
 
-	console.ExecutionID(executor.ExecID())
+	console.Default.ExecutionID(executor.ExecID())
 
 	return nil
 }

@@ -20,9 +20,9 @@ func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []hos
 		if ctx.Err() != nil {
 			break
 		}
-		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
+		console.Default.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
-		err := e.runOnHost(ctx, task, entry, globalVars, console.DefaultLogger())
+		err := e.runOnHost(ctx, task, entry, globalVars, console.Default)
 		results = append(results, Result{
 			Host:    entry.Name,
 			Success: err == nil,
@@ -76,7 +76,7 @@ dispatch:
 					}
 				}
 
-				console.RawOutput(buf.String())
+				console.Default.RawOutput(buf.String())
 			}()
 
 			logger.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
@@ -103,8 +103,8 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 			break
 		}
 
-		console.Output(console.LevelBrief, console.StyleNone, "")
-		console.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
+		console.Default.Output(console.LevelBrief, console.StyleNone, "")
+		console.Default.Section(fmt.Sprintf("Group %s, Batch %d/%d (%d hosts)",
 			batch.Group, i+1, len(plan), len(batch.Hosts)))
 
 		var results []Result
@@ -119,7 +119,7 @@ func (e *Executor) runBatches(ctx context.Context, task *config.Task, plan []Bat
 		if e.stopOnFailure {
 			for _, r := range results {
 				if !r.Success {
-					console.Error("Batch failed, stopping remaining batches")
+					console.Default.Error("Batch failed, stopping remaining batches")
 					return all
 				}
 			}

@@ -19,7 +19,7 @@ var encryptCmd = &cobra.Command{
 		var err error
 
 		if len(args) > 0 {
-			console.Warn("Passing input via command line is insecure and may be recorded in shell history; use interactive input instead")
+			console.Default.Warn("Passing input via command line is insecure and may be recorded in shell history; use interactive input instead")
 			passwd = args[0]
 		} else {
 			passwd, err = prompt.HiddenConfirm("Text to encrypt: ")
