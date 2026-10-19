@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -43,5 +44,40 @@ func TestLoad(t *testing.T) {
 	}
 	if release.Steps[2].Delay != 5 {
 		t.Errorf("expected delay 5, got %d", release.Steps[1].Delay)
+	}
+}
+
+func TestFinalizeInventoryRejectsSlashInSelectorNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		servers  map[string]Group
+		wantText string
+	}{
+		{
+			name: "group",
+			servers: map[string]Group{
+				"prod/east": {},
+			},
+			wantText: "invalid group name",
+		},
+		{
+			name: "host",
+			servers: map[string]Group{
+				"prod": {Hosts: map[string]Host{"web/01": {}}},
+			},
+			wantText: "invalid host name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := finalizeInventory(&Inventory{Servers: tt.servers})
+			if err == nil {
+				t.Fatal("finalizeInventory() succeeded, want invalid selector-name error")
+			}
+			if !strings.Contains(err.Error(), tt.wantText) {
+				t.Fatalf("error = %q, want it to contain %q", err, tt.wantText)
+			}
+		})
 	}
 }

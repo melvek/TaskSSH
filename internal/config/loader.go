@@ -116,6 +116,9 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 		inv.Defaults.Extra = make(map[string]any)
 	}
 
+	if err := validateHostSelectorNames(inv); err != nil {
+		return nil, err
+	}
 	if err := validateReservedVars(inv); err != nil {
 		return nil, err
 	}
@@ -124,6 +127,20 @@ func finalizeInventory(inv *Inventory) (*Inventory, error) {
 	inv.Include = nil
 
 	return inv, nil
+}
+
+func validateHostSelectorNames(inv *Inventory) error {
+	for groupName, group := range inv.Servers {
+		if strings.ContainsRune(groupName, '/') {
+			return fmt.Errorf("invalid group name %q: '/' is reserved for host selectors", groupName)
+		}
+		for hostName := range group.Hosts {
+			if strings.ContainsRune(hostName, '/') {
+				return fmt.Errorf("invalid host name %q in group %q: '/' is reserved for host selectors", hostName, groupName)
+			}
+		}
+	}
+	return nil
 }
 
 // applyDefaultsToGroups 把 inv.Defaults 下沉到 inv.Servers 里每个 group 的 Vars，
