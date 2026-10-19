@@ -15,7 +15,7 @@ var (
 )
 
 var pushCmd = &cobra.Command{
-	Use:   "push [hosts...]",
+	Use:   "push -H <hosts> [file] [dest]",
 	Short: "Upload a file or directory to remote server",
 	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {

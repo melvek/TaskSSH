@@ -33,7 +33,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "taskssh <task> [hosts...] [options]",
+	Use:           "taskssh <task> -H <hosts> [options]",
 	Short:         "TaskSSH is a lightweight operations tool.",
 	Long:          "TaskSSH is a lightweight, SSH-based batch operations tool.\nhttps://taskssh.mestrap.com/",
 	Version:       Version,

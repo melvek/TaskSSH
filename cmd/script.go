@@ -15,7 +15,7 @@ var (
 )
 
 var scriptCmd = &cobra.Command{
-	Use:   "script [hosts...]",
+	Use:   "script -H <hosts> [file] [dest]",
 	Short: "Execute a local shell script on remote hosts",
 	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -27,7 +27,7 @@ func (l *Logger) Warn(format string, args ...any) {
 
 // Success 输出成功状态。
 func (l *Logger) Success(format string, args ...any) {
-	l.Output(LevelInfo, StyleSuccess, format, args...)
+	l.Output(LevelDebug, StyleSuccess, format, args...)
 }
 
 // Error 输出错误信息。

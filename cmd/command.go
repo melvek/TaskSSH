@@ -16,7 +16,7 @@ var (
 // -e/--execute 需要执行的远程命令，支持变量替换
 // -L/--local   指定命令在本地环境执行
 var commandCmd = &cobra.Command{
-	Use:   "command [hosts...]",
+	Use:   "command -H <hosts> [command]",
 	Short: "Execute a remote command",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

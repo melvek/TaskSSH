@@ -15,7 +15,7 @@ var (
 )
 
 var fetchCmd = &cobra.Command{
-	Use:   "fetch [hosts...]",
+	Use:   "fetch -H <hosts> [file] [dest]",
 	Short: "Download a file or directory from remote server",
 	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
