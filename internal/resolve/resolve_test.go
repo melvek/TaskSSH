@@ -34,6 +34,19 @@ func TestReplace_WithSpaces(t *testing.T) {
 	}
 }
 
+func TestReplace_EmptyName(t *testing.T) {
+	vars := Vars{}
+
+	_, err := vars.Replace("{{ }}")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "") {
+		t.Errorf("error should mention '', got %q", err.Error())
+	}
+}
+
 func TestReplace_Recursive(t *testing.T) {
 	vars := Vars{
 		"app_name": "myapp",
@@ -77,15 +90,18 @@ func TestReplace_ShellVarUnchanged(t *testing.T) {
 	}
 }
 
-func TestReplace_Empty(t *testing.T) {
-	vars := Vars{}
+func TestReplace_ShellEscape(t *testing.T) {
+	vars := Vars{"app_name": "myapp'Name"}
 
-	got, err := vars.Replace("")
+	// shell 变量 $HOME 和 ${HOME} 不应被处理
+	got, err := vars.Replace("echo {{app_name}}")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got != "" {
-		t.Errorf("got %q, want empty", got)
+
+	want := "echo myapp'Name"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
 
