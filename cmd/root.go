@@ -65,20 +65,28 @@ func init() {
 	// 注册全局参数
 	rootCmd.PersistentFlags().StringVarP(&inventoryFile, "inventory", "i", "", "Inventory file (default: inventory.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&listOnly, "list", "l", false, "List target hosts only")
-	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
-	rootCmd.PersistentFlags().BoolVarP(&confirmFlag, "confirm", "", false, "List target hosts and wait for confirmation before executing")
+	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D", nil, "Set variable (key=value), can be repeated")
+
+	// 服务器信息
 	rootCmd.PersistentFlags().StringVarP(&hostFlag, "host", "H", "", "Target hosts")
 	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "port")
 	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "username")
 	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "password (plaintext, not recommended)")
+
+	// 加密及登录
 	rootCmd.PersistentFlags().StringVarP(&identityFileFlag, "identity-file", "k", "", "SSH private key file")
+	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V", "", "File or executable that holds the secret key")
+
+	// 执行控制
+	rootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Show what would be executed without actually running")
+	rootCmd.PersistentFlags().BoolVarP(&confirmFlag, "confirm", "", false, "List target hosts and wait for confirmation before executing")
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 1, "Number of concurrent connections")
 	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "", 10, "Connection timeout in seconds")
-	rootCmd.PersistentFlags().StringVarP(&secretKeyFile, "secret-key-file", "V", "", "File or executable that holds the secret key")
-	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D", nil, "Set variable (key=value), can be repeated")
 	rootCmd.PersistentFlags().IntVarP(&serialFlag, "serial", "S", -1, "Run in batches of N hosts per group (0 = all at once; default: use task config)")
 	rootCmd.PersistentFlags().IntVarP(&minAvailableFlag, "min-available", "", -1, "Keep at least N hosts per group running (0 = no limit; default: use task config)")
 	rootCmd.PersistentFlags().BoolVarP(&stopOnFailureFlag, "stop-on-failure", "", true, "Stop remaining batches if a batch fails")
+
+	// 日志输出相关
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quietFlag, "quiet", "q", false, "Only show errors")
 
@@ -118,7 +126,7 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(fetchCmd)
 	rootCmd.AddCommand(scriptCmd)
+	rootCmd.AddCommand(keygenCmd)
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
-	rootCmd.AddCommand(keygenCmd)
 }

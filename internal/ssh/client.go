@@ -96,9 +96,7 @@ func (c *Client) getSFTP() (*sftp.Client, error) {
 	return c.sftp, nil
 }
 
-// Stat 返回远程路径的信息。
-//
-// 只读操作，dry-run 时也正常执行。
+// 返回远程路径的信息
 func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {
@@ -112,7 +110,7 @@ func (c *Client) Stat(remotePath string) (os.FileInfo, error) {
 	return info, nil
 }
 
-// ListFiles 递归列出远程目录下的所有文件
+// 递归列出远程目录下的所有文件
 func (c *Client) ListFiles(root string) ([]string, error) {
 	sftpClient, err := c.getSFTP()
 	if err != nil {
@@ -142,9 +140,7 @@ func (c *Client) ListFiles(root string) ([]string, error) {
 	return files, nil
 }
 
-// MkdirAll 在远程递归创建目录。
-//
-// dry-run 时跳过。
+// 在远程递归创建目录
 func (c *Client) MkdirAll(remotePath string) error {
 	sftpClient, err := c.getSFTP()
 	if err != nil {

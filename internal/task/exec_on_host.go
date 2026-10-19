@@ -22,13 +22,13 @@ import (
 func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.HostEntry,
 	globalVars resolve.Vars) error {
 
-	// 1. 清单变量：global -> 组 -> 主机
+	// 合并清单变量：global -> 组 -> 主机
 	vars := entry.BaseVars(globalVars)
 
-	// 3. CLI -D
+	// 合并命令行变量
 	maps.Copy(vars, e.cliVars)
 
-	// 4. 运行时变量（不可覆盖）
+	// 加载执行时参数
 	vars["exec_id"] = e.execID
 
 	var client *ssh.Client

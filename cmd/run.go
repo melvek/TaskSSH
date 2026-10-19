@@ -58,9 +58,9 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	defer ssh.ClearPasswordCache()
 
 	// 未指定具体主机时，报错，因为目前默认是不做确认的，为防止忘了写，导致对全部主机执行一些不可逆的操作
-	// 如果确实需要对所有服务器执行操作，需要显式地指定 --host "*"
+	// 如果确实需要对所有服务器执行操作，需要显式地指定 -H/--host "*"
 	if hostFlag == "" {
-		return fmt.Errorf("no target hosts, user -H/--host to specify")
+		return fmt.Errorf("no target hosts, use -H/--host to specify")
 	}
 
 	// dry-run 提醒
@@ -115,7 +115,7 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	globalVars := make(resolve.Vars)
 	maps.Copy(globalVars, inv.Defaults.Extra)
 
-	// 一次性加载所有Action，之后根据任务创建执行器
+	// 自动分批处理
 	serial := t.Serial
 	if serialFlag >= 0 {
 		serial = serialFlag
@@ -152,10 +152,6 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	}
 
 	console.ExecutionID(executor.ExecID())
-
-	// if failed > 0 {
-	// 	return fmt.Errorf("%d host(s) failed", failed)
-	// }
 
 	return nil
 }

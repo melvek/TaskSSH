@@ -54,14 +54,11 @@ func NewExecutor(concurrency int, connectTimeout int,
 	}
 }
 
-// ExecID 返回本次执行的唯一标识。
-//
-// 仅在 Run 执行后有效。
+// ExecID 返回本次执行的唯一标识
 func (e *Executor) ExecID() string {
 	return e.execID
 }
 
-// Run 对一批主机执行任务。
 func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []host.HostEntry, globalVars resolve.Vars) ([]Result, error) {
 
 	e.execID = generateExecID()
@@ -78,6 +75,7 @@ func (e *Executor) Run(ctx context.Context, task *config.Task, hosts []host.Host
 		return e.runBatches(ctx, task, plan, globalVars), nil
 	}
 
+	// 并发数为 1 时，执行串行执行
 	if e.concurrency == 1 || e.dryRun {
 		return e.runSerial(ctx, task, hosts, globalVars), nil
 	}
