@@ -14,9 +14,9 @@ import (
 type OverwritePolicy int
 
 const (
-	// PolicyFail 目标已存在则报错（默认）。
+	// 目标已存在则报错（默认）
 	PolicyFail OverwritePolicy = iota
-	// PolicyOverwrite 直接覆盖。
+	// 直接覆盖
 	PolicyOverwrite
 )
 
@@ -28,9 +28,7 @@ func NewPolicy(force bool) OverwritePolicy {
 	return PolicyFail
 }
 
-// Upload 上传本地文件到远程，返回最终远程路径。
-//
-// dry-run 时跳过实际传输，返回目标路径。
+// Upload 上传本地文件到远程，返回最终远程路径
 func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (string, error) {
 	if c.conn == nil {
 		return "", fmt.Errorf("client not connected")
@@ -54,10 +52,8 @@ func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (s
 		return "", err
 	}
 
-	if exists(sftpClient, finalPath) {
-		if err := handleExisting(finalPath, policy); err != nil {
-			return "", err
-		}
+	if exists(sftpClient, finalPath) && policy == PolicyFail {
+		return "", fmt.Errorf("remote file already exists: %s (use -F to overwrite)", finalPath)
 	}
 
 	src, err := os.Open(localPath)
@@ -77,17 +73,6 @@ func (c *Client) Upload(localPath, remotePath string, policy OverwritePolicy) (s
 	}
 
 	return finalPath, nil
-}
-
-// handleExisting 处理已存在的远程文件。
-func handleExisting(path string, policy OverwritePolicy) error {
-	switch policy {
-	case PolicyFail:
-		return fmt.Errorf("remote file already exists: %s (use -F to overwrite)", path)
-	case PolicyOverwrite:
-		return nil
-	}
-	return nil
 }
 
 // resolveRemotePath 解析最终远程路径。
