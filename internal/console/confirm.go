@@ -1,4 +1,4 @@
-package cmd
+package console
 
 import (
 	"bufio"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func confirm(message string) bool {
+func Confirm(message string) bool {
 	fmt.Printf("%s (y/n): ", message)
 
 	reader := bufio.NewReader(os.Stdin)

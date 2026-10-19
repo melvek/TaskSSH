@@ -107,7 +107,7 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 
 	// dry run 不需要确认操作
 	if confirmFlag && !dryRun {
-		if !confirm("Confirm to proceed") {
+		if !console.Confirm("Confirm to proceed") {
 			return nil
 		}
 	}
