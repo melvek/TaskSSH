@@ -3,14 +3,13 @@ package host
 import (
 	"fmt"
 	"net"
-	"path"
 	"strings"
 )
 
 // byGroup 匹配组名。
 //
 // 空 pattern（"g:" 后无内容）视为语法错误；
-// path.Match 出错视为语法错误；
+// glob 语法错误直接返回；
 // strict=true 时匹配不到返回 error，strict=false 时返回 nil, nil。
 func (r *resolver) byGroup(pattern string, strict bool) ([]HostEntry, error) {
 	if pattern == "" {
@@ -24,10 +23,11 @@ func (r *resolver) byGroup(pattern string, strict bool) ([]HostEntry, error) {
 
 	// glob 匹配
 	if isGlobPattern(pattern) {
-		entries, err := r.matchGroups(pattern)
+		matcher, err := compileGlobPattern(pattern)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid group pattern %q: %w", pattern, err)
 		}
+		entries := r.matchGroups(matcher)
 		if len(entries) > 0 {
 			return entries, nil
 		}
@@ -46,7 +46,7 @@ func (r *resolver) byGroup(pattern string, strict bool) ([]HostEntry, error) {
 // byHost 匹配所有组内主机名。
 //
 // 空 pattern（"h:" 后无内容）视为语法错误；
-// path.Match 出错视为语法错误；
+// glob 语法错误直接返回；
 // strict=true 时匹配不到返回 error，strict=false 时返回 nil, nil。
 func (r *resolver) byHost(pattern string, strict bool) ([]HostEntry, error) {
 	if pattern == "" {
@@ -66,10 +66,11 @@ func (r *resolver) byHost(pattern string, strict bool) ([]HostEntry, error) {
 	}
 
 	// glob 匹配
-	entries, err := r.matchHosts(pattern)
+	matcher, err := compileGlobPattern(pattern)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid host pattern %q: %w", pattern, err)
 	}
+	entries := r.matchHosts(matcher)
 	if len(entries) > 0 {
 		return entries, nil
 	}
@@ -112,18 +113,6 @@ func (r *resolver) byDefault(name string, strict bool) ([]HostEntry, error) {
 
 		groupIsGlob := isGlobPattern(groupPat)
 		hostIsGlob := isGlobPattern(hostPat)
-
-		// 先校验 glob 语法（避免进入循环后才发现）
-		if groupIsGlob {
-			if _, err := path.Match(groupPat, ""); err != nil {
-				return nil, fmt.Errorf("invalid group pattern %q: %w", groupPat, err)
-			}
-		}
-		if hostIsGlob {
-			if _, err := path.Match(hostPat, ""); err != nil {
-				return nil, fmt.Errorf("invalid host pattern %q: %w", hostPat, err)
-			}
-		}
 
 		// 精确组名 + 精确主机名：组存在但主机不存在 → 明确报错
 		if !groupIsGlob && !hostIsGlob {
@@ -173,18 +162,12 @@ func (r *resolver) byDefault(name string, strict bool) ([]HostEntry, error) {
 
 	// 4. glob 匹配组名 + 主机名，去重合并
 	if isGlobPattern(name) {
-		// 先校验语法
-		if _, err := path.Match(name, ""); err != nil {
+		matcher, err := compileGlobPattern(name)
+		if err != nil {
 			return nil, fmt.Errorf("invalid pattern %q: %w", name, err)
 		}
-		groupHits, err := r.matchGroups(name)
-		if err != nil {
-			return nil, err
-		}
-		hostHits, err := r.matchHosts(name)
-		if err != nil {
-			return nil, err
-		}
+		groupHits := r.matchGroups(matcher)
+		hostHits := r.matchHosts(matcher)
 		all := append(groupHits, hostHits...)
 		if len(all) > 0 {
 			return dedupeEntries(all), nil
@@ -203,40 +186,29 @@ func (r *resolver) byDefault(name string, strict bool) ([]HostEntry, error) {
 	return []HostEntry{standaloneEntry(name, r.inv)}, nil
 }
 
-// matchGroups 返回所有组名匹配 pattern 的条目。
-//
-// 调用方负责先校验 pattern 语法；path.Match 出错仅在 pattern 非法时触发，
-// 此处仍返回错误以防意外。
-func (r *resolver) matchGroups(pattern string) ([]HostEntry, error) {
+// matchGroups 返回所有组名匹配已编译 glob 的条目。
+func (r *resolver) matchGroups(matcher *globPattern) []HostEntry {
 	all := make([]HostEntry, 0, len(r.entries))
 	for _, groupName := range r.groupOrder {
-		ok, err := path.Match(pattern, groupName)
-		if err != nil {
-			return nil, fmt.Errorf("invalid group pattern %q: %w", pattern, err)
-		}
-		if ok {
+		if matcher.Match(groupName) {
 			all = append(all, r.entriesAt(r.groups[groupName])...)
 		}
 	}
-	return all, nil
+	return all
 }
 
-// matchHosts 返回所有主机名匹配 pattern 的条目。
+// matchHosts 返回所有主机名匹配已编译 glob 的条目。
 //
 // 平铺遍历 entries（其顺序即 groupOrder x hostOrder），借 hostOf 直接取主机名，
 // 全程无字符串拼接、无哈希查表。
-func (r *resolver) matchHosts(pattern string) ([]HostEntry, error) {
+func (r *resolver) matchHosts(matcher *globPattern) []HostEntry {
 	all := make([]HostEntry, 0, len(r.entries))
 	for i := range r.entries {
-		ok, err := path.Match(pattern, r.hostOf[i])
-		if err != nil {
-			return nil, fmt.Errorf("invalid host pattern %q: %w", pattern, err)
-		}
-		if ok {
+		if matcher.Match(r.hostOf[i]) {
 			all = append(all, r.entries[i])
 		}
 	}
-	return all, nil
+	return all
 }
 
 // matchGroupHost 匹配 "组 pattern/主机 pattern"。
@@ -250,22 +222,23 @@ func (r *resolver) matchHosts(pattern string) ([]HostEntry, error) {
 //
 // 匹配不到返回 nil, nil；pattern 语法错返回 error。
 func (r *resolver) matchGroupHost(groupPat, hostPat string) ([]HostEntry, error) {
+	groupMatcher, err := compileGlobPattern(groupPat)
+	if err != nil {
+		return nil, fmt.Errorf("invalid group pattern %q: %w", groupPat, err)
+	}
+	hostMatcher, err := compileGlobPattern(hostPat)
+	if err != nil {
+		return nil, fmt.Errorf("invalid host pattern %q: %w", hostPat, err)
+	}
+
 	all := make([]HostEntry, 0, len(r.entries))
 	for _, groupName := range r.groupOrder {
-		ok, err := path.Match(groupPat, groupName)
-		if err != nil {
-			return nil, fmt.Errorf("invalid group pattern %q: %w", groupPat, err)
-		}
-		if !ok {
+		if !groupMatcher.Match(groupName) {
 			continue
 		}
 		// 直接用该组的 entries 下标，主机名从 hostOf 取，无拼接无查表
 		for _, idx := range r.groups[groupName] {
-			ok, err := path.Match(hostPat, r.hostOf[idx])
-			if err != nil {
-				return nil, fmt.Errorf("invalid host pattern %q: %w", hostPat, err)
-			}
-			if ok {
+			if hostMatcher.Match(r.hostOf[idx]) {
 				all = append(all, r.entries[idx])
 			}
 		}

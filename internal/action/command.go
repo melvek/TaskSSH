@@ -2,11 +2,8 @@ package action
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
-
-	"mestrap.com/taskssh/internal/console"
 )
 
 // CommandAction 执行远程命令
@@ -39,13 +36,13 @@ func (a *CommandAction) Execute(ctx *ActionContext) error {
 		return runLocalCommand(ctx, cmd)
 	}
 
-	console.Debug("Execute command: %s", cmd)
+	ctx.Log().Debug("Execute command: %s", cmd)
 
 	if ctx.DryRun {
 		return nil
 	}
 
-	result, err := ctx.Client.Exec(cmd)
+	result, err := ctx.Client.ExecContext(ctx.Context, cmd, ctx.Log())
 	if err != nil {
 		return err
 	}
@@ -59,7 +56,7 @@ func (a *CommandAction) Execute(ctx *ActionContext) error {
 
 func runLocalCommand(ctx *ActionContext, cmd string) error {
 
-	console.Debug("Execute local command: %s", cmd)
+	ctx.Log().Debug("Execute local command: %s", cmd)
 
 	if ctx.DryRun {
 		return nil
@@ -72,8 +69,8 @@ func runLocalCommand(ctx *ActionContext, cmd string) error {
 		c = exec.Command("sh", "-c", cmd)
 	}
 
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
+	c.Stdout = ctx.Log().CommandWriter()
+	c.Stderr = ctx.Log().StderrWriter()
 
 	if err := c.Run(); err != nil {
 		return fmt.Errorf("local command failed: %w", err)

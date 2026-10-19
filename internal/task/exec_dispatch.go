@@ -17,9 +17,12 @@ func (e *Executor) runSerial(ctx context.Context, task *config.Task, hosts []hos
 	results := make([]Result, 0, len(hosts))
 
 	for i, entry := range hosts {
+		if ctx.Err() != nil {
+			break
+		}
 		console.Progress(i+1, len(hosts), entry.Name, entry.Host.Host)
 
-		err := e.runOnHost(ctx, task, entry, globalVars)
+		err := e.runOnHost(ctx, task, entry, globalVars, console.DefaultLogger())
 		results = append(results, Result{
 			Host:    entry.Name,
 			Success: err == nil,
@@ -40,27 +43,31 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []h
 	results := make([]Result, len(hosts))
 	sem := make(chan struct{}, e.concurrency)
 	var wg sync.WaitGroup
+	dispatched := 0
 
+dispatch:
 	for i, entry := range hosts {
-		// ctx 取消时不再派发新主机
+		select {
+		case sem <- struct{}{}:
+		case <-ctx.Done():
+			break dispatch
+		}
 		if ctx.Err() != nil {
+			<-sem
 			break
 		}
 
+		results[i].Host = entry.Name
+		dispatched++
 		wg.Add(1)
-		sem <- struct{}{}
 
 		go func(idx int, entry host.HostEntry) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
 			var buf bytes.Buffer
-			console.SetOutput(&buf)
-			console.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
-
+			logger := console.NewLogger(&buf)
 			defer func() {
-				console.ResetOutput()
-
 				if r := recover(); r != nil {
 					results[idx] = Result{
 						Host:    entry.Name,
@@ -72,7 +79,8 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []h
 				console.RawOutput(buf.String())
 			}()
 
-			err := e.runOnHost(ctx, task, entry, globalVars)
+			logger.Progress(idx+1, len(hosts), entry.Name, entry.Host.Host)
+			err := e.runOnHost(ctx, task, entry, globalVars, logger)
 
 			results[idx] = Result{
 				Host:    entry.Name,
@@ -83,7 +91,7 @@ func (e *Executor) runParallel(ctx context.Context, task *config.Task, hosts []h
 	}
 
 	wg.Wait()
-	return results
+	return results[:dispatched]
 }
 
 // runBatches 按批队列依次执行。

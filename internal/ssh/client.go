@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -21,16 +22,27 @@ const DefaultConnectTimeout = 10 * time.Second
 
 // Client 包装 SSH 连接。
 type Client struct {
-	conn *ssh.Client
-	sftp *sftp.Client
-	host *config.Host
+	conn       *ssh.Client
+	sftp       *sftp.Client
+	host       *config.Host
+	stopCancel func() bool
 }
 
 // Connect 建立 SSH 连接。
 //
 // timeout 为 0 时使用 DefaultConnectTimeout。
-// dryRun 为 true 时，后续的 Exec / Upload / Download / MkdirAll 将被跳过。
 func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
+	return ConnectContext(context.Background(), host, timeout)
+}
+
+// ConnectContext establishes an SSH connection that is interrupted when ctx is canceled.
+func ConnectContext(ctx context.Context, host *config.Host, timeout time.Duration) (*Client, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	if host.Host == "" {
 		return nil, fmt.Errorf("host is empty")
@@ -67,15 +79,44 @@ func Connect(host *config.Host, timeout time.Duration) (*Client, error) {
 	}
 
 	addr := net.JoinHostPort(host.Host, fmt.Sprintf("%d", port))
-	conn, err := ssh.Dial("tcp", addr, sshConfig)
+	rawConn, err := (&net.Dialer{Timeout: timeout}).DialContext(ctx, "tcp", addr)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, fmt.Errorf("connect %s: %w", addr, err)
 	}
 
-	return &Client{
-		conn: conn,
+	if err := rawConn.SetDeadline(time.Now().Add(timeout)); err != nil {
+		rawConn.Close()
+		return nil, fmt.Errorf("set SSH handshake deadline: %w", err)
+	}
+	stopHandshakeCancel := context.AfterFunc(ctx, func() {
+		rawConn.Close()
+	})
+	sshConn, chans, reqs, err := ssh.NewClientConn(rawConn, addr, sshConfig)
+	stopHandshakeCancel()
+	if ctx.Err() != nil {
+		rawConn.Close()
+		return nil, ctx.Err()
+	}
+	if err != nil {
+		rawConn.Close()
+		return nil, fmt.Errorf("connect %s: %w", addr, err)
+	}
+	if err := rawConn.SetDeadline(time.Time{}); err != nil {
+		rawConn.Close()
+		return nil, fmt.Errorf("clear SSH handshake deadline: %w", err)
+	}
+
+	client := &Client{
+		conn: ssh.NewClient(sshConn, chans, reqs),
 		host: host,
-	}, nil
+	}
+	client.stopCancel = context.AfterFunc(ctx, func() {
+		rawConn.Close()
+	})
+	return client, nil
 }
 
 func newHostKeyCallback(homeDir string) (ssh.HostKeyCallback, error) {
@@ -89,6 +130,10 @@ func newHostKeyCallback(homeDir string) (ssh.HostKeyCallback, error) {
 
 // Close 关闭 SFTP 会话和 SSH 连接。
 func (c *Client) Close() error {
+	if c.stopCancel != nil {
+		c.stopCancel()
+		c.stopCancel = nil
+	}
 	if c.sftp != nil {
 		c.sftp.Close()
 		c.sftp = nil

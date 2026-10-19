@@ -1,6 +1,9 @@
 package secret
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -116,4 +119,95 @@ func TestEncrypt_NoKey(t *testing.T) {
 	// 无 stdin 输入时，loadRawKey 会尝试交互，无法在测试里完成
 	// 这里只验证「有 key 时能工作」，不验证无 key 的行为
 	t.Skip("skipping: requires interactive input")
+}
+
+func TestGenerateKeyFileDoesNotOverwriteWithoutForce(t *testing.T) {
+	keyPath := filepath.Join(t.TempDir(), "vault-key")
+	if err := GenerateKeyFile(keyPath, false); err != nil {
+		t.Fatalf("GenerateKeyFile() error = %v", err)
+	}
+	original, err := os.ReadFile(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := GenerateKeyFile(keyPath, false); err == nil {
+		t.Fatal("GenerateKeyFile() unexpectedly overwrote an existing key")
+	}
+	got, err := os.ReadFile(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(original) {
+		t.Fatal("existing key contents changed without force")
+	}
+	assertKeyFilePermissions(t, keyPath)
+}
+
+func TestGenerateKeyFileForceReplacesAtomically(t *testing.T) {
+	keyPath := filepath.Join(t.TempDir(), "vault-key")
+	if err := GenerateKeyFile(keyPath, false); err != nil {
+		t.Fatal(err)
+	}
+	original, err := os.ReadFile(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := GenerateKeyFile(keyPath, true); err != nil {
+		t.Fatalf("GenerateKeyFile(force) error = %v", err)
+	}
+	replacement, err := os.ReadFile(keyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(replacement) == string(original) {
+		t.Fatal("force did not replace the existing key")
+	}
+	assertKeyFilePermissions(t, keyPath)
+
+	entries, err := os.ReadDir(filepath.Dir(keyPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("temporary key files remain: %v", entries)
+	}
+}
+
+func TestGenerateKeyFileRejectsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target")
+	link := filepath.Join(dir, "vault-key")
+	if err := os.WriteFile(target, []byte("preserve"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("cannot create symbolic links: %v", err)
+	}
+
+	if err := GenerateKeyFile(link, true); err == nil {
+		t.Fatal("GenerateKeyFile() followed a symbolic link")
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "preserve" {
+		t.Fatalf("symbolic-link target changed: %q", got)
+	}
+}
+
+func assertKeyFilePermissions(t *testing.T, path string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0600 {
+		t.Errorf("key file permissions = %#o, want 0600", got)
+	}
 }

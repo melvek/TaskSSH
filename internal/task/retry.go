@@ -36,6 +36,10 @@ func shouldRetry(interval int) bool {
 //
 // interval 必须 > 0，否则直接执行一次不重试。
 func withRetry(ctx context.Context, fn func() error, interval, timeout int) error {
+	return withRetryLogger(ctx, console.DefaultLogger(), fn, interval, timeout)
+}
+
+func withRetryLogger(ctx context.Context, logger *console.Logger, fn func() error, interval, timeout int) error {
 	if !shouldRetry(interval) {
 		return fn()
 	}
@@ -64,7 +68,7 @@ func withRetry(ctx context.Context, fn func() error, interval, timeout int) erro
 		}
 
 		// Verbose 下输出重试信息
-		console.Info("attempt %d failed: %v", attempt, err)
+		logger.Info("attempt %d failed: %v", attempt, err)
 
 		select {
 		case <-time.After(time.Duration(interval) * time.Second):

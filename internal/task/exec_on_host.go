@@ -20,7 +20,7 @@ import (
 //
 //	defaults -> 组 vars -> 主机 Extra -> 标准变量 -> CLI -D -> 运行时（date / exec_id）
 func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.HostEntry,
-	globalVars resolve.Vars) error {
+	globalVars resolve.Vars, logger *console.Logger) error {
 
 	// 合并清单变量：global -> 组 -> 主机
 	vars := entry.BaseVars(globalVars)
@@ -34,9 +34,9 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 	var client *ssh.Client
 
 	if !e.dryRun {
-		c, err := ssh.Connect(&entry.Host, e.connectTimeout)
+		c, err := ssh.ConnectContext(ctx, &entry.Host, e.connectTimeout)
 		if err != nil {
-			console.Error("%v", err)
+			logger.Error("%v", err)
 			return err
 		}
 		client = c
@@ -44,52 +44,61 @@ func (e *Executor) runOnHost(ctx context.Context, task *config.Task, entry host.
 	}
 
 	for i, step := range task.Steps {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 
 		act := action.Get(step.Action)
 		if act == nil {
-			console.Error("unknown action: %s", step.Action)
+			logger.Error("unknown action: %s", step.Action)
 			return fmt.Errorf("unknown action: %s", step.Action)
 		}
 
 		if len(task.Steps) > 1 {
-			console.Step(i+1, len(task.Steps), step.Name)
+			logger.Step(i+1, len(task.Steps), step.Name)
 		}
 
 		if step.When != "" {
 			ok, expanded, err := evalWhen(step.When, vars)
 			if err != nil {
-				console.Error("eval when: %v", err)
+				logger.Error("eval when: %v", err)
 				return fmt.Errorf("step %s: eval when: %w", step.Name, err)
 			}
 			if !ok {
-				console.Skipped("ignore: %s", expanded)
+				logger.Skipped("ignore: %s", expanded)
 				continue
 			}
 		}
 
 		actx := &action.ActionContext{
-			Host:   &entry.Host,
-			Vars:   vars,
-			With:   step.With,
-			Client: client,
-			DryRun: e.dryRun,
+			Context: ctx,
+			Host:    &entry.Host,
+			Vars:    vars,
+			With:    step.With,
+			Client:  client,
+			DryRun:  e.dryRun,
+			Logger:  logger,
 		}
 
-		err := withRetry(ctx, func() error {
+		err := withRetryLogger(ctx, logger, func() error {
 			return act.Execute(actx)
 		}, step.Interval, step.Timeout)
 
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if err != nil {
 			if step.IgnoreErrors {
-				console.Ignored("Ignored with error: %v", err)
+				logger.Ignored("Ignored with error: %v", err)
 			} else {
-				console.Error("Failure: %v", err)
+				logger.Error("Failure: %v", err)
 				return fmt.Errorf("step %s: %w", step.Name, err)
 			}
 		}
 
 		if step.Delay > 0 {
-			console.Info("Waiting %ds...", step.Delay)
+			logger.Info("Waiting %ds...", step.Delay)
 			if !e.dryRun {
 				select {
 				case <-time.After(time.Duration(step.Delay) * time.Second):
