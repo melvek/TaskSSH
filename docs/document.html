@@ -1140,6 +1140,9 @@ taskssh fetch -H prod -f /var/log/app/ -d ./logs/ -z</code></pre>
                 在 <code>inventory.yaml</code> 和 <code>with</code> 中使用
                 <code>{{变量名}}</code> 引用变量。花括号内允许前后空格。
             </p>
+            <p>
+                变量值支持字符串、数字和布尔标量；列表、映射及 null 值不能直接替换，会报错。
+            </p>
 
             <h3>来源与优先级</h3>
 
@@ -1178,7 +1181,7 @@ taskssh fetch -H prod -f /var/log/app/ -d ./logs/ -z</code></pre>
 
             <h3>递归展开</h3>
 
-            <p>变量值可引用其他变量，最多展开 4 层。</p>
+            <p>变量值可引用其他变量，最多进行 5 轮替换。</p>
 
             <pre class="language-yaml"><code>defaults:
   app_name: myapp
