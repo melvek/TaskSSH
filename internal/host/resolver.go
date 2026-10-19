@@ -12,12 +12,11 @@ import (
 type resolver struct {
 	inv         *config.Inventory
 	entries     []HostEntry
-	byName      map[string]int      // "组名/主机名" → entries 下标
-	groups      map[string][]int    // 组名 → entries 下标列表
-	groupOrder  []string            // 已排序的组名
-	hostOrder   map[string][]string // 组名 → 该组已排序主机名
-	hostsByName map[string][]int    // 主机名 → entries 下标列表（跨组，O(1) 精确匹配）
-	hostOf      []string            // 与 entries 一一对应：该条目的主机名（不含组名前缀）
+	byName      map[string]int   // "组名/主机名" → entries 下标
+	groups      map[string][]int // 组名 → entries 下标列表
+	groupOrder  []string         // 已排序的组名
+	hostsByName map[string][]int // 主机名 → entries 下标列表（跨组，O(1) 精确匹配）
+	hostOf      []string         // 与 entries 一一对应：该条目的主机名（不含组名前缀）
 }
 
 func newResolver(inv *config.Inventory) *resolver {
@@ -25,7 +24,6 @@ func newResolver(inv *config.Inventory) *resolver {
 		inv:         inv,
 		byName:      make(map[string]int),
 		groups:      make(map[string][]int),
-		hostOrder:   make(map[string][]string),
 		hostsByName: make(map[string][]int),
 	}
 
@@ -47,7 +45,6 @@ func newResolver(inv *config.Inventory) *resolver {
 			hostNames = append(hostNames, name)
 		}
 		sort.Strings(hostNames)
-		r.hostOrder[groupName] = hostNames
 
 		idxs := make([]int, 0, len(hostNames))
 		for _, hostName := range hostNames {
@@ -75,11 +72,7 @@ func (r *resolver) resolve(pattern string, ov Overrides) ([]HostEntry, error) {
 	var result []HostEntry
 
 	if len(tokens) == 0 {
-		sub, err := r.resolveSingle("g:*", true)
-		if err != nil {
-			return nil, err
-		}
-		result = sub
+		return nil, fmt.Errorf("host pattern is empty; use %q to select all hosts", "g:*")
 	} else {
 		// 第一个 token 以 & 或 ! 开头 → 从 g:* 开始（严格模式）
 		if strings.HasPrefix(tokens[0], "&") || strings.HasPrefix(tokens[0], "!") {

@@ -860,6 +860,11 @@ defaults:
                 </table>
             </div>
 
+            <p>
+                组名和主机名不能包含 <code>/</code>，因为该字符用于 <code>组名/主机名</code> 选择器。
+                空白或逗号分隔后没有选择项时会报错；选择全部主机请显式使用 <code>g:*</code>。
+            </p>
+
             <h3>glob 语法</h3>
 
             <div class="table-wrap">

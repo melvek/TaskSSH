@@ -85,3 +85,12 @@ func Test_InvalidGlobIsReported(t *testing.T) {
 		}
 	}
 }
+
+func Test_SeparatorOnlyPatternIsRejected(t *testing.T) {
+	for _, pattern := range []string{" ", ",", " , , "} {
+		_, err := resolveNames(pattern)
+		if err == nil {
+			t.Errorf("resolve(%q) succeeded; want empty-pattern error", pattern)
+		}
+	}
+}
