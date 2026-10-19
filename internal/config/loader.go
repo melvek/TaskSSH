@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	"mestrap.com/taskssh/internal/console"
 	"mestrap.com/taskssh/internal/fileutil"
 )
 
@@ -30,7 +29,6 @@ func Load(path string) (*Inventory, error) {
 		return finalizeInventory(&Inventory{})
 	}
 
-	console.Default.Debug("loading invertory file: %s ...", path)
 	inv, err := readInventoryFile(path)
 	if err != nil {
 		return nil, err
@@ -51,7 +49,6 @@ func Load(path string) (*Inventory, error) {
 	// 依次加载子文件
 	subs := make([]includedFile, 0, len(files))
 	for _, f := range files {
-		console.Default.Debug("loading include invertory file: %s ...", f)
 		sub, err := readInventoryFile(f)
 		if err != nil {
 			return nil, err
