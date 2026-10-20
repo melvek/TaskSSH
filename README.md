@@ -1,95 +1,74 @@
 [![Language](https://img.shields.io/badge/Language-Go-blue.svg)](https://go.dev)
 [![Version](https://img.shields.io/github/v/release/melvek/TaskSSH?include_prereleases)](https://github.com/melvek/TaskSSH/releases/latest)
 ![Supports](https://img.shields.io/badge/Supports-Windows,%20Linux,%20macOS-orange)
-[![LICENSE](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
+[![License](https://img.shields.io/github/license/melvek/TaskSSH)](LICENSE)
 
-![logo](docs/assets/images/logo.svg)
+![TaskSSH](docs/assets/images/logo.svg)
 
-TaskSSH 是一个单文件、无依赖的 SSH 批量运维工具。你只需要写一个 `inventory.yaml`，定义服务器组、认证信息和任务步骤，就能一次对多台服务器执行命令、上传文件、下载文件。
+# TaskSSH
 
-一份清单，一条命令，一批服务器。
+TaskSSH 是一个轻量级、跨平台的 SSH 批量运维工具。它将服务器、变量和任务保存在 `inventory.yaml` 中，通过单个可执行文件对一台或多台主机执行命令、传输文件，或运行可复用的多步骤任务。
 
-如果你厌倦了用 Shell 循环 + `sshpass` 管理服务器，又觉得 Ansible 对小型场景太重，TaskSSH 可能正适合你。
+TaskSSH 不需要在远程主机安装 Agent，也不要求用户安装 Python。它适合希望用清晰、可审查的配置完成日常批量操作，同时不需要完整自动化平台的场景。
 
-## 特性
+## 设计原则
 
-### 核心定位
-
-- **单文件、无依赖**：下载即用，不需要 Python、Agent 或额外运行环境。
-- **YAML 声明式配置**：服务器、变量、任务全部写在 `inventory.yaml`，可提交、可审查。
-- **跨平台**：Windows、Linux、macOS，一个二进制文件。
-
-### 任务编排
-
-- **Action + Task 模型**：`command`、`push`、`fetch`、`script` 四种原子操作，自由组合为有序流程。
-- **变量系统**：`{{var}}` 语法，global / 组 / 主机 / CLI 四级合并，支持递归展开。
-- **条件执行**：`when` 表达式，按主机变量决定 step 是否执行。
-- **错误容忍**：`ignore_errors` 让单步失败不中断整条任务。
-
-### 批量控制
-
-- **按组分批**：`serial` 与 `min_available` 控制每批主机数与安全余量，支持滚动部署。
-- **并发执行**：`-c` 控制批内并发数，默认串行。
-- **Dry-run**：`--dry-run` 不连接主机，输出每台每步将执行的内容。
-
-### 安全
-
-- **密码加密存储**：AES-256-GCM 加密，清单中不出现明文。
-- **密钥外置**：密钥由用户管理，不硬编码在二进制中。
-- **SSH 主机密钥校验**：连接前校验 `~/.ssh/known_hosts` 中的主机密钥；缺少记录或密钥不匹配时拒绝连接。Windows 使用用户目录下 `.ssh\known_hosts`。
-- **下载路径保护**：`fetch` 拒绝远端符号链接，并避免通过本地已有符号链接写入下载文件。
-- **多种认证**：公钥、keyboard-interactive、密码，按优先级尝试。
-
-### 传输能力
-
-- **文件与目录传输**：`push` / `fetch` 支持单文件和目录。
-- **两种目录模式**：默认递归逐文件，`-z` 则打包传输，减少连接开销。
-
-## 支持平台
-
-| 平台 | 架构 |
-|---|---|
-| Windows | amd64 |
-| Linux | amd64 |
-| Linux | arm64 |
-| macOS | amd64 (Intel) |
-| macOS | arm64 (Apple Silicon) |
+- **简单上手**：下载单个可执行文件即可使用；目标主机通过位置参数指定，操作内容通过选项明确表达。
+- **复用 SSH**：通过 SSH 连接远程主机，不在目标机器安装额外 Agent 或开放服务端口。
+- **配置可读、可审查**：以 YAML 管理主机组、变量和任务，让操作流程便于团队理解与代码审查。
+- **默认谨慎**：不指定目标主机时直接报错；使用 `--dry-run` 预览任务，或使用 `--confirm` 在执行前确认目标。
+- **跨平台运行**：提供 Windows、Linux 和 macOS 的预构建版本。
 
 ## 安装
 
-前往 [Releases](https://github.com/melvek/TaskSSH/releases) 页面，下载对应平台的压缩包，解压后得到 `taskssh` / `taskssh.exe`。
+从 [Releases](https://github.com/melvek/TaskSSH/releases/latest) 下载对应平台的压缩包，解压后即可运行 `taskssh` 或 `taskssh.exe`。
 
-Linux / macOS 下添加执行权限：
+Linux / macOS 可按需添加执行权限：
 
 ```bash
 chmod +x taskssh
 ```
 
+从源码构建需要 Go 1.27 或更高版本：
+
+```bash
+git clone https://github.com/melvek/TaskSSH.git
+cd TaskSSH
+go build -o taskssh .
+```
+
 ## 快速开始
 
-### 1. 创建密钥文件
+### 直接执行
 
-用于加密清单中的密码。只需创建一次：
-
-```bash
-mkdir -p ~/.taskssh
-openssl rand -base64 32 > ~/.taskssh/vault-key
-chmod 600 ~/.taskssh/vault-key
-```
-
-### 2. 加密密码
+每个命令使用一个主机 pattern 位置参数。多个主机或组可在同一个 pattern 中用逗号组合；在 PowerShell、Bash 或 Zsh 中，建议将包含逗号、空格或 `&`、`!` 等符号的 pattern 用引号括起来。
 
 ```bash
-taskssh encrypt "your-password"
-# 输出：xxxxx
+# 在单台主机执行命令
+taskssh command web1 -e "uptime"
+
+# 在多个主机组执行命令
+taskssh command "prod,web_server" -e "date"
+
+# 上传文件
+taskssh push prod -f ./dist/app.jar -d /opt/myapp/
+
+# 下载日志
+taskssh fetch prod -f /var/log/myapp.log -d ./logs/
+
+# 查看 dry-run 计划，不连接远程主机
+taskssh deploy prod --dry-run
 ```
 
-### 3. 创建 `inventory.yaml`
+`-H/--host` 已移除。主机 pattern 语法及筛选示例见[主机 pattern 文档](https://taskssh.mestrap.com/document.html#host-pattern)。
+
+### 使用清单和任务
+
+创建 `inventory.yaml`，定义默认连接信息、主机组和可复用任务：
 
 ```yaml
 defaults:
   username: deploy
-  password: "xxxxx"        # 上一步的密文
 
 servers:
   prod:
@@ -102,39 +81,64 @@ servers:
 tasks:
   release:
     steps:
-      - name: "上传新版本"
+      - name: Upload application
         action: push
         with:
-          file: "./dist/app.jar"
-          dest: "${service_path}"
-          force: true
-      - name: "重启服务"
+          file: ./dist/app.jar
+          dest: "{{service_path}}"
+      - name: Restart application
         action: command
         with:
           command: "systemctl restart myapp"
-        delay: 5
 ```
 
-### 4. 执行任务
-
-连接前，请确认目标主机的密钥已通过可信渠道验证并记录在 OpenSSH `known_hosts` 文件中。TaskSSH 不会自动信任未知或已变更的主机密钥。
+执行任务前，可先查看将要操作的主机和步骤：
 
 ```bash
-taskssh release prod --confirm
+taskssh release prod --dry-run
 ```
 
-## 文档
+确认清单中的 SSH 主机密钥已通过可信渠道验证，并已记录到 OpenSSH `known_hosts` 文件。TaskSSH 不会自动信任未知或已变更的主机密钥。
 
-完整文档见 [document.html](https://taskssh.mestrap.com/document.html)，包含：
+### 管理加密密钥
 
-- 清单文件详解（`defaults` / `servers` / `tasks`）
-- Action 参考（`command` / `push` / `fetch` / `script`）
-- 变量替换规则
-- Vault 密钥管理
-- 命令行选项
-- 认证方式
-- 常见问题
+使用 Vault 密钥加密清单中需要保存的密码：
+
+```bash
+taskssh keygen
+taskssh encrypt
+```
+
+`keygen` 默认将密钥写入 `~/.taskssh/vault-key`。请安全备份密钥；丢失后，使用该密钥加密的内容将无法解密。
+
+## 功能概览
+
+- **任务编排**：组合 `command`、`push`、`fetch`、`script` 操作为有序任务。
+- **变量与条件**：支持默认值、组、主机和命令行变量；用 `when` 按条件执行步骤。
+- **批量控制**：支持并发连接，以及通过 `serial`、`min_available` 配置滚动批次。
+- **文件传输**：支持文件与目录；可选择逐文件传输或通过 `-z` 打包传输。
+- **认证方式**：支持 SSH Agent、公钥、keyboard-interactive 和密码认证。
+- **安全保护**：加密保存密码；校验 SSH 主机密钥；限制文件下载路径风险。
+- **跨平台**：支持 Windows、Linux 和 macOS。
+
+## 文档与帮助
+
+- [完整使用文档](https://taskssh.mestrap.com/document.html)：清单格式、主机 pattern、Action、变量、认证与 CLI 选项。
+- [问题反馈与功能建议](https://github.com/melvek/TaskSSH/issues)：提交 Bug 或讨论改进建议。
+- 命令行帮助：`taskssh --help` 或 `taskssh <command> --help`。
+
+## 参与贡献
+
+欢迎提交 Bug 报告、文档改进和代码贡献。提交改动前，请阅读[贡献指南](CONTRIBUTING.md)，并运行相关 Go 测试：
+
+```bash
+go test ./...
+```
+
+## 许可证
+
+TaskSSH 使用 MIT License，详见 [LICENSE](LICENSE)。
 
 ## 更新日志
 
-[CHANGELOG](CHANGELOG.md)
+查看 [CHANGELOG.md](CHANGELOG.md) 了解版本变更。
