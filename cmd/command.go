@@ -16,23 +16,19 @@ var (
 // -e/--execute 需要执行的远程命令，支持变量替换
 // -L/--local   指定命令在本地环境执行
 var commandCmd = &cobra.Command{
-	Use:   "command -H <hosts> [command]",
+	Use:   "command <host-pattern> --execute <command>",
 	Short: "Execute a remote command",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if executeFlag == "" {
-			if len(args) > 0 {
-				executeFlag = args[0]
-			} else {
-				return fmt.Errorf("command action requires 'command' parameter")
-			}
+			return fmt.Errorf("command requires -e/--execute")
 		}
 
 		with := action.CommandWith{
 			Command: executeFlag,
 			Local:   executeLocal,
 		}
-		return runBuiltinTask(cmd.Context(), "command", with)
+		return runBuiltinTask(cmd.Context(), "command", with, args)
 	},
 }
 

@@ -192,7 +192,7 @@
 
         <div class="start-examples">
             <h3>示例：直接执行</h3>
-            <pre class="language-bash"><code>taskssh command 10.0.0.1 -u deploy -e "uptime" -y</code></pre>
+            <pre class="language-bash"><code>taskssh command 10.0.0.1 -u deploy -e "uptime" --dry-run</code></pre>
 
             <h3>示例：定义任务</h3>
             <pre class="language-yaml"><code>tasks:
@@ -214,7 +214,7 @@
         with:
           command: "curl -sf http://localhost:8080/health"</code></pre>
             <p class="start-hint">
-                执行：<code>taskssh release prod -i inventory.yaml -y</code>
+                执行：<code>taskssh release prod -i inventory.yaml --dry-run</code>
             </p>
         </div>
     </div>

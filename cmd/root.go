@@ -14,7 +14,7 @@ var (
 	inventoryFile     string
 	listOnly          bool
 	confirmFlag       bool
-	hostFlag          string
+	targetHostPattern string
 	portFlag          int
 	userFlag          string
 	passwordFlag      string
@@ -33,7 +33,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "taskssh <task> -H <hosts> [options]",
+	Use:           "taskssh <task> <host-pattern> [options]",
 	Short:         "TaskSSH is a lightweight operations tool.",
 	Long:          "TaskSSH is a lightweight, SSH-based batch operations tool.\nhttps://taskssh.mestrap.com/",
 	Version:       Version,
@@ -69,7 +69,6 @@ func init() {
 	rootCmd.PersistentFlags().StringArrayVarP(&cliVars, "define", "D", nil, "Set variable (key=value), can be repeated")
 
 	// 服务器信息
-	rootCmd.PersistentFlags().StringVarP(&hostFlag, "host", "H", "", "Target hosts")
 	rootCmd.PersistentFlags().IntVarP(&portFlag, "port", "P", 0, "port")
 	rootCmd.PersistentFlags().StringVarP(&userFlag, "user", "u", "", "username")
 	rootCmd.PersistentFlags().StringVarP(&passwordFlag, "password", "p", "", "password (plaintext, not recommended)")

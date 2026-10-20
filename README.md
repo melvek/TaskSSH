@@ -120,7 +120,7 @@ tasks:
 连接前，请确认目标主机的密钥已通过可信渠道验证并记录在 OpenSSH `known_hosts` 文件中。TaskSSH 不会自动信任未知或已变更的主机密钥。
 
 ```bash
-taskssh release prod -y
+taskssh release prod --confirm
 ```
 
 ## 文档

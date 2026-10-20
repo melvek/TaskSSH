@@ -15,23 +15,18 @@ var (
 )
 
 var scriptCmd = &cobra.Command{
-	Use:   "script -H <hosts> [file] [dest]",
+	Use:   "script <host-pattern> --file <file> [--dest <dest>]",
 	Short: "Execute a local shell script on remote hosts",
-	Args:  cobra.MaximumNArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if scriptFile == "" {
-			if len(args) > 0 {
-				scriptFile = args[0]
-			} else {
-				return fmt.Errorf("push action requires 'file' parameter")
-			}
+			return fmt.Errorf("script requires -f/--file")
 		}
 		if scriptDest == "" {
-			if len(args) > 1 {
-				scriptDest = args[1]
-			} else {
-				scriptDest = "/tmp"
+			if cmd.Flags().Changed("dest") {
+				return fmt.Errorf("script -d/--dest cannot be empty")
 			}
+			scriptDest = "/tmp"
 		}
 		with := action.ScriptWith{
 			File:   scriptFile,
@@ -39,7 +34,7 @@ var scriptCmd = &cobra.Command{
 			Remove: scriptRemove,
 			Force:  scriptForce,
 		}
-		return runBuiltinTask(cmd.Context(), "script", with)
+		return runBuiltinTask(cmd.Context(), "script", with, args)
 	},
 }
 

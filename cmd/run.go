@@ -14,7 +14,11 @@ import (
 )
 
 // runBuiltinTask 执行内置任务
-func runBuiltinTask(ctx context.Context, taskName string, with any) error {
+func runBuiltinTask(ctx context.Context, taskName string, with any, args []string) error {
+	if err := setTargetHostPattern(args); err != nil {
+		return err
+	}
+
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -34,6 +38,16 @@ func runBuiltinTask(ctx context.Context, taskName string, with any) error {
 
 // runDynamicTask 从 inventory.yaml 动态查找自定义的 task
 func runDynamicTask(ctx context.Context, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("task name is required")
+	}
+	if len(args) != 2 {
+		return fmt.Errorf("expected task name and one host-pattern argument")
+	}
+	if err := setTargetHostPattern(args[1:]); err != nil {
+		return err
+	}
+
 	inv, err := config.Load(inventoryFile)
 	if err != nil {
 		return err
@@ -54,9 +68,9 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	defer ssh.ClearPasswordCache()
 
 	// 未指定具体主机时，报错，因为目前默认是不做确认的，为防止忘了写，导致对全部主机执行一些不可逆的操作
-	// 如果确实需要对所有服务器执行操作，需要显式地指定 -H/--host "*"
-	if hostFlag == "" {
-		return fmt.Errorf("no target hosts, use -H/--host to specify")
+	// 如果确实需要对所有服务器执行操作，需要显式地指定 "*"
+	if targetHostPattern == "" {
+		return fmt.Errorf("no target hosts, specify one host pattern as a positional argument")
 	}
 
 	// dry-run 提醒
@@ -77,7 +91,7 @@ func executeTask(ctx context.Context, t *config.Task, inv *config.Inventory) err
 	}
 
 	// 解析主机匹配
-	entries, err := host.ResolveHosts(hostFlag, inv, ov)
+	entries, err := host.ResolveHosts(targetHostPattern, inv, ov)
 
 	if err != nil {
 		return err

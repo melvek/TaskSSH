@@ -15,23 +15,15 @@ var (
 )
 
 var pushCmd = &cobra.Command{
-	Use:   "push -H <hosts> [file] [dest]",
+	Use:   "push <host-pattern> --file <file> --dest <dest>",
 	Short: "Upload a file or directory to remote server",
-	Args:  cobra.MaximumNArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if pushFile == "" {
-			if len(args) > 0 {
-				pushFile = args[0]
-			} else {
-				return fmt.Errorf("push action requires 'file' parameter")
-			}
+			return fmt.Errorf("push requires -f/--file")
 		}
 		if pushDest == "" {
-			if len(args) > 1 {
-				pushDest = args[1]
-			} else {
-				return fmt.Errorf("push action requires 'dest' parameter")
-			}
+			return fmt.Errorf("push requires -d/--dest")
 		}
 
 		with := action.PushWith{
@@ -40,7 +32,7 @@ var pushCmd = &cobra.Command{
 			Force: pushForce,
 			Zip:   pushZip,
 		}
-		return runBuiltinTask(cmd.Context(), "push", with)
+		return runBuiltinTask(cmd.Context(), "push", with, args)
 	},
 }
 

@@ -15,25 +15,20 @@ var (
 )
 
 var fetchCmd = &cobra.Command{
-	Use:   "fetch -H <hosts> [file] [dest]",
+	Use:   "fetch <host-pattern> --file <file> [--dest <dest>]",
 	Short: "Download a file or directory from remote server",
-	Args:  cobra.MaximumNArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if fetchFile == "" {
-			if len(args) > 0 {
-				fetchFile = args[0]
-			} else {
-				return fmt.Errorf("push action requires 'file' parameter")
-			}
+			return fmt.Errorf("fetch requires -f/--file")
 		}
 
 		if fetchDest == "" {
-			if len(args) > 1 {
-				fetchDest = args[1]
-			} else {
-				// 如果没有指定本地路径，则使用当前路径
-				fetchDest = "./"
+			if cmd.Flags().Changed("dest") {
+				return fmt.Errorf("fetch -d/--dest cannot be empty")
 			}
+			// 如果没有指定本地路径，则使用当前路径
+			fetchDest = "./"
 		}
 
 		with := action.FetchWith{
@@ -42,7 +37,7 @@ var fetchCmd = &cobra.Command{
 			Zip:    fetchZip,
 			TmpDir: fetchTmpDir,
 		}
-		return runBuiltinTask(cmd.Context(), "fetch", with)
+		return runBuiltinTask(cmd.Context(), "fetch", with, args)
 	},
 }
 
