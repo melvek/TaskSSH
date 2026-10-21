@@ -2,16 +2,22 @@ package ssh
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/term"
+
 	"mestrap.com/taskssh/internal/config"
+	"mestrap.com/taskssh/internal/prompt"
 )
 
 // DefaultPort 是默认 SSH 端口。
@@ -19,6 +25,8 @@ const DefaultPort = 22
 
 // DefaultConnectTimeout 是默认连接超时。
 const DefaultConnectTimeout = 10 * time.Second
+
+var hostKeyPromptMu sync.Mutex
 
 // Client 包装 SSH 连接。
 type Client struct {
@@ -121,11 +129,112 @@ func ConnectContext(ctx context.Context, host *config.Host, timeout time.Duratio
 
 func newHostKeyCallback(homeDir string) (ssh.HostKeyCallback, error) {
 	path := filepath.Join(homeDir, ".ssh", "known_hosts")
-	callback, err := knownhosts.New(path)
-	if err != nil {
-		return nil, fmt.Errorf("load SSH known_hosts %s: %w", path, err)
+	return newHostKeyCallbackWithPrompt(path, confirmUnknownHostKey)
+}
+
+func newHostKeyCallbackWithPrompt(path string, confirm func(string, ssh.PublicKey) (bool, error)) (ssh.HostKeyCallback, error) {
+	if err := ensureKnownHostsFile(path); err != nil {
+		return nil, err
 	}
-	return callback, nil
+
+	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		hostKeyPromptMu.Lock()
+		defer hostKeyPromptMu.Unlock()
+
+		callback, err := knownhosts.New(path)
+		if err != nil {
+			return fmt.Errorf("load SSH known_hosts %s: %w", path, err)
+		}
+		err = callback(hostname, remote, key)
+		if err == nil {
+			return nil
+		}
+
+		var keyErr *knownhosts.KeyError
+		if !errors.As(err, &keyErr) || len(keyErr.Want) != 0 {
+			return err
+		}
+
+		trusted, err := confirm(hostname, key)
+		if err != nil {
+			return fmt.Errorf("confirm SSH host key for %s: %w", hostname, err)
+		}
+		if !trusted {
+			return fmt.Errorf("SSH host key for %s was not trusted", hostname)
+		}
+
+		if err := appendKnownHost(path, hostname, key); err != nil {
+			return err
+		}
+		return nil
+	}, nil
+}
+
+func ensureKnownHostsFile(path string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("create SSH directory %s: %w", dir, err)
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return fmt.Errorf("open SSH known_hosts %s: %w", path, err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close SSH known_hosts %s: %w", path, err)
+	}
+	return nil
+}
+
+func appendKnownHost(path, hostname string, key ssh.PublicKey) (retErr error) {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	if err != nil {
+		return fmt.Errorf("open SSH known_hosts %s for writing: %w", path, err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil && retErr == nil {
+			retErr = fmt.Errorf("close SSH known_hosts %s: %w", path, err)
+		}
+	}()
+
+	info, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("inspect SSH known_hosts %s: %w", path, err)
+	}
+	if info.Size() > 0 {
+		last := make([]byte, 1)
+		if _, err := file.ReadAt(last, info.Size()-1); err != nil {
+			return fmt.Errorf("read SSH known_hosts %s: %w", path, err)
+		}
+		if last[0] != '\n' {
+			if _, err := file.Write([]byte("\n")); err != nil {
+				return fmt.Errorf("append to SSH known_hosts %s: %w", path, err)
+			}
+		}
+	}
+
+	line := knownhosts.Line([]string{knownhosts.Normalize(hostname)}, key) + "\n"
+	if _, err := file.WriteString(line); err != nil {
+		return fmt.Errorf("append to SSH known_hosts %s: %w", path, err)
+	}
+	return nil
+}
+
+func confirmUnknownHostKey(hostname string, key ssh.PublicKey) (bool, error) {
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		return false, fmt.Errorf("no interactive terminal; verify the host key and add it to known_hosts")
+	}
+
+	fmt.Fprintf(os.Stderr, "The authenticity of host %s (%s) can't be established.\n", hostname, key.Type())
+	fmt.Fprintf(os.Stderr, "SHA256 fingerprint: %s\n", ssh.FingerprintSHA256(key))
+	fmt.Fprintln(os.Stderr, "Only continue if you trust this server and have verified its fingerprint.")
+	answer, err := prompt.Line("Trust this host key and continue? (yes/no): ")
+	if err != nil {
+		return false, err
+	}
+	if strings.EqualFold(answer, "yes") {
+		return true, nil
+	}
+	return false, nil
 }
 
 // Close 关闭 SFTP 会话和 SSH 连接。

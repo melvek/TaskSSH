@@ -15,6 +15,7 @@ type Host struct {
 	Password     string `yaml:"password"`
 	IdentityFile string `yaml:"identity_file,omitempty"`
 	Passphrase   string `yaml:"passphrase,omitempty"`
+	AuthOverride bool   `yaml:"-"`
 
 	// Extra 存放未定义的字段，用于变量替换
 	Extra map[string]any `yaml:",inline"`

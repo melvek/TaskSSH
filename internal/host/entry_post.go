@@ -9,7 +9,7 @@ import (
 	"mestrap.com/taskssh/internal/secret"
 )
 
-// applyOverrides 应用 CLI 覆盖（端口、用户名）。
+// applyOverrides 应用 CLI 覆盖。
 func applyOverrides(entries []HostEntry, ov Overrides) {
 	for i := range entries {
 		if ov.Port > 0 {
@@ -17,6 +17,11 @@ func applyOverrides(entries []HostEntry, ov Overrides) {
 		}
 		if ov.Username != "" {
 			entries[i].Host.Username = ov.Username
+		}
+		if ov.Password != "" || ov.IdentityFile != "" {
+			entries[i].Host.Password = ov.Password
+			entries[i].Host.IdentityFile = ov.IdentityFile
+			entries[i].Host.AuthOverride = true
 		}
 	}
 }

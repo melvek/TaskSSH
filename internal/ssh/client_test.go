@@ -63,10 +63,152 @@ func TestNewHostKeyCallback(t *testing.T) {
 	}
 }
 
-func TestNewHostKeyCallbackRequiresKnownHostsFile(t *testing.T) {
-	_, err := newHostKeyCallback(t.TempDir())
-	if err == nil {
-		t.Fatal("newHostKeyCallback() succeeded without a known_hosts file")
+func TestNewHostKeyCallbackCreatesKnownHostsFile(t *testing.T) {
+	homeDir := t.TempDir()
+	if _, err := newHostKeyCallback(homeDir); err != nil {
+		t.Fatalf("newHostKeyCallback() error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(homeDir, ".ssh", "known_hosts")); err != nil {
+		t.Fatalf("known_hosts was not created: %v", err)
+	}
+}
+
+func TestUnknownHostKeyPromptStoresTrustedKey(t *testing.T) {
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := ssh.NewSignerFromKey(privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(t.TempDir(), ".ssh", "known_hosts")
+	promptCalls := 0
+	callback, err := newHostKeyCallbackWithPrompt(path, func(hostname string, key ssh.PublicKey) (bool, error) {
+		promptCalls++
+		if hostname != "new.example.com:22" {
+			t.Errorf("prompt hostname = %q, want %q", hostname, "new.example.com:22")
+		}
+		if string(key.Marshal()) != string(signer.PublicKey().Marshal()) {
+			t.Error("prompt received unexpected host key")
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("newHostKeyCallbackWithPrompt() error = %v", err)
+	}
+
+	remote := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 22}
+	if err := callback("new.example.com:22", remote, signer.PublicKey()); err != nil {
+		t.Fatalf("callback() error = %v", err)
+	}
+	if err := callback("new.example.com:22", remote, signer.PublicKey()); err != nil {
+		t.Fatalf("callback() rejected stored key: %v", err)
+	}
+	if promptCalls != 1 {
+		t.Errorf("prompt called %d times, want 1", promptCalls)
+	}
+}
+
+func TestUnknownHostKeyStoresNonDefaultPort(t *testing.T) {
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := ssh.NewSignerFromKey(privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(t.TempDir(), "known_hosts")
+	promptCalls := 0
+	callback, err := newHostKeyCallbackWithPrompt(path, func(string, ssh.PublicKey) (bool, error) {
+		promptCalls++
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("newHostKeyCallbackWithPrompt() error = %v", err)
+	}
+	remote := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 2222}
+	if err := callback("new.example.com:2222", remote, signer.PublicKey()); err != nil {
+		t.Fatalf("callback() error = %v", err)
+	}
+	if err := callback("new.example.com:2222", remote, signer.PublicKey()); err != nil {
+		t.Fatalf("callback() rejected stored key: %v", err)
+	}
+	if promptCalls != 1 {
+		t.Errorf("prompt called %d times, want 1", promptCalls)
+	}
+}
+
+func TestUnknownHostKeyCanBeRejected(t *testing.T) {
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer, err := ssh.NewSignerFromKey(privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(t.TempDir(), "known_hosts")
+	callback, err := newHostKeyCallbackWithPrompt(path, func(string, ssh.PublicKey) (bool, error) {
+		return false, nil
+	})
+	if err != nil {
+		t.Fatalf("newHostKeyCallbackWithPrompt() error = %v", err)
+	}
+	remote := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 22}
+	if err := callback("new.example.com:22", remote, signer.PublicKey()); err == nil {
+		t.Fatal("callback() accepted a rejected host key")
+	}
+
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(contents) != 0 {
+		t.Fatalf("known_hosts contains an untrusted key: %q", contents)
+	}
+}
+
+func TestChangedHostKeyDoesNotPromptForTrust(t *testing.T) {
+	_, trustedPrivateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trustedSigner, err := ssh.NewSignerFromKey(trustedPrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, otherPrivateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherSigner, err := ssh.NewSignerFromKey(otherPrivateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(t.TempDir(), "known_hosts")
+	if err := os.WriteFile(path, []byte(knownhosts.Line([]string{"example.com"}, trustedSigner.PublicKey())+"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	promptCalled := false
+	callback, err := newHostKeyCallbackWithPrompt(path, func(string, ssh.PublicKey) (bool, error) {
+		promptCalled = true
+		return true, nil
+	})
+	if err != nil {
+		t.Fatalf("newHostKeyCallbackWithPrompt() error = %v", err)
+	}
+	remote := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 22}
+	if err := callback("example.com:22", remote, otherSigner.PublicKey()); err == nil {
+		t.Fatal("callback() accepted a changed host key")
+	}
+	if promptCalled {
+		t.Fatal("callback() prompted to trust a changed host key")
 	}
 }
 

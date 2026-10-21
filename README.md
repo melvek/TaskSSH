@@ -56,11 +56,18 @@ taskssh push prod -f ./dist/app.jar -d /opt/myapp/
 # 下载日志
 taskssh fetch prod -f /var/log/myapp.log -d ./logs/
 
+# 测试清单配置和 SSH 连接
+taskssh test prod
+
 # 查看 dry-run 计划，不连接远程主机
 taskssh deploy prod --dry-run
 ```
 
 `-H/--host` 已移除。主机 pattern 语法及筛选示例见[主机 pattern 文档](https://taskssh.mestrap.com/document.html#host-pattern)。
+
+可通过 `--password` 或 `--identity-file` 临时指定 SSH 认证方式。指定后只尝试命令行提供的密码和/或私钥，不会回退到 SSH Agent 或清单中配置的另一种认证方式；未指定时仍按默认认证顺序尝试。
+
+首次连接到尚未记录在当前用户 `~/.ssh/known_hosts` 中的主机时，TaskSSH 会显示主机密钥类型和 SHA-256 指纹，并询问是否信任。只有输入 `yes` 后才会将本次连接收到的密钥保存并继续；已有记录但密钥不匹配时会拒绝连接。非交互环境不会自动信任未知密钥。可用 `taskssh test <host-pattern>` 验证清单解析、SSH 认证和连接。
 
 ### 使用清单和任务
 

@@ -94,3 +94,50 @@ func Test_SeparatorOnlyPatternIsRejected(t *testing.T) {
 		}
 	}
 }
+
+func TestCLIAuthOverridesSelectOnlySpecifiedMethods(t *testing.T) {
+	inventory := testInv()
+	group := inventory.Servers["db"]
+	host := group.Hosts["api"]
+	host.Password = "inventory-password"
+	host.IdentityFile = "inventory-key"
+	group.Hosts["api"] = host
+	inventory.Servers["db"] = group
+
+	tests := []struct {
+		name         string
+		overrides    Overrides
+		wantPassword string
+		wantIdentity string
+	}{
+		{
+			name:         "CLI password",
+			overrides:    Overrides{Password: "cli-password"},
+			wantPassword: "cli-password",
+		},
+		{
+			name:         "CLI identity file",
+			overrides:    Overrides{IdentityFile: "cli-key"},
+			wantIdentity: "cli-key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entries, err := newResolver(inventory).resolve("db/api", tt.overrides)
+			if err != nil {
+				t.Fatalf("resolve() error = %v", err)
+			}
+			got := entries[0].Host
+			if got.Password != tt.wantPassword {
+				t.Errorf("Password = %q, want %q", got.Password, tt.wantPassword)
+			}
+			if got.IdentityFile != tt.wantIdentity {
+				t.Errorf("IdentityFile = %q, want %q", got.IdentityFile, tt.wantIdentity)
+			}
+			if !got.AuthOverride {
+				t.Error("AuthOverride = false, want true")
+			}
+		})
+	}
+}

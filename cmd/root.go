@@ -82,8 +82,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&confirmFlag, "confirm", "", false, "List target hosts and wait for confirmation before executing")
 	rootCmd.PersistentFlags().IntVarP(&concurrency, "concurrency", "c", 1, "Number of concurrent connections")
 	rootCmd.PersistentFlags().IntVarP(&connectTimeout, "connect-timeout", "", 10, "Connection timeout in seconds")
-	rootCmd.PersistentFlags().IntVarP(&serialFlag, "serial", "S", -1, "Run in batches of N hosts per group (0 = all at once; default: use task config)")
-	rootCmd.PersistentFlags().IntVarP(&minAvailableFlag, "min-available", "", -1, "Keep at least N hosts per group running (0 = no limit; default: use task config)")
+	rootCmd.PersistentFlags().IntVarP(&serialFlag, "serial", "S", -1, "Run in batches of N hosts per group (0 = all at once)")
+	rootCmd.PersistentFlags().IntVarP(&minAvailableFlag, "min-available", "", -1, "Keep at least N hosts per group running (0 = no limit)")
 	rootCmd.PersistentFlags().BoolVarP(&stopOnFailureFlag, "stop-on-failure", "", true, "Stop remaining batches if a batch fails")
 
 	// 日志输出相关
@@ -129,6 +129,7 @@ func init() {
 	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(fetchCmd)
 	rootCmd.AddCommand(scriptCmd)
+	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(keygenCmd)
 	rootCmd.AddCommand(encryptCmd)
 	rootCmd.AddCommand(decryptCmd)
