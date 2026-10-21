@@ -23,8 +23,10 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 	var methods []ssh.AuthMethod
 
 	// SSH Agent
-	if ag := getAgent(); ag != nil {
-		methods = append(methods, ssh.PublicKeysCallback(ag.Signers))
+	if !host.AuthOverride {
+		if ag := getAgent(); ag != nil {
+			methods = append(methods, ssh.PublicKeysCallback(ag.Signers))
+		}
 	}
 
 	// 公钥
@@ -32,7 +34,7 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 		signer, err := loadPrivateKey(host.IdentityFile, host.Passphrase)
 		if err != nil {
 			// agent 可用时，公钥加载失败不中断
-			if len(methods) == 0 {
+			if host.AuthOverride || len(methods) == 0 {
 				return nil, fmt.Errorf("load identity %s: %w", host.IdentityFile, err)
 			}
 		} else {
@@ -58,7 +60,7 @@ func buildAuthMethods(host *config.Host) ([]ssh.AuthMethod, error) {
 		}))
 
 		methods = append(methods, ssh.Password(pwd))
-	} else if host.IdentityFile == "" && len(methods) == 0 {
+	} else if host.IdentityFile == "" && len(methods) == 0 && !host.AuthOverride {
 		methods = append(methods, ssh.PasswordCallback(func() (string, error) {
 			return PromptPassword(), nil
 		}))
