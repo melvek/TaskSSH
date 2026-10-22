@@ -4,7 +4,7 @@
     src: url("../fonts/RedHatDisplay-VF.woff2") format("woff2-variations");
     font-weight: 300 900;
     font-style: normal;
-    font-display: fallback;
+    font-display: swap;
 }
 
 @font-face {
@@ -12,7 +12,7 @@
     src: url("../fonts/RedHatText-VF.woff2") format("woff2-variations");
     font-weight: 300 700;
     font-style: normal;
-    font-display: fallback;
+    font-display: swap;
 }
 
 @font-face {
@@ -20,7 +20,7 @@
     src: url("../fonts/pt-mono-regular-2.ttf") format("truetype");
     font-weight: 300 700;
     font-style: normal;
-    font-display: fallback;
+    font-display: swap;
 }
 
 :root {
