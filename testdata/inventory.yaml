@@ -15,15 +15,17 @@
 #   host           主机地址（通常不在此处配置）
 #   port           SSH 端口，默认 22
 #   username       登录用户名
+
 #   password       密码（必须密文）
 #   identity_file  私钥路径，支持 ~
 #   passphrase     私钥 passphrase（必须密文）
 #
+#   password、identity_file、passphrase 认证方式根据情况使用其中一种即可
 # 其他字段进入变量池，可用 {{变量名}} 引用。
 
-# 引用其它清单文件
-include:
- - tasks.yaml
+# 引用其它清单文件，整合多清单中的服务器配置，或者复用任务定义
+# include:
+#  - conf/*.yaml
 
 defaults:
   port: 22

@@ -131,25 +131,6 @@
                 一条命令对多台服务器执行命令、上传下载文件。
             </p>
 
-            <h3>使用方式</h3>
-
-            <p>从简单到高级，三种用法逐级叠加：</p>
-
-            <ul>
-                <li>
-                    <strong>直接执行</strong>：不写清单，用位置参数指定主机，
-                    执行单条命令或单次传输。
-                </li>
-                <li>
-                    <strong>按组执行</strong>：写清单定义服务器组与变量，
-                    用组名批量操作，复用认证与配置。
-                </li>
-                <li>
-                    <strong>定义任务</strong>：把多个 action 编排成有序流程，
-                    一条命令完成整套操作。
-                </li>
-            </ul>
-
             <h2 id="install">安装</h2>
 
             <h3>下载二进制</h3>
@@ -178,11 +159,11 @@ go build -o taskssh main.go</code></pre>
             </p>
 
             <pre class="language-bash"><code># 执行远程命令
-taskssh command web1 -u deploy -e "uptime"
-taskssh command web1 -u deploy -e "date"
+taskssh command "192.168.1.1, 192.168.1.2" -u web -p "123456" -e "uptime"
+taskssh command "192.168.1.1, 192.168.1.2" -u deploy -e "date"
 
 # 上传文件或目录
-taskssh push web1 -u deploy -f app.jar -d /opt/app/
+taskssh push app_domain1 -u deploy -f app.jar -d /opt/app/
 
 # 下载文件或目录，不指定 `-d` 时，下载到当前目录
 taskssh fetch web1 -u deploy -f /var/log/app.log -d ./logs/
@@ -195,7 +176,7 @@ taskssh script web1 -u deploy -f ./deploy.sh -d /tmp -r</code></pre>
             </p>
 
             <pre class="language-bash"><code># 多台主机
-            taskssh command "10.0.0.1,10.0.0.2" -u deploy -e "df -h"
+taskssh command "10.0.0.1,10.0.0.2" -u deploy -e "df -h"
 
 # 直接指定 IP
 taskssh command "192.168.1.10" -u deploy -e "uptime"</code></pre>
@@ -208,8 +189,8 @@ taskssh command "192.168.1.10" -u deploy -e "uptime"</code></pre>
             <h3>使用清单文件</h3>
 
             <p>
-                当主机较多、需要分组、或需要复用认证与变量时，写一个
-                <code>inventory.yaml</code>，把配置固化为可复用、可提交、可审查的文件。
+                当主机较多、需要分组、或需要复用认证与变量时，可以使用
+                <code>inventory.yaml</code>清单文件，把配置固化为可复用、可提交、可审查的文件。
             </p>
 
             <h4>1. 生成 Vault 密钥</h4>
