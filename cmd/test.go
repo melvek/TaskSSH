@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -37,29 +35,26 @@ var testCmd = &cobra.Command{
 		ssh.ClearPasswordCache()
 		defer ssh.ClearPasswordCache()
 
-		var failures []error
 		for _, entry := range entries {
 			port := entry.Host.Port
 			if port == 0 {
 				port = ssh.DefaultPort
 			}
 			address := net.JoinHostPort(entry.Host.Host, strconv.Itoa(port))
-			console.Default.Info("Testing SSH connection to %s (%s)", entry.Name, address)
+			console.Default.Debug("Testing SSH connection to %s (%s)", entry.Name, address)
 
 			client, err := ssh.ConnectContext(cmd.Context(), &entry.Host, time.Duration(connectTimeout)*time.Second)
 			if err != nil {
 				console.Default.Error("SSH connection failed for %s: %v", entry.Name, err)
-				failures = append(failures, fmt.Errorf("%s: %w", entry.Name, err))
 				continue
 			}
 			if err := client.Close(); err != nil {
 				console.Default.Error("SSH connection cleanup failed for %s: %v", entry.Name, err)
-				failures = append(failures, fmt.Errorf("%s: close SSH connection: %w", entry.Name, err))
 				continue
 			}
-			console.Default.Success("SSH connection successful: %s", entry.Name)
+			console.Default.Info("SSH connection successful: %s (%s)", entry.Name, address)
 		}
 
-		return errors.Join(failures...)
+		return nil
 	},
 }
